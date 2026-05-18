@@ -6,15 +6,17 @@ import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
+import com.inuteamflow.server.domain.user.repository.SchoolLoginRepository;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
-import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
+import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.jwt.JwtTokenProvider;
 import com.inuteamflow.server.global.jwt.TokenResponse;
 import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import com.inuteamflow.server.global.s3.S3Service;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -29,6 +31,7 @@ public class AuthService {
 
     private final S3Service s3Service;
     private final UserRepository userRepository;
+    private final ObjectProvider<SchoolLoginRepository> schoolLoginRepositoryProvider;
     private final JwtTokenProvider jwtTokenProvider;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
@@ -47,7 +50,6 @@ public class AuthService {
         }
 
         User user = User.create(request, bCryptPasswordEncoder.encode(request.getPassword()));
-
         String imageUrl = s3Service.getImageUrl(user.getImageKey());
 
         return MyInfoResponse.create(userRepository.save(user), imageUrl);
@@ -78,16 +80,31 @@ public class AuthService {
         return jwtTokenProvider.generateTokenByUsername(user.getUsername());
     }
 
+    @Transactional
     public MyInfoResponse verifySchool(
             UserDetailsImpl userDetails,
             VerifySchoolRequest request
     ) {
-        User user = userDetails.getUser();
+        SchoolLoginRepository schoolLoginRepository = schoolLoginRepositoryProvider.getIfAvailable();
+        if (schoolLoginRepository == null) {
+            throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFY_UNAVAILABLE);
+        }
 
-        // TODO: 학교 서버에 접근할 수 있게 설정 후, 학생 인증 로직 구현
+        User user = userRepository.findById(userDetails.getUser().getUserId())
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
+
+        String loginCheckResult = schoolLoginRepository.loginCheck(
+                request.getStudentNumber(),
+                request.getPortalPassword()
+        );
+
+        if (loginCheckResult == null || "N".equalsIgnoreCase(loginCheckResult.trim())) {
+            throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFY_FAILED);
+        }
+
+        user.verifySchool(request.getStudentNumber());
 
         String imageUrl = s3Service.getImageUrl(user.getImageKey());
-
         return MyInfoResponse.create(user, imageUrl);
     }
 }
