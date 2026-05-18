@@ -35,6 +35,17 @@ public enum CustomErrorCode implements ErrorCode {
     TEAM_FORBIDDEN(HttpStatus.FORBIDDEN, 403, ""),
     TEAM_MEMBER_ALREADY_ROLE(HttpStatus.BAD_REQUEST, 400, ""),
 
+    // 모집글 관련 에러
+    RECRUITMENT_MEMBER_FULL(HttpStatus.CONFLICT, 409, "정원이 가득 찼습니다."),
+    RECRUITMENT_APPLICATION_STATUS_INVALID(HttpStatus.BAD_REQUEST, 400, "유효하지 않은 신청서 상태입니다."),
+    RECRUITMENT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "모집글을 찾을 수 없습니다."),
+    RECRUITMENT_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "모집글에 대한 권한이 없습니다."),
+    RECRUITMENT_ALREADY_APPLIED(HttpStatus.CONFLICT, 409, "이미 신청한 모집글입니다."),
+    RECRUITMENT_APPLICANT_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "본인 모집글에는 신청할 수 없습니다."),
+    RECRUITMENT_APPLICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "신청서를 찾을 수 없습니다."),
+    RECRUITMENT_CLOSED(HttpStatus.CONFLICT, 409, "이미 마감된 모집글입니다."),
+    RECRUITMENT_EXPIRED(HttpStatus.CONFLICT, 409, "모집글의 신청기간이 지났습니다."),
+
     // 투표 관련 에러
     VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "투표를 찾을 수 없습니다."),
     VOTE_NOT_OPENED(HttpStatus.BAD_REQUEST, 400, "열려 있는 투표가 아닙니다."),
