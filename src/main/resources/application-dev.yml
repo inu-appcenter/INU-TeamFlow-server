@@ -1,9 +1,10 @@
 spring:
-  application:
-    name: inu-teamflow-server
-
   config:
-    import: optional:file:.env[.properties]
+    activate:
+      on-profile: dev
+
+  application:
+    name: inu-teamflow
 
   datasource:
     url: ${POSTGRESQL_URL}
@@ -14,35 +15,29 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    open-in-view: false
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
-#  sql:
-#    init:
-#      mode: always
-
-server:
-  port: 8080
+oracle:
+  datasource:
+    jdbc-url: ${ORACLE_URL}
+    username: ${ORACLE_USERNAME}
+    password: ${ORACLE_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+  enabled: true
 
 jwt:
   secret: ${JWT_SECRET}
-
-oracle:
-  enabled: false
 
 aws:
   credentials:
     access-key: ${AWS_ACCESS_KEY_ID}
     secret-key: ${AWS_SECRET_ACCESS_KEY}
-
   region:
     static: ${AWS_REGION}
-
   s3:
     bucket: ${S3_BUCKET_NAME}
-
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN}
