@@ -2,10 +2,8 @@ package com.inuteamflow.server.domain.team.entity;
 
 import com.inuteamflow.server.domain.team.dto.request.TeamCreateRequest;
 import com.inuteamflow.server.domain.team.dto.request.TeamUpdateRequest;
-import com.inuteamflow.server.domain.team.enums.TeamCategory;
-import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.BaseEntity;
-import com.inuteamflow.server.global.BaseTimeEntity;
+import com.inuteamflow.server.global.enums.Category;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -29,7 +27,7 @@ public class Team extends BaseEntity {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private TeamCategory category;
+    private Category category;
 
     private String link;
 
@@ -39,7 +37,7 @@ public class Team extends BaseEntity {
     private String imageKey;
 
     @Builder
-    private Team (String name, String description, TeamCategory category,
+    private Team (String name, String description, Category category,
                   String link, String sns, String imageKey) {
         this.name = name;
         this.description = description;
