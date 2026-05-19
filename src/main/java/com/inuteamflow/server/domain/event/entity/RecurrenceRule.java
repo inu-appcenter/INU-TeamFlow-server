@@ -58,9 +58,6 @@ public class RecurrenceRule extends BaseTimeEntity {
     @Column(name = "occurrence_count")
     private Integer occurrenceCount;
 
-    @Column(name = "time_zone")
-    private String timeZone;
-
     @Builder
     private RecurrenceRule(
             Event event,
@@ -70,8 +67,7 @@ public class RecurrenceRule extends BaseTimeEntity {
             Integer byMonthDay,
             LocalDateTime seriesStartAt,
             LocalDateTime untilAt,
-            Integer occurrenceCount,
-            String timeZone
+            Integer occurrenceCount
     ) {
         this.event = event;
         this.freq = freq;
@@ -81,7 +77,6 @@ public class RecurrenceRule extends BaseTimeEntity {
         this.seriesStartAt = seriesStartAt;
         this.untilAt = untilAt;
         this.occurrenceCount = occurrenceCount;
-        this.timeZone = timeZone;
     }
 
     public static RecurrenceRule create(
@@ -98,7 +93,6 @@ public class RecurrenceRule extends BaseTimeEntity {
                 .seriesStartAt(seriesStartAt)
                 .untilAt(recurrence.getUntilAt())
                 .occurrenceCount(recurrence.getOccurrenceCount())
-                .timeZone(recurrence.getTimeZone())
                 .build();
     }
 
@@ -119,7 +113,6 @@ public class RecurrenceRule extends BaseTimeEntity {
         this.seriesStartAt = seriesStartAt;
         this.untilAt = recurrence.getUntilAt();
         this.occurrenceCount = recurrence.getOccurrenceCount();
-        this.timeZone = recurrence.getTimeZone();
     }
 
     public void finishBefore(LocalDateTime occurrenceAt) {

@@ -6,13 +6,13 @@ import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.service.AuthService;
-import com.inuteamflow.server.global.jwt.TokenResponse;
 import com.inuteamflow.server.global.jwt.JwtTokenProvider;
-import com.inuteamflow.server.global.response.ApiResponse;
-import jakarta.servlet.http.HttpServletResponse;
+import com.inuteamflow.server.global.jwt.TokenResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
@@ -26,59 +26,62 @@ import java.time.Duration;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
-public class AuthController {
+public class AuthController implements AuthControllerDocument {
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ApiResponse<TokenResponse> login(
-            @Valid @RequestBody LoginRequest loginRequest,
-            HttpServletResponse response
+    public ResponseEntity<TokenResponse> login(
+            @Valid @RequestBody LoginRequest loginRequest
     ) {
         TokenResponse tokenResponse = authService.login(loginRequest);
-        addRefreshTokenCookie(response, tokenResponse.getRefreshToken());
-        return ApiResponse.ok(tokenResponse);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenResponse.getRefreshToken()).toString())
+                .body(tokenResponse);
     }
 
     @PostMapping("/reissue")
-    public ApiResponse<TokenResponse> reissue(
-            @CookieValue(REFRESH_TOKEN_COOKIE_NAME) String refreshToken,
-            HttpServletResponse response
+    public ResponseEntity<TokenResponse> reissue(
+            @CookieValue(REFRESH_TOKEN_COOKIE_NAME) String refreshToken
     ) {
         TokenResponse tokenResponse = authService.reissue(refreshToken);
-        addRefreshTokenCookie(response, tokenResponse.getRefreshToken());
-        return ApiResponse.ok(tokenResponse);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .header(HttpHeaders.SET_COOKIE, createRefreshTokenCookie(tokenResponse.getRefreshToken()).toString())
+                .body(tokenResponse);
     }
 
     @PostMapping("/signup")
-    public ApiResponse<MyInfoResponse> signup(
+    public ResponseEntity<MyInfoResponse> signup(
             @Valid @RequestBody SignupRequest request
     ) {
-        return ApiResponse.ok(authService.signUp(request));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(authService.signUp(request));
     }
 
     @PostMapping("/verify-school")
-    public ApiResponse<MyInfoResponse> verifySchool(
+    public ResponseEntity<MyInfoResponse> verifySchool(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody VerifySchoolRequest request
     ) {
-        return ApiResponse.ok(authService.verifySchool(userDetails, request));
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(authService.verifySchool(userDetails, request));
     }
 
-    private void addRefreshTokenCookie(
-            HttpServletResponse response,
+    private ResponseCookie createRefreshTokenCookie(
             String refreshToken
     ) {
-        ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
+        return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
                 .secure(false)
                 .path("/")
                 .maxAge(Duration.ofMillis(JwtTokenProvider.REFRESH_TOKEN_VALID_TIME))
                 .sameSite("Lax")
                 .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 }

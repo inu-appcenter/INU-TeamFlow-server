@@ -7,10 +7,11 @@ import com.inuteamflow.server.domain.event.dto.response.EventListResponse;
 import com.inuteamflow.server.domain.event.enums.RecurrenceEditScope;
 import com.inuteamflow.server.domain.event.service.MyEventService;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
-import com.inuteamflow.server.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,45 +21,53 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/events")
-public class MyEventController {
+public class MyEventController implements MyEventControllerDocument{
 
     private final MyEventService myEventService;
 
     @GetMapping
-    public ApiResponse<List<EventListResponse>> getMyEventList(
+    public ResponseEntity<List<EventListResponse>> getMyEventList(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam Integer year,
-            @RequestParam Integer month
+            @RequestParam("year") Integer year,
+            @RequestParam("month") Integer month
     ) {
-        return ApiResponse.ok(myEventService.getMyEventList(userDetails.getUser(), year, month));
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(myEventService.getMyEventList(userDetails.getUser(), year, month));
     }
 
     @PostMapping
-    public ApiResponse<EventDetailResponse> createMyEvent(
+    public ResponseEntity<EventDetailResponse> createMyEvent(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody MyEventCreateRequest request
     ) {
-        return ApiResponse.ok(myEventService.createMyEvent(userDetails.getUser(), request));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(myEventService.createMyEvent(userDetails.getUser(), request));
     }
 
     @PutMapping("/{eventId}")
-    public ApiResponse<EventDetailResponse> updateMyEvent(
+    public ResponseEntity<EventDetailResponse> updateMyEvent(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long eventId,
+            @PathVariable("eventId") Long eventId,
             @Valid @RequestBody MyEventUpdateRequest request
     ) {
-        return ApiResponse.ok(myEventService.updateMyEvent(userDetails.getUser(), eventId, request));
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(myEventService.updateMyEvent(userDetails.getUser(), eventId, request));
     }
 
     @DeleteMapping("/{eventId}")
-    public ApiResponse<Void> deleteMyEvent(
+    public ResponseEntity<Void> deleteMyEvent(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long eventId,
-            @RequestParam(required = false) RecurrenceEditScope recurrenceEditScope,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime occurrenceAt
+            @PathVariable("eventId") Long eventId,
+            @RequestParam(name = "scope", required = false) RecurrenceEditScope recurrenceEditScope,
+            @RequestParam(name = "occurrence", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime occurrenceAt
     ) {
         myEventService.deleteMyEvent(userDetails.getUser(), eventId, recurrenceEditScope, occurrenceAt);
-        return ApiResponse.ok();
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
     }
 
 }
