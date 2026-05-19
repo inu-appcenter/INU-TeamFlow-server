@@ -1,7 +1,6 @@
 package com.inuteamflow.server.domain.recruitment.dto.response;
 
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
-import com.inuteamflow.server.domain.recruitment.enums.RecruitmentCategory;
 import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.enums.Status;
 import lombok.AccessLevel;
