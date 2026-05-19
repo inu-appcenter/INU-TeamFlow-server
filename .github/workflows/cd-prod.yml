@@ -45,6 +45,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            mkdir -p /home/serverking/inu-teamflow/prod
+
       - name: Copy compose
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -61,10 +70,9 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            mkdir -p /home/serverking/inu-teamflow/prod
             cd /home/serverking/inu-teamflow/prod
 
-            cat > .env <<EOF
+            cat > .env <<'EOF'
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             SPRING_PROFILES_ACTIVE=prod
             POSTGRESQL_URL=${{ secrets.PROD_POSTGRESQL_URL }}
