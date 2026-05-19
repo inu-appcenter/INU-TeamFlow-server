@@ -8,11 +8,11 @@ import com.inuteamflow.server.domain.recruitment.dto.response.ApplicationSummary
 import com.inuteamflow.server.domain.recruitment.dto.response.MyApplicationSummaryResponse;
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
-import com.inuteamflow.server.domain.recruitment.enums.ApplicationStatus;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
+import com.inuteamflow.server.global.enums.Status;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.RequiredArgsConstructor;
@@ -113,22 +113,22 @@ public class RecruitmentApplicationService {
                 .findById(applicationId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_NOT_FOUND));
 
-        ApplicationStatus newStatus = request.getApplicationStatus();
+        Status newStatus = request.getApplicationStatus();
 
-        if (newStatus == ApplicationStatus.CANCELED) {
+        if (newStatus == Status.CANCELED) {
             if (!recruitmentApplication.getCreatedBy().equals(user.getUserId())) {
                 throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICANT_FORBIDDEN);
             }
             recruitmentApplication.cancel();
 
-        } else if (newStatus == ApplicationStatus.ACCEPTED || newStatus == ApplicationStatus.DECLINED) {
+        } else if (newStatus == Status.ACCEPTED || newStatus == Status.DECLINED) {
             Recruitment recruitment = recruitmentApplication.getRecruitment();
 
             if (!recruitmentApplication.getRecruitment().getRecruiter().getUserId().equals(user.getUserId())) {
                 throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
             }
 
-            if (newStatus == ApplicationStatus.ACCEPTED) {
+            if (newStatus == Status.ACCEPTED) {
                 recruitment.increaseCurrentMemberCount();
                 recruitmentApplication.accept();
             }

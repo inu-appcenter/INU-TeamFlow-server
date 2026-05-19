@@ -1,9 +1,9 @@
 package com.inuteamflow.server.domain.invitation.entity;
 
-import com.inuteamflow.server.domain.invitation.enums.InvitationStatus;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.BaseEntity;
+import com.inuteamflow.server.global.enums.Status;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -33,13 +33,13 @@ public class TeamInvitation extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "invite_status", nullable = false)
-    private InvitationStatus invitationStatus;
+    private Status invitationStatus;
 
     @Column(name = "responded_at")
     private LocalDateTime respondedAt;
 
     @Builder
-    private TeamInvitation(Team team, User receiver, InvitationStatus invitationStatus) {
+    private TeamInvitation(Team team, User receiver, Status invitationStatus) {
         this.team = team;
         this.receiver = receiver;
         this.invitationStatus = invitationStatus;
@@ -49,23 +49,23 @@ public class TeamInvitation extends BaseEntity {
         return TeamInvitation.builder()
                 .team(team)
                 .receiver(receiver)
-                .invitationStatus(InvitationStatus.WAITING)
+                .invitationStatus(Status.WAITING)
                 .build();
     }
 
     // DECLINED 상태에서 재초대 시, 기존 레코드를 WAITING으로 초기화
     public void reinvite() {
-        this.invitationStatus = InvitationStatus.WAITING;
+        this.invitationStatus = Status.WAITING;
         this.respondedAt = null;
     }
 
     public void accept() {
-        this.invitationStatus = InvitationStatus.ACCEPTED;
+        this.invitationStatus = Status.ACCEPTED;
         this.respondedAt = LocalDateTime.now();
     }
 
     public void decline() {
-        this.invitationStatus = InvitationStatus.DECLINED;
+        this.invitationStatus = Status.DECLINED;
         this.respondedAt = LocalDateTime.now();
     }
 

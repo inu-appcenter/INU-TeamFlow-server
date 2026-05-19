@@ -1,7 +1,7 @@
 package com.inuteamflow.server.domain.recruitment.dto.response;
 
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
-import com.inuteamflow.server.domain.recruitment.enums.ApplicationStatus;
+import com.inuteamflow.server.global.enums.Status;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,7 +14,7 @@ public class ApplicationSummaryResponse {
 
     private Long applicationId;
     private String introduction;
-    private ApplicationStatus applicationStatus;
+    private Status applicationStatus;
     private String applicantName;
     private LocalDateTime createdAt;
     private LocalDateTime respondedAt;

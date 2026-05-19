@@ -1,6 +1,6 @@
 package com.inuteamflow.server.domain.invitation.dto.request;
 
-import com.inuteamflow.server.domain.invitation.enums.InvitationStatus;
+import com.inuteamflow.server.global.enums.Status;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 public class TeamInvitationStatusUpdateRequest {
 
     @NotNull
-    private InvitationStatus status;
+    private Status status;
 
 }

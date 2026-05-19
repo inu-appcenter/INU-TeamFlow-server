@@ -1,8 +1,8 @@
 package com.inuteamflow.server.domain.recruitment.dto.response;
 
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
-import com.inuteamflow.server.domain.recruitment.enums.ApplicationStatus;
-import com.inuteamflow.server.domain.recruitment.enums.RecruitmentCategory;
+import com.inuteamflow.server.global.enums.Category;
+import com.inuteamflow.server.global.enums.Status;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,10 +14,10 @@ import java.time.LocalDateTime;
 public class ApplicationDetailResponse {
 
     private Long applicationId;
-    private ApplicationStatus applicationStatus;
+    private Status applicationStatus;
     private String introduction;
     private String recruitmentTitle;
-    private RecruitmentCategory category;
+    private Category category;
     private String recruiterName;
     //    private String announcementTitle;
     private String applicantName;

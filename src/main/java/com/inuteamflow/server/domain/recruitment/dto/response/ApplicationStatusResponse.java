@@ -1,7 +1,7 @@
 package com.inuteamflow.server.domain.recruitment.dto.response;
 
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
-import com.inuteamflow.server.domain.recruitment.enums.ApplicationStatus;
+import com.inuteamflow.server.global.enums.Status;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class ApplicationStatusResponse {
 
     private Long applicationID;
-    private ApplicationStatus applicationStatus;
+    private Status applicationStatus;
     private LocalDateTime respondedAt;
 
     public static ApplicationStatusResponse from(RecruitmentApplication application) {

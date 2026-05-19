@@ -1,9 +1,9 @@
 package com.inuteamflow.server.domain.recruitment.entity;
 
-import com.inuteamflow.server.domain.recruitment.enums.RecruitmentCategory;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.BaseEntity;
+import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import jakarta.persistence.*;
@@ -32,7 +32,7 @@ public class Recruitment extends BaseEntity {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    private RecruitmentCategory category;
+    private Category category;
 
     @Column(nullable = false, name = "is_opened")
     private Boolean isOpened;
@@ -55,7 +55,7 @@ public class Recruitment extends BaseEntity {
     private User recruiter;
 
     @Builder
-    private Recruitment(String title, String description, RecruitmentCategory category,
+    private Recruitment(String title, String description, Category category,
                         Integer targetMemberCount, LocalDateTime endAt,
                         Team team, User recruiter) {
         this.title = title;
@@ -69,7 +69,7 @@ public class Recruitment extends BaseEntity {
         this.recruiter = recruiter;
     }
 
-    public void update(String title, String description, RecruitmentCategory category,
+    public void update(String title, String description, Category category,
                        Integer targetMemberCount, LocalDateTime endAt) {
         this.title = title;
         this.description = description;
