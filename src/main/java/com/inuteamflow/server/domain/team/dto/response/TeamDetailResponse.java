@@ -2,8 +2,8 @@ package com.inuteamflow.server.domain.team.dto.response;
 
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
-import com.inuteamflow.server.domain.team.enums.TeamCategory;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
+import com.inuteamflow.server.global.enums.Category;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,7 +18,7 @@ public class TeamDetailResponse {
 
     private String name;
 
-    private TeamCategory category;
+    private Category category;
 
     private String description;
 

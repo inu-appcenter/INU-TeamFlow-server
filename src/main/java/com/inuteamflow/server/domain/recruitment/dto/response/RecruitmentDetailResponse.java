@@ -1,7 +1,7 @@
 package com.inuteamflow.server.domain.recruitment.dto.response;
 
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
-import com.inuteamflow.server.domain.recruitment.enums.RecruitmentCategory;
+import com.inuteamflow.server.global.enums.Category;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,7 +15,7 @@ public class RecruitmentDetailResponse {
     private Long recruitmentId;
     private String title;
     private Boolean isOpened;
-    private RecruitmentCategory category;
+    private Category category;
     private String description;
     private Integer targetMemberCount;
     private Integer currentMemberCount;

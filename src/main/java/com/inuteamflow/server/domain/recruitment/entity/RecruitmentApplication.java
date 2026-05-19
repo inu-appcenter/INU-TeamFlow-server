@@ -1,7 +1,7 @@
 package com.inuteamflow.server.domain.recruitment.entity;
 
-import com.inuteamflow.server.domain.recruitment.enums.ApplicationStatus;
 import com.inuteamflow.server.global.BaseEntity;
+import com.inuteamflow.server.global.enums.Status;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import jakarta.persistence.*;
@@ -32,7 +32,7 @@ public class RecruitmentApplication extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, name = "application_status")
-    private ApplicationStatus applicationStatus;
+    private Status applicationStatus;
 
     @Column(name = "responded_at")
     private LocalDateTime respondedAt;
@@ -41,30 +41,30 @@ public class RecruitmentApplication extends BaseEntity {
     private RecruitmentApplication(Recruitment recruitment, String introduction) {
         this.recruitment = recruitment;
         this.introduction = introduction;
-        this.applicationStatus = ApplicationStatus.WAITING;
+        this.applicationStatus = Status.WAITING;
     }
 
     public void accept() {
-        if (this.applicationStatus != ApplicationStatus.WAITING) {
+        if (this.applicationStatus != Status.WAITING) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_STATUS_INVALID);
         }
-        this.applicationStatus = ApplicationStatus.ACCEPTED;
+        this.applicationStatus = Status.ACCEPTED;
         this.respondedAt = LocalDateTime.now();
     }
 
     public void decline() {
-        if (this.applicationStatus != ApplicationStatus.WAITING) {
+        if (this.applicationStatus != Status.WAITING) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_STATUS_INVALID);
         }
-        this.applicationStatus = ApplicationStatus.DECLINED;
+        this.applicationStatus = Status.DECLINED;
         this.respondedAt = LocalDateTime.now();
     }
 
     public void cancel() {
-        if (this.applicationStatus != ApplicationStatus.WAITING) {
+        if (this.applicationStatus != Status.WAITING) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_STATUS_INVALID);
         }
-        this.applicationStatus = ApplicationStatus.CANCELED;
+        this.applicationStatus = Status.CANCELED;
     }
 
 }

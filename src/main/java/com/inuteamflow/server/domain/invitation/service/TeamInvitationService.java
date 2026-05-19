@@ -5,7 +5,6 @@ import com.inuteamflow.server.domain.invitation.dto.request.TeamInvitationStatus
 import com.inuteamflow.server.domain.invitation.dto.response.TeamInvitationResponse;
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
 import com.inuteamflow.server.domain.invitation.enums.InvitationDirection;
-import com.inuteamflow.server.domain.invitation.enums.InvitationStatus;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
@@ -14,6 +13,7 @@ import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
+import com.inuteamflow.server.global.enums.Status;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.RequiredArgsConstructor;
@@ -79,7 +79,7 @@ public class TeamInvitationService {
 
         TeamInvitation invitation = teamInvitationRepository.findByTeam_TeamIdAndReceiver(teamId, receiver)
                 .map(existing -> {
-                    if (existing.getInvitationStatus() == InvitationStatus.WAITING) {
+                    if (existing.getInvitationStatus() == Status.WAITING) {
                         throw new RestApiException(CustomErrorCode.INVITATION_ALREADY_SENT);
                     }
                     existing.reinvite();
@@ -103,20 +103,20 @@ public class TeamInvitationService {
             throw new RestApiException(CustomErrorCode.INVITATION_FORBIDDEN);
         }
 
-        if (invitation.getInvitationStatus() != InvitationStatus.WAITING) {
+        if (invitation.getInvitationStatus() != Status.WAITING) {
             throw new RestApiException(CustomErrorCode.INVITATION_STATUS_INVALID);
         }
 
-        InvitationStatus newStatus = request.getStatus();
+        Status newStatus = request.getStatus();
 
-        if (newStatus == InvitationStatus.ACCEPTED) {
+        if (newStatus == Status.ACCEPTED) {
             invitation.accept();
             teamMemberRepository.save(TeamMember.create(
                     invitation.getTeam(),
                     receiver,
                     TeamRole.MEMBER
             ));
-        } else if (newStatus == InvitationStatus.DECLINED) {
+        } else if (newStatus == Status.DECLINED) {
             invitation.decline();
         } else {
             throw new RestApiException(CustomErrorCode.INVITATION_STATUS_INVALID);
