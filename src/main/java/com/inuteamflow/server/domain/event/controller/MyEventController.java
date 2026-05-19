@@ -21,15 +21,15 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/events")
-public class MyEventController {
+public class MyEventController implements MyEventControllerDocument{
 
     private final MyEventService myEventService;
 
     @GetMapping
     public ResponseEntity<List<EventListResponse>> getMyEventList(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @RequestParam Integer year,
-            @RequestParam Integer month
+            @RequestParam("year") Integer year,
+            @RequestParam("month") Integer month
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -49,7 +49,7 @@ public class MyEventController {
     @PutMapping("/{eventId}")
     public ResponseEntity<EventDetailResponse> updateMyEvent(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long eventId,
+            @PathVariable("eventId") Long eventId,
             @Valid @RequestBody MyEventUpdateRequest request
     ) {
         return ResponseEntity
@@ -60,7 +60,7 @@ public class MyEventController {
     @DeleteMapping("/{eventId}")
     public ResponseEntity<Void> deleteMyEvent(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long eventId,
+            @PathVariable("eventId") Long eventId,
             @RequestParam(name = "scope", required = false) RecurrenceEditScope recurrenceEditScope,
             @RequestParam(name = "occurrence", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime occurrenceAt
     ) {

@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
-public class VoteController {
+public class VoteController implements VoteControllerDocument {
 
     private final VoteService voteService;
 

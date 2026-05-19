@@ -26,7 +26,7 @@ import java.time.Duration;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
-public class AuthController {
+public class AuthController implements AuthControllerDocument {
 
     private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
 

@@ -21,7 +21,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/teams/{teamId}/events")
-public class TeamEventController {
+public class TeamEventController implements TeamEventControllerDocument{
 
     private final TeamEventService teamEventService;
 
