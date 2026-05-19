@@ -2,15 +2,13 @@ package com.inuteamflow.server.domain.event.enums;
 
 public enum EventColor {
 
-    RED,
-    ORANGE,
-    YELLOW,
-    GREEN,
-    MINT,
-    CYAN,
-    BLUE,
-    PURPLE,
-    PINK,
-    GRAY
+    SUN,
+    BLOSSOM,
+    OCEAN,
+    LEAF,
+    ROSE,
+    PEACH,
+    LAVENDER,
+    MINT
 
 }

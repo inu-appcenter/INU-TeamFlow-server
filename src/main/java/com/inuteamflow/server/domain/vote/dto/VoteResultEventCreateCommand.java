@@ -42,7 +42,7 @@ public class VoteResultEventCreateCommand implements EventCreateCommand {
 
     @Override
     public EventColor getColor() {
-        return EventColor.BLUE;
+        return EventColor.OCEAN;
     }
 
     @Override

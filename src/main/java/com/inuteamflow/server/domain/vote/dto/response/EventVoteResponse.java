@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import com.inuteamflow.server.domain.vote.entity.Vote;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -17,6 +18,7 @@ public class EventVoteResponse {
     private Long teamId;
     private String title;
     private String description;
+    private LocalDateTime date;
     private Boolean isOpened;
 
     private Boolean isAllDay;
@@ -36,6 +38,7 @@ public class EventVoteResponse {
                 vote.getTeam().getTeamId(),
                 vote.getTitle(),
                 vote.getDescription(),
+                vote.getCreatedAt(),
                 vote.getIsOpened(),
                 vote.getIsAllDay(),
                 vote.getDailyTimeStart(),

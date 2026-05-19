@@ -104,7 +104,7 @@ public class VoteService {
 
     // 사용자가 가능한 시간 슬롯을 선택한다.
     @Transactional
-    public EventVoteTimeSlotResponse selectTimeSlot(
+    public List<EventVoteTimeSlotResponse> selectTimeSlot(
             UserDetailsImpl userDetails,
             Long voteId,
             EventVoteTimeSlotSelectRequest request
@@ -119,11 +119,16 @@ public class VoteService {
         voteAvailabilityService.updateVoteAvailabilities(voteParticipant, voteTimeSlots);
         voteParticipant.complete();
 
-        VoteTimeSlot firstSelectedTimeSlot = voteTimeSlots.get(0);
-        return EventVoteTimeSlotResponse.create(
-                firstSelectedTimeSlot,
-                voteAvailabilityService.countParticipants(firstSelectedTimeSlot)
-        );
+        List<EventVoteTimeSlotResponse> responses = new ArrayList<>();
+
+        for (VoteTimeSlot voteTimeSlot : voteTimeSlots) {
+            responses.add(EventVoteTimeSlotResponse.create(
+                    voteTimeSlot,
+                    voteAvailabilityService.countParticipants(voteTimeSlot)
+            ));
+        }
+
+        return responses;
     }
 
     // 투표 결과를 확정하고 일정으로 생성한다.
