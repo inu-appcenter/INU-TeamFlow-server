@@ -7,8 +7,11 @@ import com.inuteamflow.server.domain.team.dto.response.TeamDetailResponse;
 import com.inuteamflow.server.domain.team.dto.response.TeamMemberResponse;
 import com.inuteamflow.server.domain.team.dto.response.TeamSummaryResponse;
 import com.inuteamflow.server.domain.team.service.TeamService;
+import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.global.response.ApiResponse;
+import com.inuteamflow.server.global.s3.PresignedUrlRequest;
+import com.inuteamflow.server.global.s3.PresignedUrlResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -84,6 +87,12 @@ public class TeamController {
         return ApiResponse.ok(null);
     }
 
-//    @PostMapping("/{teamId}/banner/presigned-url")
-//    public ApiResponse<PresignedUrlResponse> getPresignedUrl()
+    @PostMapping("/{teamId}/banner/presigned-url")
+    public ApiResponse<PresignedUrlResponse> getPresignedUrl(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long teamId,
+            @Valid @RequestBody PresignedUrlRequest request
+    ) {
+        return ApiResponse.ok(teamService.getPresignedUrl(userDetails, teamId, request));
+    }
 }
