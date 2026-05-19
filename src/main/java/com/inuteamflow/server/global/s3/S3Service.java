@@ -51,6 +51,17 @@ public class S3Service {
         return PresignedUrlResponse.create(uploadUrl, imageKey);
     }
 
+    public PresignedUrlResponse getTeamBannerPresignedUrl(
+            PresignedUrlRequest request
+    ) {
+        validateImageContentType(request.getContentType());
+
+        String imageKey = createTeamBannerImageKey(request.getFileName());
+        String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
+
+        return PresignedUrlResponse.create(uploadUrl, imageKey);
+    }
+
     public String getImageUrl(String imageKey) {
         if (!StringUtils.hasText(imageKey)) {
             return null;
@@ -96,6 +107,10 @@ public class S3Service {
 
     private String createProfileImageKey(String fileName) {
         return "users/profile/" + UUID.randomUUID() + getFileExtension(fileName);
+    }
+
+    private String createTeamBannerImageKey(String fileName) {
+        return "teams/banner/" + UUID.randomUUID() + getFileExtension(fileName);
     }
 
     private String getFileExtension(String fileName) {

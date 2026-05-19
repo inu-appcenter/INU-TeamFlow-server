@@ -6,7 +6,7 @@ import com.inuteamflow.server.domain.invitation.dto.response.TeamInvitationRespo
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
 import com.inuteamflow.server.domain.invitation.enums.InvitationDirection;
 import com.inuteamflow.server.domain.invitation.enums.InvitationStatus;
-import com.inuteamflow.server.domain.invitation.repository.InvitationRepository;
+import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
@@ -25,9 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class InvitationService {
+public class TeamInvitationService {
 
-    private final InvitationRepository invitationRepository;
+    private final TeamInvitationRepository teamInvitationRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
@@ -35,7 +35,7 @@ public class InvitationService {
     // 내가 받은/보낸 팀 초대 목록
     public Page<TeamInvitationResponse> getInvitations(User user, InvitationDirection direction, Pageable pageable) {
         if (direction == InvitationDirection.RECEIVED) {
-            return invitationRepository.findByReceiver(user, pageable)
+            return teamInvitationRepository.findByReceiver(user, pageable)
                     .map(invitation -> {
                         String senderName = invitation.getCreatedBy() == null ? null :
                                 userRepository.findById(invitation.getCreatedBy())
@@ -44,7 +44,7 @@ public class InvitationService {
                         return TeamInvitationResponse.from(invitation, senderName);
                     });
         } else {
-            return invitationRepository.findByCreatedBy(user.getUserId(), pageable)
+            return teamInvitationRepository.findByCreatedBy(user.getUserId(), pageable)
                     .map(invitation -> TeamInvitationResponse.from(invitation, user.getName()));
         }
     }
@@ -65,6 +65,10 @@ public class InvitationService {
         User receiver = userRepository.findByStudentNumber(request.getStudentNumber())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
 
+        if (receiver.getUserId().equals(sender.getUserId())) {
+            throw new RestApiException(CustomErrorCode.INVITATION_SELF_INVITE);
+        }
+
         if (!Boolean.TRUE.equals(receiver.getIsSchoolVerified())) {
             throw new RestApiException(CustomErrorCode.INVITATION_RECEIVER_NOT_VERIFIED);
         }
@@ -73,7 +77,7 @@ public class InvitationService {
             throw new RestApiException(CustomErrorCode.INVITATION_ALREADY_MEMBER);
         }
 
-        TeamInvitation invitation = invitationRepository.findByTeam_TeamIdAndReceiver(teamId, receiver)
+        TeamInvitation invitation = teamInvitationRepository.findByTeam_TeamIdAndReceiver(teamId, receiver)
                 .map(existing -> {
                     if (existing.getInvitationStatus() == InvitationStatus.WAITING) {
                         throw new RestApiException(CustomErrorCode.INVITATION_ALREADY_SENT);
@@ -81,7 +85,7 @@ public class InvitationService {
                     existing.reinvite();
                     return existing;
                 })
-                .orElseGet(() -> invitationRepository.save(
+                .orElseGet(() -> teamInvitationRepository.save(
                         TeamInvitation.create(team, receiver)
                 ));
 
@@ -92,7 +96,7 @@ public class InvitationService {
     // 팀 초대 수락/거절
     @Transactional
     public TeamInvitationResponse updateStatus(User receiver, Long invitationId, TeamInvitationStatusUpdateRequest request) {
-        TeamInvitation invitation = invitationRepository.findById(invitationId)
+        TeamInvitation invitation = teamInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.INVITATION_NOT_FOUND));
 
         if (!invitation.getReceiverId().equals(receiver.getUserId())) {

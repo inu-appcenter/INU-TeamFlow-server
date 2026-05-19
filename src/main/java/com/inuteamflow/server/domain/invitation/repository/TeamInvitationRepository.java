@@ -1,7 +1,6 @@
 package com.inuteamflow.server.domain.invitation.repository;
 
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
-import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
 import com.inuteamflow.server.domain.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface InvitationRepository extends JpaRepository<TeamInvitation, Long> {
+public interface TeamInvitationRepository extends JpaRepository<TeamInvitation, Long> {
 
     Page<TeamInvitation> findByReceiver(User user, Pageable pageable);
 

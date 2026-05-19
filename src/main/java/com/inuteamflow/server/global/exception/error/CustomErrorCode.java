@@ -33,6 +33,15 @@ public enum CustomErrorCode implements ErrorCode {
     TEAM_FORBIDDEN(HttpStatus.FORBIDDEN, 403, ""),
     TEAM_MEMBER_ALREADY_ROLE(HttpStatus.BAD_REQUEST, 400, ""),
 
+    // 팀 초대 관련 에러
+    INVITATION_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "멤버 초대 권한이 없습니다."),
+    INVITATION_RECEIVER_NOT_VERIFIED(HttpStatus.BAD_REQUEST, 400, "학번 인증이 되지 않은 사용자입니다."),
+    INVITATION_ALREADY_MEMBER(HttpStatus.BAD_REQUEST, 400, "이미 멤버인 사용자입니다."),
+    INVITATION_ALREADY_SENT(HttpStatus.BAD_REQUEST, 400, "이미 초대를 보낸 사용자입니다."),
+    INVITATION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "초대를 찾을 수 없습니다."),
+    INVITATION_STATUS_INVALID(HttpStatus.BAD_REQUEST, 400, "초대의 상태가 유효하지 않습니다"),
+    INVITATION_SELF_INVITE(HttpStatus.BAD_REQUEST, 400, "자기 자신은 초대할 수 없습니다."),
+
     // 모집글 관련 에러
     RECRUITMENT_MEMBER_FULL(HttpStatus.CONFLICT, 409, "정원이 가득 찼습니다."),
     RECRUITMENT_APPLICATION_STATUS_INVALID(HttpStatus.BAD_REQUEST, 400, "유효하지 않은 신청서 상태입니다."),
