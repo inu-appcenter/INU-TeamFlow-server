@@ -110,23 +110,27 @@ public class TeamInvitationService {
         Status newStatus = request.getStatus();
 
         if (newStatus == Status.ACCEPTED) {
-            invitation.accept();
-            teamMemberRepository.save(TeamMember.create(
-                    invitation.getTeam(),
-                    receiver,
-                    TeamRole.MEMBER
-            ));
-        } else if (newStatus == Status.DECLINED) {
-            invitation.decline();
-        } else {
-            throw new RestApiException(CustomErrorCode.INVITATION_STATUS_INVALID);
+
+
+    // 팀 초대 취소
+    @Transactional
+    public TeamInvitationResponse cancelInvitation(User sender, Long teamId, Long invitationId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+
+        TeamMember senderMember = teamMemberRepository.findByTeamAndUser(team, sender)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+
+        if (senderMember.getTeamRole() != TeamRole.LEADER) {
+            throw new RestApiException(CustomErrorCode.INVITATION_FORBIDDEN);
         }
 
-        String senderName = invitation.getCreatedBy() == null ? null :
-                userRepository.findById(invitation.getCreatedBy())
-                        .map(User::getName)
-                        .orElse(null);
-        return TeamInvitationResponse.from(invitation, senderName);
+        TeamInvitation invitation = teamInvitationRepository.findById(invitationId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.INVITATION_NOT_FOUND));
 
+
+        invitation.cancel();
+
+        return TeamInvitationResponse.from(invitation, sender.getName());
     }
 }

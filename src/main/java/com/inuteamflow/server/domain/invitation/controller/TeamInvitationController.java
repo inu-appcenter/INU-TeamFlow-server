@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -50,5 +52,16 @@ public class TeamInvitationController {
     ) {
         User user = userDetails.getUser();
         return ApiResponse.ok(teamInvitationService.updateStatus(user, invitationId, request));
+    }
+
+    @PutMapping("/teams/{teamId}/invitations/{invitationId}/cancel")
+    public ResponseEntity<TeamInvitationResponse> cancelInvitation(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long teamId,
+            @PathVariable Long invitationId
+    ) {
+        User user = userDetails.getUser();
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamInvitationService.cancelInvitation(user, teamId, invitationId));
     }
 }

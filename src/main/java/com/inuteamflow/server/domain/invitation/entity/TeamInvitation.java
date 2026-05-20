@@ -4,6 +4,8 @@ import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.BaseEntity;
 import com.inuteamflow.server.global.enums.Status;
+import com.inuteamflow.server.global.exception.error.CustomErrorCode;
+import com.inuteamflow.server.global.exception.error.RestApiException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -53,7 +55,7 @@ public class TeamInvitation extends BaseEntity {
                 .build();
     }
 
-    // DECLINED 상태에서 재초대 시, 기존 레코드를 WAITING으로 초기화
+    // DECLINED/CANCELED 상태에서 재초대 시, 기존 레코드를 WAITING으로 초기화
     public void reinvite() {
         this.invitationStatus = Status.WAITING;
         this.respondedAt = null;
@@ -67,6 +69,13 @@ public class TeamInvitation extends BaseEntity {
     public void decline() {
         this.invitationStatus = Status.DECLINED;
         this.respondedAt = LocalDateTime.now();
+    }
+
+    public void cancel() {
+        if (this.invitationStatus != Status.WAITING) {
+            throw new RestApiException(CustomErrorCode.INVITATION_STATUS_INVALID);
+        }
+        this.invitationStatus = Status.CANCELED;
     }
 
     public Long getTeamId() {
