@@ -110,6 +110,25 @@ public class TeamInvitationService {
         Status newStatus = request.getStatus();
 
         if (newStatus == Status.ACCEPTED) {
+            invitation.accept();
+            teamMemberRepository.save(TeamMember.create(
+                    invitation.getTeam(),
+                    receiver,
+                    TeamRole.MEMBER
+            ));
+        } else if (newStatus == Status.DECLINED) {
+            invitation.decline();
+        } else {
+            throw new RestApiException(CustomErrorCode.INVITATION_STATUS_INVALID);
+        }
+
+        String senderName = invitation.getCreatedBy() == null ? null :
+                userRepository.findById(invitation.getCreatedBy())
+                        .map(User::getName)
+                        .orElse(null);
+        return TeamInvitationResponse.from(invitation, senderName);
+
+    }
 
 
     // 팀 초대 취소
