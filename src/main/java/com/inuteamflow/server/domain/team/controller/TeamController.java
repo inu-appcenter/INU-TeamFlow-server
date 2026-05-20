@@ -14,6 +14,8 @@ import com.inuteamflow.server.global.s3.PresignedUrlRequest;
 import com.inuteamflow.server.global.s3.PresignedUrlResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,72 +29,80 @@ public class TeamController {
     private final TeamService teamService;
 
     @GetMapping("/me")
-    public ApiResponse<List<TeamSummaryResponse>> getMyTeams(
+    public ResponseEntity<List<TeamSummaryResponse>> getMyTeams(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        return ApiResponse.ok(teamService.getMyTeams(userDetails));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamService.getMyTeams(userDetails));
     }
 
     @GetMapping("/{teamId}")
-    public ApiResponse<TeamDetailResponse> getTeamDatail(
+    public ResponseEntity<TeamDetailResponse> getTeamDetail(
             @PathVariable Long teamId,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        return ApiResponse.ok(teamService.getTeamDetails(teamId, userDetails));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamService.getTeamDetails(teamId, userDetails));
     }
 
     @GetMapping("/{teamId}/members")
-    public ApiResponse<List<TeamMemberResponse>> getTeamMembers(
+    public ResponseEntity<List<TeamMemberResponse>> getTeamMembers(
             @PathVariable Long teamId,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        return ApiResponse.ok(teamService.getTeamMembers(teamId, userDetails));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamService.getTeamMembers(teamId, userDetails));
     }
 
     @PatchMapping("/{teamId}/members/{memberId}/role")
-    public ApiResponse<String> updateMemberRole(
+    public ResponseEntity<String> updateMemberRole(
             @PathVariable Long teamId,
             @PathVariable Long memberId,
             @RequestBody TeamMemberRoleRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         teamService.updateMemberRole(userDetails, teamId, memberId, request.getTeamRole());
-        return ApiResponse.ok("변경 되었습니다.");
+        return ResponseEntity.status(HttpStatus.OK)
+                .body("변경 되었습니다.");
     }
 
 
     @PostMapping
-    public ApiResponse<TeamDetailResponse> createTeam(
+    public ResponseEntity<TeamDetailResponse> createTeam(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody TeamCreateRequest request
     ) {
-        return ApiResponse.ok(teamService.createTeam(userDetails, request));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamService.createTeam(userDetails, request));
     }
 
     @PutMapping("/{teamId}")
-    public ApiResponse<TeamDetailResponse> updateTeam(
+    public ResponseEntity<TeamDetailResponse> updateTeam(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId,
             @Valid @RequestBody TeamUpdateRequest request
     ) {
-        return ApiResponse.ok(teamService.updateTeam(userDetails, teamId, request));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamService.updateTeam(userDetails, teamId, request));
     }
 
     @DeleteMapping("/{teamId}")
-    public ApiResponse<Void> deleteTeam(
+    public ResponseEntity<Void> deleteTeam(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId
     ) {
         teamService.deleteTeam(userDetails, teamId);
-        return ApiResponse.ok(null);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(null);
     }
 
     @PostMapping("/{teamId}/banner/presigned-url")
-    public ApiResponse<PresignedUrlResponse> getPresignedUrl(
+    public ResponseEntity<PresignedUrlResponse> getPresignedUrl(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId,
             @Valid @RequestBody PresignedUrlRequest request
     ) {
-        return ApiResponse.ok(teamService.getPresignedUrl(userDetails, teamId, request));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamService.getPresignedUrl(userDetails, teamId, request));
     }
 }
