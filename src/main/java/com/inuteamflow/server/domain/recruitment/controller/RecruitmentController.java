@@ -16,6 +16,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,64 +30,71 @@ public class RecruitmentController {
     private final RecruitmentApplicationService recruitmentApplicationService;
 
     @GetMapping
-    public ApiResponse<Page<RecruitmentSummaryResponse>> getRecruitments(Pageable pageable) {
-        return ApiResponse.ok(recruitmentService.getRecruitments(pageable));
+    public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentService.getRecruitments(pageable));
     }
 
     @GetMapping("/me")
-    public ApiResponse<Page<RecruitmentSummaryResponse>> getMyRecruitments(
+    public ResponseEntity<Page<RecruitmentSummaryResponse>> getMyRecruitments(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             Pageable pageable
     ) {
         User user = userDetails.getUser();
-        return ApiResponse.ok(recruitmentService.getMyRecruitments(user, pageable));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentService.getMyRecruitments(user, pageable));
     }
 
     @GetMapping("/{recruitmentId}")
-    public ApiResponse<RecruitmentDetailResponse> getRecruitment(
+    public ResponseEntity<RecruitmentDetailResponse> getRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long recruitmentId
     ) {
         User user = userDetails.getUser();
-        return ApiResponse.ok(recruitmentService.getRecruitment(recruitmentId, user));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentService.getRecruitment(recruitmentId, user));
     }
 
     @PostMapping
-    public ApiResponse<RecruitmentDetailResponse> creatRecruitment(
+    public ResponseEntity<RecruitmentDetailResponse> creatRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody RecruitmentCreateRequest request
     ) {
         User user = userDetails.getUser();
-        return ApiResponse.ok(recruitmentService.createRecruitment(request, user));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentService.createRecruitment(request, user));
     }
 
     @PutMapping("/{recruitmentId}")
-    public ApiResponse<RecruitmentDetailResponse> updateRecruitment(
+    public ResponseEntity<RecruitmentDetailResponse> updateRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long recruitmentId,
             @Valid @RequestBody RecruitmentUpdateRequest request
     ) {
         User user = userDetails.getUser();
-        return ApiResponse.ok(recruitmentService.updateRecruitment(recruitmentId, request, user));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentService.updateRecruitment(recruitmentId, request, user));
     }
 
     @PostMapping("/{recruitmentId}/applications")
-    public ApiResponse<ApplicationSummaryResponse> apply(
+    public ResponseEntity<ApplicationSummaryResponse> apply(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long recruitmentId,
             @Valid @RequestBody ApplicationCreateRequest request
     ) {
         User user = userDetails.getUser();
-        return ApiResponse.ok(recruitmentApplicationService.apply(recruitmentId, request, user));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentApplicationService.apply(recruitmentId, request, user));
     }
 
     @GetMapping("/{recruitmentId}/applications")
-    public ApiResponse<Page<ApplicationSummaryResponse>> getApplicationsByRecruitment(
+    public ResponseEntity<Page<ApplicationSummaryResponse>> getApplicationsByRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long recruitmentId,
             Pageable pageable
     ) {
         User user = userDetails.getUser();
-        return ApiResponse.ok(recruitmentApplicationService.getApplicationsByRecruitment(recruitmentId, user, pageable));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentApplicationService.getApplicationsByRecruitment(recruitmentId, user, pageable));
     }
 }
