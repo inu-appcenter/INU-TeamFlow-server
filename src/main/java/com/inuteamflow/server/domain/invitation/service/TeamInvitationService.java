@@ -129,4 +129,27 @@ public class TeamInvitationService {
         return TeamInvitationResponse.from(invitation, senderName);
 
     }
+
+
+    // 팀 초대 취소
+    @Transactional
+    public TeamInvitationResponse cancelInvitation(User sender, Long teamId, Long invitationId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+
+        TeamMember senderMember = teamMemberRepository.findByTeamAndUser(team, sender)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+
+        if (senderMember.getTeamRole() != TeamRole.LEADER) {
+            throw new RestApiException(CustomErrorCode.INVITATION_FORBIDDEN);
+        }
+
+        TeamInvitation invitation = teamInvitationRepository.findById(invitationId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.INVITATION_NOT_FOUND));
+
+
+        invitation.cancel();
+
+        return TeamInvitationResponse.from(invitation, sender.getName());
+    }
 }
