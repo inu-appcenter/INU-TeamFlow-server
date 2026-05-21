@@ -5,7 +5,7 @@ import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
-import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
+import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.vote.dto.request.EventVoteCreateRequest;
 import com.inuteamflow.server.domain.vote.dto.request.EventVoteTimeSelectRequest;
 import com.inuteamflow.server.domain.vote.dto.request.EventVoteTimeSlotSelectRequest;
@@ -57,12 +57,12 @@ public class VoteService {
     // 투표를 생성하고 참여자와 시간 슬롯을 함께 생성한다.
     @Transactional
     public EventVoteResponse createVote(
-            UserDetailsImpl userDetails,
+            User user,
             Long teamId,
             EventVoteCreateRequest request
     ) {
         Team team = getTeamById(teamId);
-        validateTeamMember(team, userDetails);
+        validateTeamMember(team, user);
 
         Vote vote = Vote.create(team, request);
         voteRepository.save(vote);
@@ -105,14 +105,14 @@ public class VoteService {
     // 사용자가 가능한 시간 슬롯을 선택한다.
     @Transactional
     public List<EventVoteTimeSlotResponse> selectTimeSlot(
-            UserDetailsImpl userDetails,
+            User user,
             Long voteId,
             EventVoteTimeSlotSelectRequest request
     ) {
         Vote vote = getVoteById(voteId);
         validateVoteIsOpened(vote);
 
-        TeamMember teamMember = validateTeamMember(vote.getTeam(), userDetails);
+        TeamMember teamMember = validateTeamMember(vote.getTeam(), user);
         VoteParticipant voteParticipant = voteParticipantService.getVoteParticipant(vote, teamMember);
         List<VoteTimeSlot> voteTimeSlots = voteTimeService.getValidVoteTimeSlots(vote, request.getSlotIdList());
 
@@ -134,13 +134,13 @@ public class VoteService {
     // 투표 결과를 확정하고 일정으로 생성한다.
     @Transactional
     public EventDetailResponse createVoteResult(
-            UserDetailsImpl userDetails,
+            User user,
             Long voteId,
             EventVoteTimeSelectRequest request
     ) {
         Vote vote = getVoteById(voteId);
         validateVoteIsOpened(vote);
-        TeamMember host = validateTeamMember(vote.getTeam(), userDetails);
+        TeamMember host = validateTeamMember(vote.getTeam(), user);
 
         List<VoteTimeSlot> selectedVoteTimeSlots = voteTimeService.getContinuousVoteTimeSlots(
                 vote,
@@ -164,9 +164,9 @@ public class VoteService {
     // 팀 멤버 여부를 검증한다.
     private TeamMember validateTeamMember(
             Team team,
-            UserDetailsImpl userDetails
+            User user
     ) {
-        return teamMemberRepository.findByTeamAndUser(team, userDetails.getUser())
+        return teamMemberRepository.findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
     }
 

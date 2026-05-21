@@ -41,7 +41,7 @@ public class VoteController implements VoteControllerDocument {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(voteService.createVote(userDetails, teamId, request));
+                .body(voteService.createVote(userDetails.getUser(), teamId, request));
     }
 
     @GetMapping("/votes/{voteId}")
@@ -70,7 +70,7 @@ public class VoteController implements VoteControllerDocument {
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(voteService.selectTimeSlot(userDetails, voteId, request));
+                .body(voteService.selectTimeSlot(userDetails.getUser(), voteId, request));
     }
 
     @PostMapping("/votes/{voteId}/result")
@@ -81,7 +81,7 @@ public class VoteController implements VoteControllerDocument {
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(voteService.createVoteResult(userDetails, voteId, request));
+                .body(voteService.createVoteResult(userDetails.getUser(), voteId, request));
     }
 
 }

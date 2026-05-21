@@ -3,7 +3,6 @@ package com.inuteamflow.server.domain.user.service;
 import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.User;
-import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.global.s3.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -20,19 +19,17 @@ public class UserService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     public MyInfoResponse getMyInfo(
-            UserDetailsImpl userDetails
+            User user
     ) {
-        User user = userDetails.getUser();
         String imageUrl = s3Service.getImageUrl(user.getImageKey());
         return MyInfoResponse.create(user, imageUrl);
     }
 
     @Transactional
     public MyInfoResponse updateMyInfo(
-            UserDetailsImpl userDetails,
+            User user,
             UserUpdateRequest request
     ) {
-        User user = userDetails.getUser();
         String oldImageKey = user.getImageKey();
         String encodedPassword = StringUtils.hasText(request.getPassword())
                 ? bCryptPasswordEncoder.encode(request.getPassword())

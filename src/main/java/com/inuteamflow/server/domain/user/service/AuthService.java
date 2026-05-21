@@ -5,7 +5,6 @@ import com.inuteamflow.server.domain.user.dto.request.SignupRequest;
 import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.User;
-import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.repository.SchoolLoginRepository;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
@@ -82,16 +81,13 @@ public class AuthService {
 
     @Transactional
     public MyInfoResponse verifySchool(
-            UserDetailsImpl userDetails,
+            User user,
             VerifySchoolRequest request
     ) {
         SchoolLoginRepository schoolLoginRepository = schoolLoginRepositoryProvider.getIfAvailable();
         if (schoolLoginRepository == null) {
             throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFY_UNAVAILABLE);
         }
-
-        User user = userRepository.findById(userDetails.getUser().getUserId())
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
 
         String loginCheckResult = schoolLoginRepository.loginCheck(
                 request.getStudentNumber(),

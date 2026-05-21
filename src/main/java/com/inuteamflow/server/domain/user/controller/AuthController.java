@@ -70,7 +70,7 @@ public class AuthController implements AuthControllerDocument {
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(authService.verifySchool(userDetails, request));
+                .body(authService.verifySchool(userDetails.getUser(), request));
     }
 
     private ResponseCookie createRefreshTokenCookie(
