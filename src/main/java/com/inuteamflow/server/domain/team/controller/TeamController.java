@@ -9,7 +9,6 @@ import com.inuteamflow.server.domain.team.dto.response.TeamSummaryResponse;
 import com.inuteamflow.server.domain.team.service.TeamService;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
-import com.inuteamflow.server.global.response.ApiResponse;
 import com.inuteamflow.server.global.s3.PresignedUrlRequest;
 import com.inuteamflow.server.global.s3.PresignedUrlResponse;
 import jakarta.validation.Valid;

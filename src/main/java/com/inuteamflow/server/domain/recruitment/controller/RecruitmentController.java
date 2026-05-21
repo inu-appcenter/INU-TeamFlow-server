@@ -11,7 +11,6 @@ import com.inuteamflow.server.domain.recruitment.service.RecruitmentApplicationS
 import com.inuteamflow.server.domain.recruitment.service.RecruitmentService;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
-import com.inuteamflow.server.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

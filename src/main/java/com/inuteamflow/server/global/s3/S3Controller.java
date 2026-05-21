@@ -1,6 +1,5 @@
 package com.inuteamflow.server.global.s3;
 
-import com.inuteamflow.server.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
