@@ -95,13 +95,4 @@ public class TeamController {
                 .body(null);
     }
 
-    @PostMapping("/{teamId}/banner/presigned-url")
-    public ResponseEntity<PresignedUrlResponse> getPresignedUrl(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long teamId,
-            @Valid @RequestBody PresignedUrlRequest request
-    ) {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(teamService.getPresignedUrl(userDetails, teamId, request));
-    }
 }

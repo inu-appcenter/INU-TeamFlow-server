@@ -156,7 +156,7 @@ public class TeamService {
 
         return TeamDetailResponse.create(team, teamMember, imageUrl, memberCount);
 
-}
+    }
 
     // 팀 삭제
     @Transactional
@@ -183,19 +183,4 @@ public class TeamService {
         teamRepository.delete(team);
     }
 
-    // 팀 프로필 Presigned URL 요청
-    public PresignedUrlResponse getPresignedUrl(UserDetailsImpl userDetails, Long teamId, PresignedUrlRequest request) {
-
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
-
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, userDetails.getUser())
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
-
-        if (teamMember.getTeamRole() == TeamRole.MEMBER) {
-            throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
-        }
-
-        return s3Service.getTeamBannerPresignedUrl(request);
-    }
 }
