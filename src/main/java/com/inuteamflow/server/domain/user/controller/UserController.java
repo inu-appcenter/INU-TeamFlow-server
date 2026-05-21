@@ -24,7 +24,7 @@ public class UserController implements UserControllerDocument{
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(userService.getMyInfo(userDetails));
+                .body(userService.getMyInfo(userDetails.getUser()));
     }
 
     @PutMapping("/me")
@@ -34,7 +34,7 @@ public class UserController implements UserControllerDocument{
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(userService.updateMyInfo(userDetails, request));
+                .body(userService.updateMyInfo(userDetails.getUser(), request));
     }
 
 }

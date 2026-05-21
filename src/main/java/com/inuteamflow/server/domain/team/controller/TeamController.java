@@ -7,11 +7,7 @@ import com.inuteamflow.server.domain.team.dto.response.TeamDetailResponse;
 import com.inuteamflow.server.domain.team.dto.response.TeamMemberResponse;
 import com.inuteamflow.server.domain.team.dto.response.TeamSummaryResponse;
 import com.inuteamflow.server.domain.team.service.TeamService;
-import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
-import com.inuteamflow.server.global.response.ApiResponse;
-import com.inuteamflow.server.global.s3.PresignedUrlRequest;
-import com.inuteamflow.server.global.s3.PresignedUrlResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,7 +29,7 @@ public class TeamController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(teamService.getMyTeams(userDetails));
+                .body(teamService.getMyTeams(userDetails.getUser()));
     }
 
     @GetMapping("/{teamId}")
@@ -42,7 +38,7 @@ public class TeamController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(teamService.getTeamDetails(teamId, userDetails));
+                .body(teamService.getTeamDetails(teamId, userDetails.getUser()));
     }
 
     @GetMapping("/{teamId}/members")
@@ -51,7 +47,7 @@ public class TeamController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(teamService.getTeamMembers(teamId, userDetails));
+                .body(teamService.getTeamMembers(teamId, userDetails.getUser()));
     }
 
     @PatchMapping("/{teamId}/members/{memberId}/role")
@@ -61,7 +57,7 @@ public class TeamController {
             @RequestBody TeamMemberRoleRequest request,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        teamService.updateMemberRole(userDetails, teamId, memberId, request.getTeamRole());
+        teamService.updateMemberRole(userDetails.getUser(), teamId, memberId, request.getTeamRole());
         return ResponseEntity.status(HttpStatus.OK)
                 .body("변경 되었습니다.");
     }
@@ -73,7 +69,7 @@ public class TeamController {
             @Valid @RequestBody TeamCreateRequest request
     ) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(teamService.createTeam(userDetails, request));
+                .body(teamService.createTeam(userDetails.getUser(), request));
     }
 
     @PutMapping("/{teamId}")
@@ -83,7 +79,7 @@ public class TeamController {
             @Valid @RequestBody TeamUpdateRequest request
     ) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(teamService.updateTeam(userDetails, teamId, request));
+                .body(teamService.updateTeam(userDetails.getUser(), teamId, request));
     }
 
     @DeleteMapping("/{teamId}")
@@ -91,18 +87,9 @@ public class TeamController {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId
     ) {
-        teamService.deleteTeam(userDetails, teamId);
+        teamService.deleteTeam(userDetails.getUser(), teamId);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(null);
     }
 
-    @PostMapping("/{teamId}/banner/presigned-url")
-    public ResponseEntity<PresignedUrlResponse> getPresignedUrl(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long teamId,
-            @Valid @RequestBody PresignedUrlRequest request
-    ) {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(teamService.getPresignedUrl(userDetails, teamId, request));
-    }
 }

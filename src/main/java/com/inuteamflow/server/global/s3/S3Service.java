@@ -1,5 +1,11 @@
 package com.inuteamflow.server.global.s3;
 
+import com.inuteamflow.server.domain.team.entity.Team;
+import com.inuteamflow.server.domain.team.entity.TeamMember;
+import com.inuteamflow.server.domain.team.enums.TeamRole;
+import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
+import com.inuteamflow.server.domain.team.repository.TeamRepository;
+import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +40,9 @@ public class S3Service {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
+    private final TeamRepository teamRepository;
+    private final TeamMemberRepository teamMemberRepository;
+
     @Value("${aws.s3.bucket}")
     private String bucket;
 
@@ -52,8 +61,20 @@ public class S3Service {
     }
 
     public PresignedUrlResponse getTeamBannerPresignedUrl(
+            User user,
+            Long teamId,
             PresignedUrlRequest request
     ) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+
+        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, user)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+
+        if (teamMember.getTeamRole() == TeamRole.MEMBER) {
+            throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
+        }
+
         validateImageContentType(request.getContentType());
 
         String imageKey = createTeamBannerImageKey(request.getFileName());

@@ -11,12 +11,9 @@ import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
-import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
-import com.inuteamflow.server.global.s3.PresignedUrlRequest;
-import com.inuteamflow.server.global.s3.PresignedUrlResponse;
 import com.inuteamflow.server.global.s3.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,9 +33,9 @@ public class TeamService {
     private final UserRepository userRepository;
 
     // 팀 리스트 조회 (내가 속한 팀)
-    public List<TeamSummaryResponse> getMyTeams(UserDetailsImpl userDetails) {
+    public List<TeamSummaryResponse> getMyTeams(User user) {
 
-        List<TeamMember> myMemberships = teamMemberRepository.findByUser(userDetails.getUser());
+        List<TeamMember> myMemberships = teamMemberRepository.findByUser(user);
 
         return myMemberships.stream()
                 .map(tm -> {
@@ -51,13 +48,13 @@ public class TeamService {
     }
 
     // 팀 상세 조회
-    public TeamDetailResponse getTeamDetails(Long teamId, UserDetailsImpl userDetails) {
+    public TeamDetailResponse getTeamDetails(Long teamId, User user) {
 
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
         // 현재 로그인한 유저가 해당 팀의 멤버인지 확인
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, userDetails.getUser())
+        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         int memberCount = teamMemberRepository.countByTeam(team);
@@ -67,12 +64,12 @@ public class TeamService {
     }
 
     // 팀 멤버 조회
-    public List<TeamMemberResponse> getTeamMembers(Long teamId, UserDetailsImpl userDetails) {
+    public List<TeamMemberResponse> getTeamMembers(Long teamId, User user) {
 
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        teamMemberRepository.findByTeamAndUser(team, userDetails.getUser())
+        teamMemberRepository.findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         return teamMemberRepository.findByTeam(team).stream()
@@ -82,12 +79,12 @@ public class TeamService {
 
     // 팀 매니저 지정, 해제
     @Transactional
-    public void updateMemberRole(UserDetailsImpl userDetails, Long teamId, Long targetMemberId, TeamRole newRole) {
+    public void updateMemberRole(User user, Long teamId, Long targetMemberId, TeamRole newRole) {
 
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        TeamMember requester = teamMemberRepository.findByTeamAndUser(team, userDetails.getUser())
+        TeamMember requester = teamMemberRepository.findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         if (requester.getTeamRole() != TeamRole.LEADER) {
@@ -111,15 +108,13 @@ public class TeamService {
 
     // 팀 생성
     @Transactional
-    public TeamDetailResponse createTeam(UserDetailsImpl userDetails, TeamCreateRequest request) {
-
-        User creator = userDetails.getUser();
+    public TeamDetailResponse createTeam(User user, TeamCreateRequest request) {
 
         Team team = Team.create(request);
         teamRepository.save(team);
 
         // 팀 생성자를 Leader 로 TeamMember 에 추가
-        TeamMember teamMember = TeamMember.create(team, creator, TeamRole.LEADER);
+        TeamMember teamMember = TeamMember.create(team, user, TeamRole.LEADER);
         teamMemberRepository.save(teamMember);
 
         String imageUrl = s3Service.getImageUrl(team.getImageKey());
@@ -130,12 +125,12 @@ public class TeamService {
 
     // 팀 수정
     @Transactional
-    public TeamDetailResponse updateTeam(UserDetailsImpl userDetails, Long teamId, TeamUpdateRequest request) {
+    public TeamDetailResponse updateTeam(User user, Long teamId, TeamUpdateRequest request) {
 
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, userDetails.getUser())
+        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         // LEADER, MANAGER 만 수정 가능
@@ -156,16 +151,16 @@ public class TeamService {
 
         return TeamDetailResponse.create(team, teamMember, imageUrl, memberCount);
 
-}
+    }
 
     // 팀 삭제
     @Transactional
-    public void deleteTeam(UserDetailsImpl userDetails, Long teamId) {
+    public void deleteTeam(User user, Long teamId) {
 
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, userDetails.getUser())
+        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         // LEADER 만 삭제 가능
@@ -183,19 +178,4 @@ public class TeamService {
         teamRepository.delete(team);
     }
 
-    // 팀 프로필 Presigned URL 요청
-    public PresignedUrlResponse getPresignedUrl(UserDetailsImpl userDetails, Long teamId, PresignedUrlRequest request) {
-
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
-
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, userDetails.getUser())
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
-
-        if (teamMember.getTeamRole() == TeamRole.MEMBER) {
-            throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
-        }
-
-        return s3Service.getTeamBannerPresignedUrl(request);
-    }
 }
