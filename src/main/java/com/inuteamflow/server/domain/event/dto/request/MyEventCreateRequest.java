@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.event.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.inuteamflow.server.domain.event.dto.Recurrence;
 import com.inuteamflow.server.domain.event.dto.EventCreateCommand;
 import com.inuteamflow.server.domain.event.enums.EventColor;
@@ -46,6 +47,8 @@ public class MyEventCreateRequest implements EventCreateCommand {
     @Schema(description = "반복 일정 규칙")
     private Recurrence recurrence;
 
+    @JsonIgnore
+    @Schema(hidden = true)
     @AssertTrue(message = "startAt < endAt 여야 합니다.")
     public boolean isValidDateRange() {
         if (startAt == null || endAt == null) {

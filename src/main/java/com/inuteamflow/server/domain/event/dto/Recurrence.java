@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.event.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.RecurrenceFrequency;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -46,11 +47,15 @@ public class Recurrence {
     @Schema(description = "반복 횟수", example = "10")
     private Integer occurrenceCount;
 
+    @JsonIgnore
+    @Schema(hidden = true)
     @AssertTrue(message = "untilAt and occurrenceCount cannot be used together")
     public boolean isValidEndCondition() {
         return untilAt == null || occurrenceCount == null;
     }
 
+    @JsonIgnore
+    @Schema(hidden = true)
     @AssertTrue(message = "byDay is required for weekly recurrence")
     public boolean isValidWeeklyByDay() {
         if (freq != RecurrenceFrequency.WEEKLY) {

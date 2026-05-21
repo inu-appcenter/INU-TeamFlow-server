@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.vote.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -45,6 +46,8 @@ public class EventVoteCreateRequest {
     @Schema(description = "종료 시간", example = "22:00:00")
     private LocalTime endTime;
 
+    @JsonIgnore
+    @Schema(hidden = true)
     @AssertTrue(message = "startDate <= endDate")
     public boolean isValidDateRange() {
         if (startDate == null || endDate == null) {
@@ -54,6 +57,8 @@ public class EventVoteCreateRequest {
         return !startDate.isAfter(endDate);
     }
 
+    @JsonIgnore
+    @Schema(hidden = true)
     @AssertTrue(message = "isAllDay가 false일 때, startTime과 endTime은 필수이고 startTime < endTime 여야 합니다.")
     public boolean isValidTimeRange() {
         if (isAllDay == null || isAllDay) {

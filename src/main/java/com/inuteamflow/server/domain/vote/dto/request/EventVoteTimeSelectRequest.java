@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.vote.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
@@ -29,6 +30,8 @@ public class EventVoteTimeSelectRequest {
     @Schema(description = "선택된 종료 일시", example = "2026-05-20T20:00:00")
     private LocalDateTime selectedEndAt;
 
+    @JsonIgnore
+    @Schema(hidden = true)
     @AssertTrue(message = "selectedStartAt < selectedEndAt 여야 합니다")
     public boolean isValidDateTimeRange() {
         if (selectedStartAt == null || selectedEndAt == null) {
