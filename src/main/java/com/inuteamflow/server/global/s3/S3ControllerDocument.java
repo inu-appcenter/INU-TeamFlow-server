@@ -100,7 +100,7 @@ public interface S3ControllerDocument {
                     )
             )
     })
-    ResponseEntity<PresignedUrlResponse> getPresignedUrl(
+    ResponseEntity<PresignedUrlResponse> getTeamBannerPresignedUrl(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId,
             @Valid @RequestBody PresignedUrlRequest request

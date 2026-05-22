@@ -33,7 +33,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
-                                "/v3/api-docs"
+                                "/v3/api-docs",
+                                "/api/v1/users/me/profile/presigned-url"
                         ).permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll() // 로그인 및 회원가입
                         .anyRequest().authenticated())

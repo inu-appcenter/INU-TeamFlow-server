@@ -24,8 +24,8 @@ public class S3Controller implements S3ControllerDocument{
                 .body(s3Service.getProfilePresignedUrl(request));
     }
 
-    @PostMapping("/{teamId}/banner/presigned-url")
-    public ResponseEntity<PresignedUrlResponse> getPresignedUrl(
+    @PostMapping("/teams/{teamId}/banner/presigned-url")
+    public ResponseEntity<PresignedUrlResponse> getTeamBannerPresignedUrl(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId,
             @Valid @RequestBody PresignedUrlRequest request
