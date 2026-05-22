@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
-public class TeamInvitationController {
+public class TeamInvitationController implements TeamInvitationControllerDocument {
 
     private final TeamInvitationService teamInvitationService;
 
