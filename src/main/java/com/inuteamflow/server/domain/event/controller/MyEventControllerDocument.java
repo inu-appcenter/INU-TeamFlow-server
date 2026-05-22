@@ -196,4 +196,6 @@ public interface MyEventControllerDocument {
             @RequestParam(name = "scope", required = false) RecurrenceEditScope recurrenceEditScope,
             @RequestParam(name = "occurrence", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime occurrenceAt
     );
+
+
 }
