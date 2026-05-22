@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/teams")
-public class TeamController {
+public class TeamController implements TeamControllerDocument {
 
     private final TeamService teamService;
 
