@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/recruitments")
-public class RecruitmentController {
+public class RecruitmentController implements RecruitmentControllerDocument {
 
     private final RecruitmentService recruitmentService;
     private final RecruitmentApplicationService recruitmentApplicationService;
