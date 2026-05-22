@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/applications")
-public class RecruitmentApplicationController {
+public class RecruitmentApplicationController implements RecruitmentApplicationControllerDocument {
 
     private final RecruitmentApplicationService applicationService;
 
