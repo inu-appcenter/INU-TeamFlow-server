@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,12 +37,23 @@ public class TeamService {
     // 팀 리스트 조회 (내가 속한 팀)
     public List<TeamSummaryResponse> getMyTeams(User user) {
 
-        List<TeamMember> myMemberships = teamMemberRepository.findByUser(user);
+        List<TeamMember> memberships = teamMemberRepository.findByUserWithTeam(user);
 
-        return myMemberships.stream()
+        List<Team> teams = memberships.stream()
+                .map(TeamMember::getTeam)
+                .toList();
+
+        Map<Long, Long> countMap = teamMemberRepository.countByTeams(teams)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
+        return memberships.stream()
                 .map(tm -> {
                     Team team = tm.getTeam();
-                    int memberCount = teamMemberRepository.countByTeam(team);
+                    int memberCount = countMap.getOrDefault(team.getTeamId(), 0L).intValue();
                     String imageUrl = s3Service.getImageUrl(team.getImageKey());
                     return TeamSummaryResponse.create(team, imageUrl, memberCount);
                 })
