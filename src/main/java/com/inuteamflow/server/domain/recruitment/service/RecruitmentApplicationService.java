@@ -22,6 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -70,13 +73,23 @@ public class RecruitmentApplicationService {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
         }
 
-        return recruitmentApplicationRepository.findAllByRecruitment(recruitment, pageable)
-                .map(application -> {
-                    String applicantName = userRepository.findById(application.getCreatedBy())
-                            .map(User::getName)
-                            .orElse(null);
-                    return ApplicationSummaryResponse.of(application, applicantName);
-                });
+        Page<RecruitmentApplication> applications =
+                recruitmentApplicationRepository.findAllByRecruitment(recruitment, pageable);
+
+        // 페이지 내 신청자 ID를 한 번에 모아서 조회
+        List<Long> applicantIds = applications.stream()
+                .map(RecruitmentApplication::getCreatedBy)
+                .distinct()
+                .toList();
+
+        Map<Long, String> nameMap = userRepository.findAllById(applicantIds)
+                .stream()
+                .collect(Collectors.toMap(User::getUserId, User::getName));
+
+        return applications.map(application -> {
+            String applicantName = nameMap.get(application.getCreatedBy());
+            return ApplicationSummaryResponse.of(application, applicantName);
+        });
     }
 
     // 내가 신청한 신청서 목록 조회
