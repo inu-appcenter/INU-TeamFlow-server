@@ -33,19 +33,15 @@ public class VoteTimeService {
     @Transactional
     public List<VoteDate> createVoteDates(
             Vote vote,
-            EventVoteCreateRequest request
+            List<LocalDate> voteDates
     ) {
-        validateDateRange(request);
+        List<VoteDate> voteDateEntities = voteDates.stream()
+                .distinct()
+                .sorted()
+                .map(date -> VoteDate.create(vote, date))
+                .toList();
 
-        List<VoteDate> voteDates = new ArrayList<>();
-        LocalDate date = request.getStartDate();
-
-        while (!date.isAfter(request.getEndDate())) {
-            voteDates.add(VoteDate.create(vote, date));
-            date = date.plusDays(1);
-        }
-
-        return voteDateRepository.saveAll(voteDates);
+        return voteDateRepository.saveAll(voteDateEntities);
     }
 
     // 투표 날짜별 시간 슬롯을 생성한다.
@@ -54,8 +50,6 @@ public class VoteTimeService {
             List<VoteDate> voteDates,
             EventVoteCreateRequest request
     ) {
-        validateTimeRange(request);
-
         List<VoteTimeSlot> voteTimeSlots = new ArrayList<>();
 
         for (VoteDate voteDate : voteDates) {
@@ -169,7 +163,6 @@ public class VoteTimeService {
         }
     }
 
-    // 특정 날짜의 시간 슬롯 목록을 생성한다.
     private void validateSelectedDateTimeRange(
             LocalDateTime selectedStartAt,
             LocalDateTime selectedEndAt
@@ -225,47 +218,17 @@ public class VoteTimeService {
         }
 
         List<VoteTimeSlot> voteTimeSlots = new ArrayList<>();
-        LocalTime slotStartAt = request.getStartTime();
+        LocalTime slotStartAt = request.getDailyTimeStart();
 
-        while (slotStartAt.isBefore(request.getEndTime())) {
+        while (slotStartAt.isBefore(request.getDailyTimeEnd())) {
             LocalTime slotEndAt = slotStartAt.plusMinutes(voteDate.getVote().getSlotUnitMinute());
 
-            if (slotEndAt.isAfter(request.getEndTime())) break;
+            if (slotEndAt.isAfter(request.getDailyTimeEnd())) break;
 
             voteTimeSlots.add(VoteTimeSlot.create(voteDate, slotStartAt, slotEndAt));
             slotStartAt = slotEndAt;
         }
 
         return voteTimeSlots;
-    }
-
-    // 투표 날짜 범위가 유효한지 검증한다.
-    private void validateDateRange(
-            EventVoteCreateRequest request
-    ) {
-        if (request.getStartDate() == null || request.getEndDate() == null) {
-            throw new RestApiException(CustomErrorCode.VOTE_DATE_INVALID);
-        }
-
-        if (request.getStartDate().isAfter(request.getEndDate())) {
-            throw new RestApiException(CustomErrorCode.VOTE_DATE_INVALID);
-        }
-    }
-
-    // 투표 시간 범위가 유효한지 검증한다.
-    private void validateTimeRange(
-            EventVoteCreateRequest request
-    ) {
-        if (Boolean.TRUE.equals(request.getIsAllDay())) {
-            return;
-        }
-
-        if (request.getStartTime() == null || request.getEndTime() == null) {
-            throw new RestApiException(CustomErrorCode.VOTE_TIME_INVALID);
-        }
-
-        if (!request.getStartTime().isBefore(request.getEndTime())) {
-            throw new RestApiException(CustomErrorCode.VOTE_TIME_INVALID);
-        }
     }
 }
