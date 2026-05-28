@@ -23,6 +23,9 @@ public class EventVoteCreateRequest {
     @Schema(description = "투표 제목", example = "스터디 일정 조율")
     private String title;
 
+    @Schema(description = "투표 설명", example = "매주 스터디를 진행할 수 있는 요일을 선택해주세요.")
+    private String description;
+
     @NotNull
     @Size(min = 1)
     @Schema(description = "참여자 유저 ID 목록", example = "[1, 2, 3]")
@@ -33,43 +36,29 @@ public class EventVoteCreateRequest {
     private Boolean isAllDay;
 
     @NotNull
-    @Schema(description = "시작 날짜", example = "2026-05-20")
-    private LocalDate startDate;
+    @Size(min = 1)
+    @Schema(description = "지정된 투표 날짜", example = "[\"2026-05-20\", \"2026-05-21\", \"2026-05-25\"]")
+    private List<@NotNull LocalDate> dates;
 
-    @NotNull
-    @Schema(description = "종료 날짜", example = "2026-05-25")
-    private LocalDate endDate;
+    @Schema(description = "일일 시작 시간", example = "09:00:00")
+    private LocalTime dailyTimeStart;
 
-    @Schema(description = "시작 시간", example = "18:00:00")
-    private LocalTime startTime;
-
-    @Schema(description = "종료 시간", example = "22:00:00")
-    private LocalTime endTime;
+    @Schema(description = "일일 종료 시간", example = "20:00:00")
+    private LocalTime dailyTimeEnd;
 
     @JsonIgnore
     @Schema(hidden = true)
-    @AssertTrue(message = "startDate <= endDate")
-    public boolean isValidDateRange() {
-        if (startDate == null || endDate == null) {
-            return true;
-        }
-
-        return !startDate.isAfter(endDate);
-    }
-
-    @JsonIgnore
-    @Schema(hidden = true)
-    @AssertTrue(message = "isAllDay가 false일 때, startTime과 endTime은 필수이고 startTime < endTime 여야 합니다.")
+    @AssertTrue(message = "isAllDay가 false일 때, dailyTimeStart과 dailyTimeEnd은 필수이고 dailyTimeStart < dailyTimeEnd 여야 합니다.")
     public boolean isValidTimeRange() {
         if (isAllDay == null || isAllDay) {
             return true;
         }
 
-        if (startTime == null || endTime == null) {
+        if (dailyTimeStart == null || dailyTimeEnd == null) {
             return false;
         }
 
-        return startTime.isBefore(endTime);
+        return dailyTimeStart.isBefore(dailyTimeEnd);
     }
 
 }

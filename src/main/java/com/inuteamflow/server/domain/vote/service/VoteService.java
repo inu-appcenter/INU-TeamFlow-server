@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -69,8 +70,8 @@ public class VoteService {
 
         voteParticipantService.createVoteParticipants(vote, request.getParticipants());
 
-        List<VoteDate> voteDates = voteTimeService.createVoteDates(vote, request);
-        voteTimeService.createVoteTimeSlots(voteDates, request);
+        List<VoteDate> dates = voteTimeService.createVoteDates(vote, request.getDates());
+        voteTimeService.createVoteTimeSlots(dates, request);
 
         return createEventVoteResponse(vote);
     }
@@ -185,8 +186,13 @@ public class VoteService {
         VoteParticipantService.VoteParticipantNames voteParticipantNames =
                 voteParticipantService.getVoteParticipantNames(vote);
 
+        List<LocalDate> dates = voteTimeService.getVoteDates(vote).stream()
+                .map(VoteDate::getDate)
+                .toList();
+
         return EventVoteResponse.create(
                 vote,
+                dates,
                 voteParticipantNames.completedVoterNames(),
                 voteParticipantNames.uncompletedVoterNames()
         );

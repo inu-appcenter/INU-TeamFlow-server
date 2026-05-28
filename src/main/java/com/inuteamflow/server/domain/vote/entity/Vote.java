@@ -75,11 +75,11 @@ public class Vote extends BaseEntity {
         return Vote.builder()
                 .team(team)
                 .title(request.getTitle())
-                .description(null)
+                .description(request.getDescription())
                 .isOpened(true)
                 .isAllDay(request.getIsAllDay())
-                .dailyTimeStart(request.getStartTime())
-                .dailyTimeEnd(request.getEndTime())
+                .dailyTimeStart(request.getDailyTimeStart())
+                .dailyTimeEnd(request.getDailyTimeEnd())
                 .slotUnitMinute(30)
                 .build();
     }
