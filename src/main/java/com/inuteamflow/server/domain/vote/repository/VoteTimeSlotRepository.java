@@ -36,4 +36,11 @@ public interface VoteTimeSlotRepository extends JpaRepository<VoteTimeSlot, Long
             @Param("startTime") LocalTime startTime,
             @Param("endTime") LocalTime endTime
     );
+
+    @Query("""
+            select vts from VoteTimeSlot vts
+            where vts.voteTimeSlotId in :ids
+            and vts.voteDate.vote = :vote
+            """)
+    List<VoteTimeSlot> findByIdsAndVote(@Param("ids") List<Long> ids, @Param("vote") Vote vote);
 }

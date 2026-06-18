@@ -22,7 +22,6 @@ public class VoteAvailabilityService {
 
     private final VoteAvailabilityRepository voteAvailabilityRepository;
 
-    // 참여자의 시간 슬롯 선택 정보를 갱신한다.
     @Transactional
     public void updateVoteAvailabilities(
             VoteParticipant voteParticipant,
@@ -40,7 +39,6 @@ public class VoteAvailabilityService {
         voteAvailabilityRepository.saveAll(voteAvailabilities);
     }
 
-    // 시간 슬롯별 선택 인원 수를 집계한다.
     public Map<Long, Integer> countParticipantsByTimeSlot(
             Vote vote
     ) {
@@ -48,27 +46,14 @@ public class VoteAvailabilityService {
             return Map.of();
         }
 
-        Map<Long, Integer> participantCountByTimeSlot = new HashMap<>();
-
-        for (VoteAvailability voteAvailability : voteAvailabilityRepository.findByVoteId(vote.getVoteId())) {
-            Long voteTimeSlotId = voteAvailability.getVoteTimeSlot().getVoteTimeSlotId();
-            participantCountByTimeSlot.put(
-                    voteTimeSlotId,
-                    participantCountByTimeSlot.getOrDefault(voteTimeSlotId, 0) + 1
-            );
+        Map<Long, Integer> result = new HashMap<>();
+        for (Object[] row : voteAvailabilityRepository.countGroupByTimeSlotId(vote.getVoteId())) {
+            result.put((Long) row[0], ((Long) row[1]).intValue());
         }
 
-        return participantCountByTimeSlot;
+        return result;
     }
 
-    // 특정 시간 슬롯의 선택 인원 수를 조회한다.
-    public Integer countParticipants(
-            VoteTimeSlot voteTimeSlot
-    ) {
-        return voteAvailabilityRepository.countByVoteTimeSlot(voteTimeSlot);
-    }
-
-    // 특정 시간칸에 가능한 참여자 목록을 조회한다.
     public List<TeamMember> getAvailableTeamMembers(
             List<VoteTimeSlot> voteTimeSlots
     ) {

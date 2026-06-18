@@ -120,12 +120,13 @@ public class VoteService {
         voteAvailabilityService.updateVoteAvailabilities(voteParticipant, voteTimeSlots);
         voteParticipant.complete();
 
+        Map<Long, Integer> countMap = voteAvailabilityService.countParticipantsByTimeSlot(vote);
         List<EventVoteTimeSlotResponse> responses = new ArrayList<>();
 
         for (VoteTimeSlot voteTimeSlot : voteTimeSlots) {
             responses.add(EventVoteTimeSlotResponse.create(
                     voteTimeSlot,
-                    voteAvailabilityService.countParticipants(voteTimeSlot)
+                    countMap.getOrDefault(voteTimeSlot.getVoteTimeSlotId(), 0)
             ));
         }
 

@@ -17,9 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -79,25 +77,29 @@ public class VoteTimeService {
         return voteTimeSlotRepository.findByVoteDatesOrderByDateAndStartAt(voteDates);
     }
 
-    // 시간 슬롯 ID 목록으로 시간 슬롯을 조회한다.
-    public List<VoteTimeSlot> getVoteTimeSlotsByIds(
-            List<Long> voteTimeSlotIds
-    ) {
-        if (voteTimeSlotIds == null || voteTimeSlotIds.isEmpty()) {
-            return List.of();
-        }
-
-        return voteTimeSlotRepository.findAllById(voteTimeSlotIds);
-    }
-
     // 선택 가능한 유효한 시간 슬롯 목록을 조회한다.
     public List<VoteTimeSlot> getValidVoteTimeSlots(
             Vote vote,
             List<Long> voteTimeSlotIds
     ) {
-        List<VoteTimeSlot> voteTimeSlots = getVoteTimeSlotsByIds(voteTimeSlotIds);
-        validateSelectedVoteTimeSlots(voteTimeSlotIds, voteTimeSlots);
-        validateVoteTimeSlots(vote, voteTimeSlots);
+        if (voteTimeSlotIds == null || voteTimeSlotIds.isEmpty()) {
+            throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
+        }
+
+        List<Long> uniqueIds = voteTimeSlotIds.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+
+        if (uniqueIds.isEmpty()) {
+            throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
+        }
+
+        List<VoteTimeSlot> voteTimeSlots = voteTimeSlotRepository.findByIdsAndVote(uniqueIds, vote);
+
+        if (voteTimeSlots.size() != uniqueIds.size()) {
+            throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
+        }
 
         return voteTimeSlots;
     }
@@ -121,48 +123,7 @@ public class VoteTimeService {
         return voteTimeSlots;
     }
 
-    // 시간 슬롯들이 해당 투표에 속하는지 검증한다.
-    public void validateVoteTimeSlots(
-            Vote vote,
-            List<VoteTimeSlot> voteTimeSlots
-    ) {
-        if (voteTimeSlots == null || voteTimeSlots.isEmpty()) {
-            throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
-        }
-
-        for (VoteTimeSlot voteTimeSlot : voteTimeSlots) {
-            if (!vote.getVoteId().equals(voteTimeSlot.getVoteDate().getVote().getVoteId())) {
-                throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_NOT_FOUND);
-            }
-        }
-    }
-
-    // 선택한 시간 슬롯 ID 목록의 유효성을 검증한다.
-    private void validateSelectedVoteTimeSlots(
-            List<Long> voteTimeSlotIds,
-            List<VoteTimeSlot> voteTimeSlots
-    ) {
-        if (voteTimeSlotIds == null) {
-            throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
-        }
-
-        Set<Long> uniqueVoteTimeSlotIds = new HashSet<>();
-
-        for (Long voteTimeSlotId : voteTimeSlotIds) {
-            if (voteTimeSlotId == null) {
-                continue;
-            }
-
-            uniqueVoteTimeSlotIds.add(voteTimeSlotId);
-        }
-
-        int requestedVoteTimeSlotCount = uniqueVoteTimeSlotIds.size();
-
-        if (requestedVoteTimeSlotCount == 0 || requestedVoteTimeSlotCount != voteTimeSlots.size()) {
-            throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
-        }
-    }
-
+    // 특정 날짜의 시간 슬롯 목록을 생성한다.
     private void validateSelectedDateTimeRange(
             LocalDateTime selectedStartAt,
             LocalDateTime selectedEndAt

@@ -11,20 +11,20 @@ import java.util.List;
 
 public interface VoteAvailabilityRepository extends JpaRepository<VoteAvailability, Long> {
 
-    List<VoteAvailability> findByVoteParticipant(VoteParticipant voteParticipant);
-
-    List<VoteAvailability> findByVoteTimeSlotIn(List<VoteTimeSlot> voteTimeSlots);
+    @Query("""
+            SELECT va FROM VoteAvailability va
+            JOIN FETCH va.voteParticipant vp JOIN FETCH vp.teamMember
+            WHERE va.voteTimeSlot IN :voteTimeSlots
+            """)
+    List<VoteAvailability> findByVoteTimeSlotIn(@Param("voteTimeSlots") List<VoteTimeSlot> voteTimeSlots);
 
     @Query("""
-            select va
-            from VoteAvailability va
-            where va.voteTimeSlot.voteDate.vote.voteId = :voteId
+            SELECT va.voteTimeSlot.voteTimeSlotId, COUNT(va)
+            FROM VoteAvailability va
+            WHERE va.voteTimeSlot.voteDate.vote.voteId = :voteId
+            GROUP BY va.voteTimeSlot.voteTimeSlotId
             """)
-    List<VoteAvailability> findByVoteId(@Param("voteId") Long voteId);
-
-    List<VoteAvailability> findByVoteTimeSlot(VoteTimeSlot voteTimeSlot);
-
-    Integer countByVoteTimeSlot(VoteTimeSlot voteTimeSlot);
+    List<Object[]> countGroupByTimeSlotId(@Param("voteId") Long voteId);
 
     void deleteByVoteParticipant(VoteParticipant voteParticipant);
 
