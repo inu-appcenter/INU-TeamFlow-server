@@ -61,12 +61,13 @@ public class EventDetailResponse {
 
     public static EventDetailResponse create(
             Event event,
-            RecurrenceRule recurrenceRule
+            RecurrenceRule recurrenceRule,
+            String teamName
     ) {
         return new EventDetailResponse(
                 event.getEventId(),
                 event.getTeamId(),
-                null,
+                teamName,
                 event.getTitle(),
                 event.getDescription(),
                 null,
@@ -84,12 +85,13 @@ public class EventDetailResponse {
     public static EventDetailResponse createModifiedOccurrence(
             Event event,
             RecurrenceRule recurrenceRule,
-            RecurrenceException recurrenceException
+            RecurrenceException recurrenceException,
+            String teamName
     ) {
         return new EventDetailResponse(
                 event.getEventId(),
                 event.getTeamId(),
-                null,
+                teamName,
                 recurrenceException.getModifiedTitle(),
                 recurrenceException.getModifiedDescription(),
                 recurrenceException.getOriginalOccurrenceAt(),

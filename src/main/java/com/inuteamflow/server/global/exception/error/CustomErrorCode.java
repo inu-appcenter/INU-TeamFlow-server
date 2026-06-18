@@ -75,6 +75,7 @@ public enum CustomErrorCode implements ErrorCode {
     EVENT_PARTICIPANT_HOST_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "일정의 주최자를 찾을 수 없습니다."),
     EVENT_RECURRENCE_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "반복 일정 규칙을 찾을 수 없습니다."),
     EVENT_RECURRENCE_REQUIRED(HttpStatus.BAD_REQUEST, 400, "반복 일정 정보가 필요합니다."),
+    EVENT_RECURRENCE_OCCURRENCE_REQUIRED(HttpStatus.BAD_REQUEST, 400, "반복 일정 발생 시점(occurrenceAt)이 필요합니다."),
     EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "해당 반복 일정 발생 시점을 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
