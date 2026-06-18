@@ -54,7 +54,7 @@ public class VoteResultService {
         ));
         vote.close();
 
-        return EventDetailResponse.create(event, null);
+        return EventDetailResponse.create(event, null, vote.getTeam().getName());
     }
 
     // 투표 결과 생성 가능 여부를 검증한다.

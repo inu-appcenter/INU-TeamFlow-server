@@ -5,7 +5,6 @@ import com.inuteamflow.server.domain.event.dto.request.MyEventUpdateRequest;
 import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
 import com.inuteamflow.server.domain.event.dto.response.EventListResponse;
 import com.inuteamflow.server.domain.event.entity.Event;
-import com.inuteamflow.server.domain.event.entity.EventParticipant;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.RecurrenceEditScope;
 import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
@@ -54,9 +53,8 @@ public class MyEventService {
                 dateRange
         ));
 
-        List<Long> participatingEventIds = eventParticipantRepository.findByTeamMember_User(user).stream()
-                .map(EventParticipant::getEvent)
-                .map(Event::getEventId)
+        List<Long> participatingEventIds = eventParticipantRepository.findEventIdsByUser(user)
+                .stream()
                 .distinct()
                 .toList();
 
@@ -90,7 +88,7 @@ public class MyEventService {
         Event event = eventRepository.save(Event.create(request));
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
 
-        return EventDetailResponse.create(event, recurrenceRule);
+        return EventDetailResponse.create(event, recurrenceRule, null);
     }
 
     @Transactional

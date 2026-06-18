@@ -26,7 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -81,7 +84,7 @@ public class TeamEventService {
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
         createParticipants(event, team, host, request.getParticipants());
 
-        return EventDetailResponse.create(event, recurrenceRule);
+        return EventDetailResponse.create(event, recurrenceRule, team.getName());
     }
 
     @Transactional
@@ -127,16 +130,24 @@ public class TeamEventService {
         participants.add(EventParticipant.create(event, host, EventRole.HOST));
 
         if (participantIds != null && !participantIds.isEmpty()) {
-            participantIds.stream()
+            List<Long> validIds = participantIds.stream()
                     .filter(Objects::nonNull)
                     .distinct()
-                    .filter(teamMemberId -> !teamMemberId.equals(host.getTeamMemberId()))
-                    .map(teamMemberId -> EventParticipant.create(
-                            event,
-                            getTeamMember(team, teamMemberId),
-                            EventRole.PARTICIPANT
-                    ))
-                    .forEach(participants::add);
+                    .filter(id -> !id.equals(host.getTeamMemberId()))
+                    .toList();
+
+            if (!validIds.isEmpty()) {
+                Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(team, validIds)
+                        .stream()
+                        .collect(Collectors.toMap(TeamMember::getTeamMemberId, Function.identity()));
+
+                for (Long id : validIds) {
+                    if (!memberMap.containsKey(id)) {
+                        throw new RestApiException(CustomErrorCode.EVENT_PARTICIPANT_INVALID);
+                    }
+                    participants.add(EventParticipant.create(event, memberMap.get(id), EventRole.PARTICIPANT));
+                }
+            }
         }
 
         eventParticipantRepository.saveAll(participants);
@@ -179,20 +190,6 @@ public class TeamEventService {
     ) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
-    }
-
-    private TeamMember getTeamMember(
-            Team team,
-            Long teamMemberId
-    ) {
-        TeamMember teamMember = teamMemberRepository.findById(teamMemberId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
-
-        if (!team.getTeamId().equals(teamMember.getTeam().getTeamId())) {
-            throw new RestApiException(CustomErrorCode.EVENT_PARTICIPANT_INVALID);
-        }
-
-        return teamMember;
     }
 
     private TeamMember validateTeamMember(

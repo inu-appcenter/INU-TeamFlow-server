@@ -66,10 +66,11 @@ public class EventRecurrenceService {
             Team team,
             EventUpdateCommand command
     ) {
+        String teamName = team == null ? null : team.getName();
         event.increaseSequence();
 
         if (Boolean.TRUE.equals(event.getIsSingle())) {
-            return updateSingleEvent(event, command);
+            return updateSingleEvent(event, command, teamName);
         }
         validateRecurrenceRequired(command);
 
@@ -77,36 +78,42 @@ public class EventRecurrenceService {
                 ? RecurrenceEditScope.ALL_SERIES
                 : command.getRecurrenceEditScope();
 
+        if ((editScope == RecurrenceEditScope.THIS_INSTANCE || editScope == RecurrenceEditScope.THIS_AND_FOLLOWING)
+                && command.getOccurrenceAt() == null) {
+            throw new RestApiException(CustomErrorCode.EVENT_RECURRENCE_OCCURRENCE_REQUIRED);
+        }
+
         return switch (editScope) {
             case ALL_SERIES -> {
                 RecurrenceRule recurrenceRule = updateAllSeries(event, command);
-                yield EventDetailResponse.create(event, recurrenceRule);
+                yield EventDetailResponse.create(event, recurrenceRule, teamName);
             }
             case THIS_INSTANCE -> {
                 RecurrenceRule recurrenceRule = getRecurrenceRule(event);
                 RecurrenceException recurrenceException = updateThisInstance(event, command);
-                yield EventDetailResponse.createModifiedOccurrence(event, recurrenceRule, recurrenceException);
+                yield EventDetailResponse.createModifiedOccurrence(event, recurrenceRule, recurrenceException, teamName);
             }
             case THIS_AND_FOLLOWING -> {
                 FollowingSeries followingSeries = updateThisAndFollowing(event, team, command);
-                yield EventDetailResponse.create(followingSeries.event(), followingSeries.recurrenceRule());
+                yield EventDetailResponse.create(followingSeries.event(), followingSeries.recurrenceRule(), teamName);
             }
         };
     }
 
     private EventDetailResponse updateSingleEvent(
             Event event,
-            EventUpdateCommand command
+            EventUpdateCommand command,
+            String teamName
     ) {
         event.update(command);
         if (command.getRecurrence() == null) {
-            return EventDetailResponse.create(event, null);
+            return EventDetailResponse.create(event, null, teamName);
         }
 
         event.changeToRecurring();
         RecurrenceRule recurrenceRule = createRecurrenceRule(event, command);
 
-        return EventDetailResponse.create(event, recurrenceRule);
+        return EventDetailResponse.create(event, recurrenceRule, teamName);
     }
 
     private RecurrenceRule updateAllSeries(
@@ -199,6 +206,11 @@ public class EventRecurrenceService {
         RecurrenceEditScope editScope = recurrenceEditScope == null
                 ? RecurrenceEditScope.ALL_SERIES
                 : recurrenceEditScope;
+
+        if ((editScope == RecurrenceEditScope.THIS_INSTANCE || editScope == RecurrenceEditScope.THIS_AND_FOLLOWING)
+                && occurrenceAt == null) {
+            throw new RestApiException(CustomErrorCode.EVENT_RECURRENCE_OCCURRENCE_REQUIRED);
+        }
 
         switch (editScope) {
             case ALL_SERIES -> {
