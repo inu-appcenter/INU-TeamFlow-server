@@ -12,9 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +26,6 @@ public class VoteParticipantService {
     private final VoteParticipantRepository voteParticipantRepository;
     private final TeamMemberRepository teamMemberRepository;
 
-    // 투표 참여자 목록을 생성한다.
     @Transactional
     public void createVoteParticipants(
             Vote vote,
@@ -34,21 +35,30 @@ public class VoteParticipantService {
             return;
         }
 
+        List<Long> uniqueIds = teamMemberIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (uniqueIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(vote.getTeam(), uniqueIds)
+                .stream()
+                .collect(Collectors.toMap(TeamMember::getTeamMemberId, Function.identity()));
+
         List<VoteParticipant> participants = new ArrayList<>();
-        Set<Long> uniqueTeamMemberIds = new HashSet<>();
-
-        for (Long teamMemberId : teamMemberIds) {
-            if (teamMemberId == null || !uniqueTeamMemberIds.add(teamMemberId)) {
-                continue;
+        for (Long id : uniqueIds) {
+            if (!memberMap.containsKey(id)) {
+                throw new RestApiException(CustomErrorCode.VOTE_PARTICIPANT_INVALID);
             }
-
-            participants.add(createVoteParticipant(vote, teamMemberId));
+            participants.add(VoteParticipant.create(vote, memberMap.get(id)));
         }
 
         voteParticipantRepository.saveAll(participants);
     }
 
-    // 투표 참여자를 조회한다.
     public VoteParticipant getVoteParticipant(
             Vote vote,
             TeamMember teamMember
@@ -57,7 +67,6 @@ public class VoteParticipantService {
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.VOTE_PARTICIPANT_NOT_FOUND));
     }
 
-    // 투표를 완료한 참여자 이름 목록을 조회한다.
     public VoteParticipantNames getVoteParticipantNames(
             Vote vote
     ) {
@@ -76,21 +85,6 @@ public class VoteParticipantService {
         }
 
         return new VoteParticipantNames(completedVoterNames, uncompletedVoterNames);
-    }
-
-    // 참여자 사용자 정보를 조회하고 투표 참여자를 생성한다.
-    private VoteParticipant createVoteParticipant(
-            Vote vote,
-            Long teamMemberId
-    ) {
-        TeamMember teamMember = teamMemberRepository.findById(teamMemberId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
-
-        if (!vote.getTeam().getTeamId().equals(teamMember.getTeam().getTeamId())) {
-            throw new RestApiException(CustomErrorCode.VOTE_PARTICIPANT_NOT_FOUND);
-        }
-
-        return VoteParticipant.create(vote, teamMember);
     }
 
     public record VoteParticipantNames(
