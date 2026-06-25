@@ -24,14 +24,13 @@ public class S3Controller implements S3ControllerDocument{
                 .body(s3Service.getProfilePresignedUrl(request));
     }
 
-    @PostMapping("/teams/{teamId}/banner/presigned-url")
+    @PostMapping("/teams/banner/presigned-url")
     public ResponseEntity<PresignedUrlResponse> getTeamBannerPresignedUrl(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long teamId,
             @Valid @RequestBody PresignedUrlRequest request
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(s3Service.getTeamBannerPresignedUrl(userDetails.getUser(), teamId, request));
+                .body(s3Service.getTeamBannerPresignedUrl(request));
     }
 }
