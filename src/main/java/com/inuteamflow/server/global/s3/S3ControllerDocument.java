@@ -57,7 +57,7 @@ public interface S3ControllerDocument {
             @Valid @RequestBody PresignedUrlRequest request
     );
 
-    @Operation(summary = "getTeamBannerPresignedUrl", description = "팀 배너 이미지 Presigned URL 발급")
+    @Operation(summary = "getTeamBannerPresignedUrl", description = "팀 배너 이미지 Presigned URL 발급 (팀 생성 전 포함, 로그인만 필요)")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -82,27 +82,10 @@ public interface S3ControllerDocument {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class)
                     )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "팀 멤버가 아니거나 정지된 사용자",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "팀을 찾을 수 없음",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
             )
     })
-    ResponseEntity<PresignedUrlResponse> getPresignedUrl(
+    ResponseEntity<PresignedUrlResponse> getTeamBannerPresignedUrl(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long teamId,
             @Valid @RequestBody PresignedUrlRequest request
     );
 }

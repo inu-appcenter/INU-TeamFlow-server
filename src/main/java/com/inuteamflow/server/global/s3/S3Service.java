@@ -60,21 +60,7 @@ public class S3Service {
         return PresignedUrlResponse.create(uploadUrl, imageKey);
     }
 
-    public PresignedUrlResponse getTeamBannerPresignedUrl(
-            User user,
-            Long teamId,
-            PresignedUrlRequest request
-    ) {
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
-
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, user)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
-
-        if (teamMember.getTeamRole() == TeamRole.MEMBER) {
-            throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
-        }
-
+    public PresignedUrlResponse getTeamBannerPresignedUrl(PresignedUrlRequest request) {
         validateImageContentType(request.getContentType());
 
         String imageKey = createTeamBannerImageKey(request.getFileName());
