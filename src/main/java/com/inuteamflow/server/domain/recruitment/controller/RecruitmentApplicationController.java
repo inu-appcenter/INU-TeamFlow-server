@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/applications")
-public class RecruitmentApplicationController {
+public class RecruitmentApplicationController implements RecruitmentApplicationControllerDocument {
 
     private final RecruitmentApplicationService applicationService;
 
@@ -44,7 +44,19 @@ public class RecruitmentApplicationController {
                 .body(applicationService.getApplication(applicationId, user));
     }
 
-    @PutMapping("/{applicationId}/status")
+    // 신청 취소 (신청자 본인)
+    @DeleteMapping("/{applicationId}")
+    public ResponseEntity<ApplicationStatusResponse> cancelApplication(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long applicationId
+    ) {
+        User user = userDetails.getUser();
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(applicationService.cancelApplication(applicationId, user));
+    }
+
+    // 수락/거절 (모집자)
+    @PatchMapping("/{applicationId}/status")
     public ResponseEntity<ApplicationStatusResponse> updateApplicationStatus(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long applicationId,
@@ -52,7 +64,7 @@ public class RecruitmentApplicationController {
     ) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
-                .body(applicationService.updateStatus(applicationId, request, user));
+                .body(applicationService.updateDecisionStatus(applicationId, request, user));
     }
 
 }

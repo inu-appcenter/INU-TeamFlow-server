@@ -32,4 +32,10 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     GROUP BY tm.team.teamId
     """)
     List<Object[]> countByTeams(@Param("teams") List<Team> teams);
+
+    @Query("""
+    SELECT tm FROM TeamMember tm
+    WHERE tm.team = :team AND tm.teamMemberId IN :ids
+    """)
+    List<TeamMember> findByTeamAndIds(@Param("team") Team team, @Param("ids") List<Long> ids);
 }

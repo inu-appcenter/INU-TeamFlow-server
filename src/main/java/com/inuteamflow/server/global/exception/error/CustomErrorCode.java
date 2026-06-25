@@ -58,6 +58,7 @@ public enum CustomErrorCode implements ErrorCode {
     // 투표 관련 에러
     VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "투표를 찾을 수 없습니다."),
     VOTE_NOT_OPENED(HttpStatus.BAD_REQUEST, 400, "열려 있는 투표가 아닙니다."),
+    VOTE_PARTICIPANT_INVALID(HttpStatus.BAD_REQUEST, 400, "유효하지 않은 투표 참여자입니다."),
     VOTE_PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "해당 투표의 참여자를 찾을 수 없습니다."),
     VOTE_DATE_INVALID(HttpStatus.BAD_REQUEST, 400, "투표 날짜 범위가 올바르지 않습니다."),
     VOTE_TIME_INVALID(HttpStatus.BAD_REQUEST, 400, "투표 시간 범위가 올바르지 않습니다."),
@@ -75,6 +76,7 @@ public enum CustomErrorCode implements ErrorCode {
     EVENT_PARTICIPANT_HOST_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "일정의 주최자를 찾을 수 없습니다."),
     EVENT_RECURRENCE_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "반복 일정 규칙을 찾을 수 없습니다."),
     EVENT_RECURRENCE_REQUIRED(HttpStatus.BAD_REQUEST, 400, "반복 일정 정보가 필요합니다."),
+    EVENT_RECURRENCE_OCCURRENCE_REQUIRED(HttpStatus.BAD_REQUEST, 400, "반복 일정 발생 시점(occurrenceAt)이 필요합니다."),
     EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "해당 반복 일정 발생 시점을 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;

@@ -58,7 +58,7 @@ public class EventListResponse {
         return new EventListResponse(
                 event.getEventId(),
                 event.getTeamId(),
-                null,
+                event.getTeamId() != null ? event.getTeam().getName() : null,
                 event.getTitle(),
                 event.getDescription(),
                 null,
@@ -81,7 +81,7 @@ public class EventListResponse {
         return new EventListResponse(
                 event.getEventId(),
                 event.getTeamId(),
-                null,
+                event.getTeamId() != null ? event.getTeam().getName() : null,
                 event.getTitle(),
                 event.getDescription(),
                 occurrenceAt,
@@ -102,7 +102,7 @@ public class EventListResponse {
         return new EventListResponse(
                 event.getEventId(),
                 event.getTeamId(),
-                null,
+                event.getTeamId() != null ? event.getTeam().getName() : null,
                 recurrenceException.getModifiedTitle(),
                 recurrenceException.getModifiedDescription(),
                 recurrenceException.getOriginalOccurrenceAt(),
