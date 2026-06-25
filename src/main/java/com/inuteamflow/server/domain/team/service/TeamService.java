@@ -1,5 +1,9 @@
 package com.inuteamflow.server.domain.team.service;
 
+import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
+import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
+import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
+import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
 import com.inuteamflow.server.domain.team.dto.request.TeamCreateRequest;
 import com.inuteamflow.server.domain.team.dto.request.TeamUpdateRequest;
 import com.inuteamflow.server.domain.team.dto.response.TeamDetailResponse;
@@ -33,6 +37,9 @@ public class TeamService {
     private final TeamMemberRepository teamMemberRepository;
     private final S3Service s3Service;
     private final UserRepository userRepository;
+    private final RecruitmentRepository recruitmentRepository;
+    private final RecruitmentApplicationRepository recruitmentApplicationRepository;
+    private final TeamInvitationRepository teamInvitationRepository;
 
     // 팀 리스트 조회 (내가 속한 팀)
     public List<TeamSummaryResponse> getMyTeams(User user) {
@@ -181,7 +188,17 @@ public class TeamService {
             throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
         }
 
-        // 팀 멤버 먼저 삭제 (FK 제약 때문에 Team 보다 먼저)
+        // 모집글 신청서 삭제 (RecruitmentApplication → Recruitment 순서로 FK 제약 해소)
+        List<Recruitment> recruitments = recruitmentRepository.findAllByTeam(team);
+        if (!recruitments.isEmpty()) {
+            recruitmentApplicationRepository.deleteAllByRecruitmentIn(recruitments);
+            recruitmentRepository.deleteAll(recruitments);
+        }
+
+        // 팀 초대 삭제
+        teamInvitationRepository.deleteAllByTeam(team);
+
+        // 팀 멤버 삭제
         teamMemberRepository.deleteAllByTeam(team);
 
         if (StringUtils.hasText(team.getImageKey())) {

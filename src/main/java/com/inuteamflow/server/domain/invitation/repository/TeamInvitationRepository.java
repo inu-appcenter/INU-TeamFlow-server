@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.invitation.repository;
 
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
+import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,4 +19,6 @@ public interface TeamInvitationRepository extends JpaRepository<TeamInvitation, 
 
     // 특정 팀+수신자 조합으로 초대 조회
     Optional<TeamInvitation> findByTeam_TeamIdAndReceiver(Long teamTeamId, User receiver);
+
+    void deleteAllByTeam(Team team);
 }
