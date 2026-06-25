@@ -10,6 +10,9 @@ import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
+import com.inuteamflow.server.domain.team.entity.TeamMember;
+import com.inuteamflow.server.domain.team.enums.TeamRole;
+import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.enums.Status;
@@ -34,6 +37,7 @@ public class RecruitmentApplicationService {
     private final RecruitmentApplicationRepository recruitmentApplicationRepository;
     private final UserRepository userRepository;
     private final RecruitmentRepository recruitmentRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
     // 모집글에 신청하기
     @Transactional
@@ -118,35 +122,62 @@ public class RecruitmentApplicationService {
         return ApplicationDetailResponse.of(recruitmentApplication, applicantName, isRecruiter);
     }
 
-    // 신청서 취소/수락/거절
+    // 신청서 취소 (신청자 본인만 가능)
     @Transactional
-    public ApplicationStatusResponse updateStatus(Long applicationId, ApplicationStatusUpdateRequest request,
-                                                  User user) {
+    public ApplicationStatusResponse cancelApplication(Long applicationId, User user) {
+        RecruitmentApplication recruitmentApplication = recruitmentApplicationRepository
+                .findById(applicationId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_NOT_FOUND));
+
+        if (!recruitmentApplication.getCreatedBy().equals(user.getUserId())) {
+            throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICANT_FORBIDDEN);
+        }
+
+        recruitmentApplication.cancel();
+        return ApplicationStatusResponse.from(recruitmentApplication);
+    }
+
+    // 신청서 수락/거절 (모집자만 가능)
+    @Transactional
+    public ApplicationStatusResponse updateDecisionStatus(Long applicationId,
+                                                          ApplicationStatusUpdateRequest request,
+                                                          User user) {
         RecruitmentApplication recruitmentApplication = recruitmentApplicationRepository
                 .findById(applicationId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_NOT_FOUND));
 
         Status newStatus = request.getApplicationStatus();
 
-        if (newStatus == Status.CANCELED) {
-            if (!recruitmentApplication.getCreatedBy().equals(user.getUserId())) {
-                throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICANT_FORBIDDEN);
-            }
-            recruitmentApplication.cancel();
-
-        } else if (newStatus == Status.ACCEPTED || newStatus == Status.DECLINED) {
-            Recruitment recruitment = recruitmentApplication.getRecruitment();
-
-            if (!recruitmentApplication.getRecruitment().getRecruiter().getUserId().equals(user.getUserId())) {
-                throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
-            }
-
-            if (newStatus == Status.ACCEPTED) {
-                recruitment.increaseCurrentMemberCount();
-                recruitmentApplication.accept();
-            }
-            else recruitmentApplication.decline();
+        if (newStatus != Status.ACCEPTED && newStatus != Status.DECLINED) {
+            throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_STATUS_INVALID);
         }
+
+        Recruitment recruitment = recruitmentApplication.getRecruitment();
+
+        if (!recruitment.getRecruiter().getUserId().equals(user.getUserId())) {
+            throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
+        }
+
+        if (newStatus == Status.ACCEPTED) {
+            recruitment.increaseCurrentMemberCount();
+            recruitmentApplication.accept();
+
+            User applicant = userRepository.findById(recruitmentApplication.getCreatedBy())
+                    .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
+
+            boolean alreadyMember = teamMemberRepository
+                    .findByTeamAndUser(recruitment.getTeam(), applicant)
+                    .isPresent();
+
+            if (!alreadyMember) {
+                teamMemberRepository.save(
+                        TeamMember.create(recruitment.getTeam(), applicant, TeamRole.MEMBER)
+                );
+            }
+        } else {
+            recruitmentApplication.decline();
+        }
+
         return ApplicationStatusResponse.from(recruitmentApplication);
     }
 }

@@ -75,7 +75,7 @@ public interface RecruitmentApplicationControllerDocument {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "신청자를 찾을 수 없음",
+                    description = "신청서를 찾을 수 없음",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -87,7 +87,47 @@ public interface RecruitmentApplicationControllerDocument {
             @PathVariable Long applicationId
     );
 
-    @Operation(summary = "updateApplicationStatus", description = "신청서 취소/수락/거절")
+    @Operation(summary = "cancelApplication", description = "신청 취소 (신청자 본인)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "신청 취소 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ApplicationStatusResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "유효하지 않거나 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "신청자 본인이 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "신청서를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ApplicationStatusResponse> cancelApplication(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long applicationId
+    );
+
+    @Operation(summary = "updateApplicationStatus", description = "신청서 수락/거절 (모집자)")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -99,7 +139,7 @@ public interface RecruitmentApplicationControllerDocument {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 요청 값",
+                    description = "잘못된 요청 값 (ACCEPTED 또는 DECLINED만 허용)",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class)
@@ -135,5 +175,4 @@ public interface RecruitmentApplicationControllerDocument {
             @PathVariable Long applicationId,
             @Valid @RequestBody ApplicationStatusUpdateRequest request
     );
-
 }
