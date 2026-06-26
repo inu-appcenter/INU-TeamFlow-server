@@ -4,6 +4,10 @@ import com.inuteamflow.server.domain.invitation.repository.TeamInvitationReposit
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
+import com.inuteamflow.server.domain.teamNotice.entity.TeamNotice;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeImageRepository;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadRepository;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.team.dto.request.TeamCreateRequest;
 import com.inuteamflow.server.domain.team.dto.request.TeamUpdateRequest;
 import com.inuteamflow.server.domain.team.dto.response.TeamDetailResponse;
@@ -40,6 +44,9 @@ public class TeamService {
     private final RecruitmentRepository recruitmentRepository;
     private final RecruitmentApplicationRepository recruitmentApplicationRepository;
     private final TeamInvitationRepository teamInvitationRepository;
+    private final TeamNoticeRepository teamNoticeRepository;
+    private final TeamNoticeReadRepository teamNoticeReadRepository;
+    private final TeamNoticeImageRepository teamNoticeImageRepository;
 
     // 팀 리스트 조회 (내가 속한 팀)
     public List<TeamSummaryResponse> getMyTeams(User user) {
@@ -193,6 +200,16 @@ public class TeamService {
         if (!recruitments.isEmpty()) {
             recruitmentApplicationRepository.deleteAllByRecruitmentIn(recruitments);
             recruitmentRepository.deleteAll(recruitments);
+        }
+
+        // 팀 공지 삭제 (읽음 기록 → 이미지 → 공지 순서로 FK 제약 해소)
+        List<TeamNotice> notices = teamNoticeRepository.findAllByTeam(team);
+        if (!notices.isEmpty()) {
+            teamNoticeReadRepository.deleteAllByTeamNoticeIn(notices);
+            teamNoticeImageRepository.findAllByTeamNoticeIn(notices)
+                    .forEach(img -> s3Service.deleteImage(img.getImageKey()));
+            teamNoticeImageRepository.deleteAllByTeamNoticeIn(notices);
+            teamNoticeRepository.deleteAll(notices);
         }
 
         // 팀 초대 삭제

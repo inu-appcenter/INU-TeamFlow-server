@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -67,6 +68,17 @@ public class S3Service {
         String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
 
         return PresignedUrlResponse.create(uploadUrl, imageKey);
+    }
+
+    public List<PresignedUrlResponse> getTeamNoticeImagePresignedUrls(List<PresignedUrlRequest> requests) {
+        return requests.stream()
+                .map(request -> {
+                    validateImageContentType(request.getContentType());
+                    String imageKey = createTeamNoticeImageKey(request.getFileName());
+                    String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
+                    return PresignedUrlResponse.create(uploadUrl, imageKey);
+                })
+                .toList();
     }
 
     public String getImageUrl(String imageKey) {
@@ -118,6 +130,10 @@ public class S3Service {
 
     private String createTeamBannerImageKey(String fileName) {
         return "teams/banner/" + UUID.randomUUID() + getFileExtension(fileName);
+    }
+
+    private String createTeamNoticeImageKey(String fileName) {
+        return "teams/notices/" + UUID.randomUUID() + getFileExtension(fileName);
     }
 
     private String getFileExtension(String fileName) {

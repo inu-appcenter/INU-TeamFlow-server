@@ -38,4 +38,16 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     WHERE tm.team = :team AND tm.teamMemberId IN :ids
     """)
     List<TeamMember> findByTeamAndIds(@Param("team") Team team, @Param("ids") List<Long> ids);
+
+    @Query("""
+    SELECT tm FROM TeamMember tm JOIN FETCH tm.user
+    WHERE tm.team = :team AND tm.user.userId = :userId
+    """)
+    Optional<TeamMember> findByTeamAndUserUserId(@Param("team") Team team, @Param("userId") Long userId);
+
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user WHERE tm.team = :team")
+    List<TeamMember> findByTeamWithUser(@Param("team") Team team);
+
+    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user JOIN FETCH tm.team WHERE tm.team IN :teams")
+    List<TeamMember> findByTeamInWithUser(@Param("teams") List<Team> teams);
 }

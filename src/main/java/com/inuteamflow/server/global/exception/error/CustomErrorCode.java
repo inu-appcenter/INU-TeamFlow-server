@@ -67,6 +67,10 @@ public enum CustomErrorCode implements ErrorCode {
     VOTE_RESULT_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "이미 투표 결과가 확정되었습니다."),
     VOTE_RESULT_TIME_INVALID(HttpStatus.BAD_REQUEST, 400, "투표 결과 확정 시간이 올바르지 않습니다."),
 
+    // 팀 공지 관련 에러
+    TEAM_NOTICE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "공지를 찾을 수 없습니다."),
+    TEAM_NOTICE_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "공지에 대한 권한이 없습니다."),
+
     // 일정 관련 에러
     EVENT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "일정을 찾을 수 없습니다."),
     EVENT_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "해당 일정에 대한 권한이 없습니다."),

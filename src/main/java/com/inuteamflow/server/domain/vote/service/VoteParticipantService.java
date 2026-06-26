@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.vote.service;
 
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
+import com.inuteamflow.server.domain.vote.dto.response.VoterInfoResponse;
 import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
 import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
@@ -67,29 +68,27 @@ public class VoteParticipantService {
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.VOTE_PARTICIPANT_NOT_FOUND));
     }
 
-    public VoteParticipantNames getVoteParticipantNames(
+    public VoteParticipants getVoteParticipants(
             Vote vote
     ) {
-        List<String> completedVoterNames = new ArrayList<>();
-        List<String> uncompletedVoterNames = new ArrayList<>();
+        List<VoterInfoResponse> completedVoters = new ArrayList<>();
+        List<VoterInfoResponse> uncompletedVoters = new ArrayList<>();
 
         for (VoteParticipant voteParticipant : voteParticipantRepository.findByVote(vote)) {
-            String voterName = voteParticipant.getTeamMember().getUser().getName();
-
             if (Boolean.TRUE.equals(voteParticipant.getHasCompleted())) {
-                completedVoterNames.add(voterName);
+                completedVoters.add(VoterInfoResponse.create(voteParticipant));
                 continue;
             }
 
-            uncompletedVoterNames.add(voterName);
+            uncompletedVoters.add(VoterInfoResponse.create(voteParticipant));
         }
 
-        return new VoteParticipantNames(completedVoterNames, uncompletedVoterNames);
+        return new VoteParticipants(completedVoters, uncompletedVoters);
     }
 
-    public record VoteParticipantNames(
-            List<String> completedVoterNames,
-            List<String> uncompletedVoterNames
+    public record VoteParticipants(
+            List<VoterInfoResponse> completedVoters,
+            List<VoterInfoResponse> uncompletedVoters
     ) {
     }
 }
