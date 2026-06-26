@@ -184,8 +184,8 @@ public class VoteService {
     private EventVoteResponse createEventVoteResponse(
             Vote vote
     ) {
-        VoteParticipantService.VoteParticipantNames voteParticipantNames =
-                voteParticipantService.getVoteParticipantNames(vote);
+        VoteParticipantService.VoteParticipants voteParticipants =
+                voteParticipantService.getVoteParticipants(vote);
 
         List<LocalDate> dates = voteTimeService.getVoteDates(vote).stream()
                 .map(VoteDate::getDate)
@@ -194,8 +194,8 @@ public class VoteService {
         return EventVoteResponse.create(
                 vote,
                 dates,
-                voteParticipantNames.completedVoterNames(),
-                voteParticipantNames.uncompletedVoterNames()
+                voteParticipants.completedVoters(),
+                voteParticipants.uncompletedVoters()
         );
     }
 

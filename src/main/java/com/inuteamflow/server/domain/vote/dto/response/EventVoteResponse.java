@@ -47,17 +47,17 @@ public class EventVoteResponse {
     @Schema(description = "일일 종료 시간", example = "20:00:00")
     private LocalTime dailyTimeEnd;
 
-    @Schema(description = "투표 완료 유저 이름 목록", example = "[\"홍길동\", \"김철수\"]")
-    private List<String> completedVoterNameList;
+    @Schema(description = "투표 완료 유저 목록")
+    private List<VoterInfoResponse> completedVoterList;
 
-    @Schema(description = "투표 미완료 유저 이름 목록", example = "[\"이영희\"]")
-    private List<String> uncompletedVoterNameList;
+    @Schema(description = "투표 미완료 유저 목록")
+    private List<VoterInfoResponse> uncompletedVoterList;
 
     public static EventVoteResponse create(
             Vote vote,
             List<LocalDate> dates,
-            List<String> completedVoterNameList,
-            List<String> uncompletedVoterNameList
+            List<VoterInfoResponse> completedVoterList,
+            List<VoterInfoResponse> uncompletedVoterList
     ) {
         return new EventVoteResponse(
                 vote.getVoteId(),
@@ -70,8 +70,8 @@ public class EventVoteResponse {
                 dates,
                 vote.getDailyTimeStart(),
                 vote.getDailyTimeEnd(),
-                completedVoterNameList,
-                uncompletedVoterNameList
+                completedVoterList,
+                uncompletedVoterList
         );
     }
 }
