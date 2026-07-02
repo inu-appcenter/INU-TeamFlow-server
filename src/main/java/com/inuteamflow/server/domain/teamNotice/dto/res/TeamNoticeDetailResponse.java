@@ -88,6 +88,6 @@ public class TeamNoticeDetailResponse {
 	@Schema(description = "공지 이미지")
 	private record Image(
 			@Schema(description = "이미지 URL") String imageUrl,
-			@Schema(description = "이미지 정렬 순서", example = "1") Integer sortOrder
+			@Schema(description = "이미지 정렬 순서", example = "0") Integer sortOrder
 	) {}
 }
