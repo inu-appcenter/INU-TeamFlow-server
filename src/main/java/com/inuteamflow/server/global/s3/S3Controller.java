@@ -45,4 +45,14 @@ public class S3Controller implements S3ControllerDocument{
                 .status(HttpStatus.OK)
                 .body(s3Service.getTeamNoticeImagePresignedUrls(request));
     }
+
+    @PostMapping("/info-posts/images/presigned-url")
+    public ResponseEntity<List<PresignedUrlResponse>> getInfoPostImagePresignedUrls(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @Valid @RequestBody List<PresignedUrlRequest> request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(s3Service.getInfoPostImagePresignedUrls(request));
+    }
 }

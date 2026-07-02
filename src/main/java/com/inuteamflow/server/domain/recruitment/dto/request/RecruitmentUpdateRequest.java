@@ -24,9 +24,6 @@ public class RecruitmentUpdateRequest {
     private Integer targetMemberCount;
 
     @NotNull
-    private Category recruitmentCategory;
-
-    @NotNull
     @Future // 현재 시간 이후여야 함
     private LocalDateTime endAt;
 

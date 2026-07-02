@@ -81,6 +81,17 @@ public class S3Service {
                 .toList();
     }
 
+    public List<PresignedUrlResponse> getInfoPostImagePresignedUrls(List<PresignedUrlRequest> requests) {
+        return requests.stream()
+                .map(request -> {
+                    validateImageContentType(request.getContentType());
+                    String imageKey = createInfoPostImageKey(request.getFileName());
+                    String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
+                    return PresignedUrlResponse.create(uploadUrl, imageKey);
+                })
+                .toList();
+    }
+
     public String getImageUrl(String imageKey) {
         if (!StringUtils.hasText(imageKey)) {
             return null;
@@ -143,5 +154,9 @@ public class S3Service {
         }
 
         return fileName.substring(dotIndex).toLowerCase(Locale.ROOT);
+    }
+
+    private String createInfoPostImageKey(String fileName) {
+        return "info-posts/image/" + UUID.randomUUID() + getFileExtension(fileName);
     }
 }

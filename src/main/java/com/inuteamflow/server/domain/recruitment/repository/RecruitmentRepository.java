@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.recruitment.repository;
 
+import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.user.entity.User;
@@ -17,4 +18,8 @@ public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> 
     Page<Recruitment> findAllByRecruiter(User user, Pageable pageable);
 
     List<Recruitment> findAllByTeam(Team team);
+
+    Page<Recruitment> findAllByInfoPost(InfoPost infoPost, Pageable pageable);
+
+    long countByInfoPost(InfoPost infoPost);
 }

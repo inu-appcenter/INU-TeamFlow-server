@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.recruitment.entity;
 
+import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.BaseEntity;
@@ -54,10 +55,14 @@ public class Recruitment extends BaseEntity {
     @JoinColumn(name = "recruiter_id", nullable = false)
     private User recruiter;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "info_post_id")
+    private InfoPost infoPost; // 정보글 연결 안 하면 null
+
     @Builder
     private Recruitment(String title, String description, Category category,
                         Integer targetMemberCount, LocalDateTime endAt,
-                        Team team, User recruiter) {
+                        Team team, User recruiter, InfoPost infoPost) {
         this.title = title;
         this.description = description;
         this.category = category;
@@ -67,13 +72,13 @@ public class Recruitment extends BaseEntity {
         this.endAt = endAt;
         this.team = team;
         this.recruiter = recruiter;
+        this.infoPost = infoPost;
     }
 
-    public void update(String title, String description, Category category,
+    public void update(String title, String description,
                        Integer targetMemberCount, LocalDateTime endAt) {
         this.title = title;
         this.description = description;
-        this.category = category;
         this.targetMemberCount = targetMemberCount;
         this.endAt = endAt;
     }

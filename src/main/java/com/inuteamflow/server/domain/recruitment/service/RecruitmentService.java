@@ -1,5 +1,7 @@
 package com.inuteamflow.server.domain.recruitment.service;
 
+import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
+import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
 import com.inuteamflow.server.domain.recruitment.dto.request.RecruitmentCreateRequest;
 import com.inuteamflow.server.domain.recruitment.dto.request.RecruitmentUpdateRequest;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentDetailResponse;
@@ -26,6 +28,7 @@ public class RecruitmentService {
     private final RecruitmentRepository recruitmentRepository;
     private final RecruitmentApplicationRepository recruitmentApplicationRepository;
     private final TeamRepository teamRepository;
+    private final InfoPostRepository infoPostRepository;
 
     // 모집글 전체 목록 조회
     public Page<RecruitmentSummaryResponse> getRecruitments(Pageable pageable) {
@@ -56,6 +59,12 @@ public class RecruitmentService {
         Team team = teamRepository.findById(request.getTeamId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
+        InfoPost infoPost = null;
+        if (request.getInfoPostId() != null) {
+            infoPost = infoPostRepository.findById(request.getInfoPostId())
+                    .orElseThrow(() -> new RestApiException(CustomErrorCode.INFO_POST_NOT_FOUND));
+        }
+
         Recruitment recruitment = Recruitment.builder()
                 .title(request.getTitle())
                 .category(request.getCategory())
@@ -64,6 +73,7 @@ public class RecruitmentService {
                 .endAt(request.getEndAt())
                 .team(team)
                 .recruiter(user)
+                .infoPost(infoPost)
                 .build();
 
         recruitmentRepository.save(recruitment);
@@ -84,7 +94,6 @@ public class RecruitmentService {
         recruitment.update(
                 request.getTitle(),
                 request.getDescription(),
-                request.getRecruitmentCategory(),
                 request.getTargetMemberCount(),
                 request.getEndAt()
         );
