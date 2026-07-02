@@ -8,8 +8,11 @@ import com.inuteamflow.server.domain.teamNotice.service.TeamNoticeService;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,7 +29,7 @@ public class TeamNoticeController implements TeamNoticeControllerDocument {
 	public ResponseEntity<Page<TeamNoticeSummaryResponse>> getTeamNotices(
 			@PathVariable Long teamId,
 			@AuthenticationPrincipal UserDetailsImpl userDetails,
-			Pageable pageable
+			@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
 	) {
 		return ResponseEntity
                 .status(HttpStatus.OK)
@@ -82,7 +85,7 @@ public class TeamNoticeController implements TeamNoticeControllerDocument {
 	@GetMapping("/team-notices/me")
 	public ResponseEntity<Page<TeamNoticeSummaryResponse>> getMyTeamNotices(
 			@AuthenticationPrincipal UserDetailsImpl userDetails,
-			Pageable pageable
+			@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
 	) {
 		return ResponseEntity
                 .status(HttpStatus.OK)
