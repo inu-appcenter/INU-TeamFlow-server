@@ -17,12 +17,14 @@ import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class EventRecurrenceService {
 
     private final EventOccurrenceService eventOccurrenceService;
@@ -31,6 +33,11 @@ public class EventRecurrenceService {
     private final RecurrenceRuleRepository recurrenceRuleRepository;
     private final RecurrenceExceptionRepository recurrenceExceptionRepository;
 
+    /**
+     * 일정 생성을 처리하는 함수:
+     * 일정 생성/수정 요청 DTO에 따라서 Method Overloading을 적용한다.
+     * */
+    @Transactional
     public RecurrenceRule createRecurrenceRule(
             Event event,
             EventCreateCommand command
@@ -46,6 +53,7 @@ public class EventRecurrenceService {
         ));
     }
 
+    @Transactional
     public RecurrenceRule createRecurrenceRule(
             Event event,
             EventUpdateCommand command
@@ -61,6 +69,13 @@ public class EventRecurrenceService {
         ));
     }
 
+    /**
+     * 일정 수정을 처리하는 함수:
+     * 내부적으로 updateAllSeries, updateThisInstance, updateThisAndFollowing을 호출한다.
+     * 세 함수에는 @Transactional을 따로 붙이진 않고 상위 함수(updateEvent)에서 붙인다.
+     * 어차피 private 메서드이기 때문에
+     * */
+    @Transactional
     public EventDetailResponse updateEvent(
             Event event,
             Team team,
@@ -194,6 +209,13 @@ public class EventRecurrenceService {
         eventParticipantRepository.saveAll(copiedParticipants);
     }
 
+    /**
+     * 일정 삭제를 처리하는 함수:
+     * 내부적으로 deleteAllSeries, deleteThisInstance, deleteThisAndFollowing을 호출한다.
+     * 세 함수에는 @Transactional을 따로 붙이진 않고 상위 함수(deleteEvent)에서 붙인다.
+     * 어차피 private 메서드이기 때문에
+     * */
+    @Transactional
     public boolean deleteEvent(
             Event event,
             RecurrenceEditScope recurrenceEditScope,

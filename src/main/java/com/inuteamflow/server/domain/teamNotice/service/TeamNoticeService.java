@@ -184,7 +184,7 @@ public class TeamNoticeService {
 
 		List<TeamNoticeImage> images = new ArrayList<>();
 		for (int i = 0; i < imageKeys.size(); i++) {
-			images.add(TeamNoticeImage.create(imageKeys.get(i), i + 1, notice));
+			images.add(TeamNoticeImage.create(imageKeys.get(i), i, notice));
 		}
 		return teamNoticeImageRepository.saveAll(images);
 	}

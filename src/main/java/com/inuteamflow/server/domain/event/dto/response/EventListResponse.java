@@ -1,7 +1,9 @@
 package com.inuteamflow.server.domain.event.dto.response;
 
+import com.inuteamflow.server.domain.event.dto.Recurrence;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceException;
+import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.EventColor;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
@@ -54,6 +56,9 @@ public class EventListResponse {
     @Schema(description = "반복 일정 예외 여부", example = "false")
     private Boolean isException;
 
+    @Schema(description = "반복 일정 규칙")
+    private Recurrence recurrence;
+
     public static EventListResponse createSingle(Event event) {
         return new EventListResponse(
                 event.getEventId(),
@@ -68,12 +73,14 @@ public class EventListResponse {
                 event.getColor(),
                 event.getIsSingle(),
                 event.getIsFinished(),
-                false
+                false,
+                null // 단건 일정임, RecurrenceRule 없음
         );
     }
 
     public static EventListResponse createOccurrence(
             Event event,
+            RecurrenceRule recurrenceRule,
             LocalDateTime occurrenceAt,
             LocalDateTime startAt,
             LocalDateTime endAt
@@ -91,12 +98,14 @@ public class EventListResponse {
                 event.getColor(),
                 event.getIsSingle(),
                 event.getIsFinished(),
-                false
+                false,
+                Recurrence.create(recurrenceRule)
         );
     }
 
     public static EventListResponse createModifiedOccurrence(
             Event event,
+            RecurrenceRule recurrenceRule,
             RecurrenceException recurrenceException
     ) {
         return new EventListResponse(
@@ -112,7 +121,8 @@ public class EventListResponse {
                 recurrenceException.getModifiedColor(),
                 event.getIsSingle(),
                 event.getIsFinished(),
-                true
+                true,
+                Recurrence.create(recurrenceRule)
         );
     }
 }
