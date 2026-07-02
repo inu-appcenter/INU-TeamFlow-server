@@ -33,4 +33,6 @@ public class RecruitmentCreateRequest {
     @Future // 현재 시간 이후여야 함
     private LocalDateTime endAt;
 
+    private Long infoPostId; // 정보글 연결 시에만 값 있음
+
 }

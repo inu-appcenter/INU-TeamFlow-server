@@ -55,6 +55,10 @@ public enum CustomErrorCode implements ErrorCode {
     RECRUITMENT_CLOSED(HttpStatus.CONFLICT, 409, "이미 마감된 모집글입니다."),
     RECRUITMENT_EXPIRED(HttpStatus.CONFLICT, 409, "모집글의 신청기간이 지났습니다."),
 
+    // 정보글 관련 에러
+    INFO_POST_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "공고를 찾을 수 없습니다."),
+    INFO_POST_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "공고에 권한이 없습니다."),
+
     // 투표 관련 에러
     VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "투표를 찾을 수 없습니다."),
     VOTE_NOT_OPENED(HttpStatus.BAD_REQUEST, 400, "열려 있는 투표가 아닙니다."),
