@@ -98,9 +98,11 @@ public class AuthService {
             throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFY_FAILED);
         }
 
-        user.verifySchool(request.getStudentNumber());
+        User managedUser = userRepository.findById(user.getUserId())
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
+        managedUser.verifySchool(request.getStudentNumber());
 
-        String imageUrl = s3Service.getImageUrl(user.getImageKey());
-        return MyInfoResponse.create(user, imageUrl);
+        String imageUrl = s3Service.getImageUrl(managedUser.getImageKey());
+        return MyInfoResponse.create(managedUser, imageUrl);
     }
 }
