@@ -12,6 +12,7 @@ import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class EventOccurrenceService {
 
     private final RecurrenceRuleRepository recurrenceRuleRepository;
@@ -123,10 +125,10 @@ public class EventOccurrenceService {
             );
             if (recurrenceException != null) {
                 // 예외 회차가 존재하면: - CANCELLED → 제외, - MODIFIED → 수정된 값 기준으로 응답 생성
-                addExceptionOccurrence(event, recurrenceException, dateRange, responses);
+                addExceptionOccurrence(event, rule, recurrenceException, dateRange, responses);
             } else {
                 // 예외가 없으면 일반 반복 occurrence 생성
-                addNormalOccurrence(event, occurrenceAt, durationSeconds, dateRange, responses);
+                addNormalOccurrence(event, rule, occurrenceAt, durationSeconds, dateRange, responses);
             }
 
             occurrenceAt = nextOccurrenceAt(occurrenceAt, rule);
@@ -181,6 +183,7 @@ public class EventOccurrenceService {
 
     private void addNormalOccurrence(
             Event event,
+            RecurrenceRule rule,
             LocalDateTime occurrenceAt,
             long durationSeconds,
             DateRange dateRange,
@@ -189,13 +192,14 @@ public class EventOccurrenceService {
         LocalDateTime startAt = occurrenceAt;
         LocalDateTime endAt = occurrenceAt.plusSeconds(durationSeconds);
         if (isOverlapped(startAt, endAt, dateRange)) {
-            responses.add(EventListResponse.createOccurrence(event, occurrenceAt, startAt, endAt));
+            responses.add(EventListResponse.createOccurrence(event, rule, occurrenceAt, startAt, endAt));
         }
     }
 
     // 반복 예외를 반영한다. CANCELLED는 제외하고, MODIFIED는 수정된 시간 기준으로 조회 범위와 겹칠 때 추가한다.
     private void addExceptionOccurrence(
             Event event,
+            RecurrenceRule rule,
             RecurrenceException recurrenceException,
             DateRange dateRange,
             List<EventListResponse> responses
@@ -210,7 +214,7 @@ public class EventOccurrenceService {
                 recurrenceException.getModifiedEndAt(),
                 dateRange
         )) {
-            responses.add(EventListResponse.createModifiedOccurrence(event, recurrenceException));
+            responses.add(EventListResponse.createModifiedOccurrence(event, rule, recurrenceException));
         }
     }
 
