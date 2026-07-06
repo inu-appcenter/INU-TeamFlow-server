@@ -6,13 +6,14 @@ import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostDetailRespons
 import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostSummaryResponse;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
-import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,8 +41,9 @@ public class InfoPostService {
     private final RecruitmentRepository recruitmentRepository;
 
     // 정보글 목록 조회
-    public Page<InfoPostSummaryResponse> getInfoPosts(Category category, String keyword, Boolean linkable, Pageable pageable) {
-        Page<InfoPost> infoPostPage = infoPostRepository.search(category, keyword, linkable, pageable);
+    public Page<InfoPostSummaryResponse> getInfoPosts(InfoPostCategory category, InfoPostType type, String keyword, Pageable pageable) {
+        List<InfoPostCategory> categories = resolveCategories(category, type);
+        Page<InfoPost> infoPostPage = infoPostRepository.search(categories, keyword, pageable);
         return toSummaryPage(infoPostPage);
     }
 
@@ -65,7 +68,7 @@ public class InfoPostService {
     // 정보글 작성
     @Transactional
     public InfoPostDetailResponse createInfoPost(InfoPostCreateRequest request, User user) {
-        InfoPost infoPost = InfoPost.create(request.getCategory(), request.getTitle(), request.getContent(), true);
+        InfoPost infoPost = InfoPost.create(request.getCategory(), request.getTitle(), request.getContent());
         infoPostRepository.save(infoPost);
 
         List<InfoPostImage> images = saveImages(infoPost, request.getImageKeys());
@@ -144,7 +147,7 @@ public class InfoPostService {
     }
 
     private Integer getRecruitmentCount(InfoPost infoPost) {
-        if (!Boolean.TRUE.equals(infoPost.getLinkable())) {
+        if (!infoPost.isLinkable()) {
             return null; // 자유형은 null
         }
         return (int) recruitmentRepository.countByInfoPost(infoPost);
@@ -164,6 +167,18 @@ public class InfoPostService {
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
+    }
+
+    private List<InfoPostCategory> resolveCategories(InfoPostCategory category, InfoPostType type) {
+        if (category != null) {
+            return List.of(category);
+        }
+        if (type != null) {
+            return Arrays.stream(InfoPostCategory.values())
+                    .filter(c -> c.getType() == type)
+                    .toList();
+        }
+        return null;
     }
 
 }

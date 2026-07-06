@@ -1,5 +1,7 @@
 package com.inuteamflow.server.domain.infoPost.entity;
 
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.BaseEntity;
 import com.inuteamflow.server.global.enums.Category;
@@ -25,7 +27,7 @@ public class InfoPost extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Category category;
+    private InfoPostCategory category;
 
     @Column(nullable = false)
     private String title;
@@ -33,23 +35,18 @@ public class InfoPost extends BaseEntity {
     @Column(nullable = false)
     private String content;
 
-    @Column(name = "linkable", nullable = false)
-    private Boolean linkable;
-
     @Builder
-    private InfoPost(Category category, String title, String content, Boolean linkable) {
+    private InfoPost(InfoPostCategory category, String title, String content) {
         this.category = category;
         this.title = title;
         this.content = content;
-        this.linkable = linkable;
     }
 
-    public static InfoPost create(Category category, String title, String content, Boolean linkable) {
+    public static InfoPost create(InfoPostCategory category, String title, String content) {
         return InfoPost.builder()
                 .category(category)
                 .title(title)
                 .content(content)
-                .linkable(linkable)
                 .build();
     }
 
@@ -60,6 +57,11 @@ public class InfoPost extends BaseEntity {
 
     public boolean isAuthor(Long userId) {
         return this.getCreatedBy().equals(userId);
+    }
+
+    // 모집글 연결 가능 여부 — DB에 저장하지 않고 카테고리 대분류로 그때그때 계산
+    public boolean isLinkable() {
+        return this.category.getType() == InfoPostType.NOTICE;
     }
 
 }

@@ -4,10 +4,11 @@ import com.inuteamflow.server.domain.infoPost.dto.request.InfoPostCreateRequest;
 import com.inuteamflow.server.domain.infoPost.dto.request.InfoPostUpdateRequest;
 import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostDetailResponse;
 import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostSummaryResponse;
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
 import com.inuteamflow.server.domain.infoPost.service.InfoPostService;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
-import com.inuteamflow.server.global.enums.Category;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,13 +29,13 @@ public class InfoPostController implements InfoPostControllerDocument {
 
     @GetMapping
     public ResponseEntity<Page<InfoPostSummaryResponse>> getInfoPosts(
-            @RequestParam(required = false) Category category,
+            @RequestParam(required = false) InfoPostCategory category,
+            @RequestParam(required = false) InfoPostType type,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Boolean linkable,
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(infoPostService.getInfoPosts(category, keyword, linkable, pageable));
+                .body(infoPostService.getInfoPosts(category, type, keyword, pageable));
     }
 
     @GetMapping("/me")

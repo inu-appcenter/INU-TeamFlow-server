@@ -191,6 +191,42 @@ public interface RecruitmentControllerDocument {
             @Valid @RequestBody RecruitmentUpdateRequest request
     );
 
+    @Operation(summary = "deleteRecruitment", description = "모집글 삭제 (작성자만 가능)")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "204",
+                    description = "모집글 삭제 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "유효하지 않거나 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "작성자가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "모집글을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<Void> deleteRecruitment(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long recruitmentId
+    );
+
     @Operation(summary = "apply", description = "모집글에 신청")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

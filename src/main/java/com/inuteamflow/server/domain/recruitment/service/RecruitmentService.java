@@ -20,6 +20,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -99,6 +101,20 @@ public class RecruitmentService {
         );
 
         return RecruitmentDetailResponse.of(recruitment, true, false);
+    }
+
+    // 모집글 삭제
+    @Transactional
+    public void deleteRecruitment(Long recruitmentId, User user) {
+        Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
+
+        if (!recruitment.getRecruiter().getUserId().equals(user.getUserId())) {
+            throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
+        }
+
+        recruitmentApplicationRepository.deleteAllByRecruitmentIn(List.of(recruitment));
+        recruitmentRepository.delete(recruitment);
     }
 
 }

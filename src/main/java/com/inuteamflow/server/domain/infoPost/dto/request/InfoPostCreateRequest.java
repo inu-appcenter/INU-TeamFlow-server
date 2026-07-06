@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.infoPost.dto.request;
 
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.global.enums.Category;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -16,8 +17,8 @@ import java.util.List;
 public class InfoPostCreateRequest {
 
     @NotNull
-    @Schema(description = "카테고리", example = "CONTEST")
-    private Category category;
+    @Schema(description = "카테고리", example = "CLUB")
+    private InfoPostCategory category;
 
     @NotBlank
     @Schema(description = "제목", example = "2026 INU 가나디 공모전")
