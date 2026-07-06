@@ -10,8 +10,11 @@ import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,7 +30,7 @@ public class RecruitmentApplicationController implements RecruitmentApplicationC
     @GetMapping("/me")
     public ResponseEntity<Page<MyApplicationSummaryResponse>> getMyApplications(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            Pageable pageable
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)

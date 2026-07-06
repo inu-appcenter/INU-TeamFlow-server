@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.teamNotice.dto.res;
 
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.teamNotice.entity.TeamNotice;
+import com.inuteamflow.server.global.enums.Category;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,9 @@ public class TeamNoticeSummaryResponse {
 
 	@Schema(description = "팀 이름", example = "팀플로우")
 	private String teamName;
+
+	@Schema(description = "팀 카테고리", example = "PROJECT")
+	private Category teamCategory;
 
 	@Schema(description = "공지 제목", example = "5월 정기 회의 안내")
 	private String title;
@@ -54,6 +58,7 @@ public class TeamNoticeSummaryResponse {
 				notice.getTeamNoticeId(),
 				notice.getTeam().getTeamId(),
 				notice.getTeam().getName(),
+				notice.getTeam().getCategory(),
 				notice.getTitle(),
 				notice.getIsPinned(),
 				isRead,

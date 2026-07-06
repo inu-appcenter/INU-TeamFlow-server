@@ -13,8 +13,11 @@ import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,7 +32,9 @@ public class RecruitmentController implements RecruitmentControllerDocument {
     private final RecruitmentApplicationService recruitmentApplicationService;
 
     @GetMapping
-    public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(Pageable pageable) {
+    public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(recruitmentService.getRecruitments(pageable));
     }
@@ -37,7 +42,7 @@ public class RecruitmentController implements RecruitmentControllerDocument {
     @GetMapping("/me")
     public ResponseEntity<Page<RecruitmentSummaryResponse>> getMyRecruitments(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            Pageable pageable
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
@@ -100,7 +105,7 @@ public class RecruitmentController implements RecruitmentControllerDocument {
     public ResponseEntity<Page<ApplicationSummaryResponse>> getApplicationsByRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long recruitmentId,
-            Pageable pageable
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)

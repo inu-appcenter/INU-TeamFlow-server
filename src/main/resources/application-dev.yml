@@ -12,6 +12,11 @@ spring:
     password: ${POSTGRESQL_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+  data:
+    web:
+      pageable:
+        max-page-size: 100 # 최대 페이지 크기 100
+
   jpa:
     hibernate:
       ddl-auto: update

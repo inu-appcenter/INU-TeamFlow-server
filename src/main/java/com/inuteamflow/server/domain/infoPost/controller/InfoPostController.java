@@ -11,6 +11,7 @@ import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummary
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -41,7 +42,7 @@ public class InfoPostController implements InfoPostControllerDocument {
     @GetMapping("/me")
     public ResponseEntity<Page<InfoPostSummaryResponse>> getMyInfoPosts(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            Pageable pageable
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getMyInfoPosts(userDetails.getUser(), pageable));
@@ -87,7 +88,7 @@ public class InfoPostController implements InfoPostControllerDocument {
     @GetMapping("/{infoPostId}/recruitments")
     public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitmentsByInfoPost(
             @PathVariable Long infoPostId,
-            Pageable pageable
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getRecruitmentsByInfoPost(infoPostId, pageable));
