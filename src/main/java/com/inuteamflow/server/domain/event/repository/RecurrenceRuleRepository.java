@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.event.repository;
 
+import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -9,9 +10,15 @@ import java.util.Optional;
 
 public interface RecurrenceRuleRepository extends JpaRepository<RecurrenceRule, Long> {
 
-    List<RecurrenceRule> findByEvent_EventIdIn(Collection<Long> eventIds);
+    List<RecurrenceRule> findByEventIn(
+            Collection<Event> events
+    );
 
-    Optional<RecurrenceRule> findByEvent_EventId(Long eventId);
+    Optional<RecurrenceRule> findByEvent(
+            Event event
+    );
 
-    void deleteByEvent_EventId(Long eventId);
+    void deleteByEvent(
+            Event event
+    );
 }

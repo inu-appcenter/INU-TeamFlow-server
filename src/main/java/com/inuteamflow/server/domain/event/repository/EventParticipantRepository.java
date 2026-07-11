@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.event.repository;
 
+import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.EventParticipant;
 import com.inuteamflow.server.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,7 +11,7 @@ import java.util.List;
 
 public interface EventParticipantRepository extends JpaRepository<EventParticipant, Long> {
 
-    List<EventParticipant> findByEvent_EventId(Long eventId);
+    List<EventParticipant> findByEvent(Event event);
 
     @Query("""
             SELECT ep.event.eventId 
@@ -19,5 +20,5 @@ public interface EventParticipantRepository extends JpaRepository<EventParticipa
             """)
     List<Long> findEventIdsByUser(@Param("user") User user);
 
-    void deleteByEvent_EventId(Long eventId);
+    void deleteByEvent(Event event);
 }
