@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.event.repository;
 
+import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceException;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,17 +11,21 @@ import java.util.Optional;
 
 public interface RecurrenceExceptionRepository extends JpaRepository<RecurrenceException, Long> {
 
-    List<RecurrenceException> findByEvent_EventIdIn(Collection<Long> eventIds);
+    List<RecurrenceException> findByEventIn(
+            Collection<Event> events
+    );
 
-    Optional<RecurrenceException> findByEvent_EventIdAndOriginalOccurrenceAt(
-            Long eventId,
+    Optional<RecurrenceException> findByEventAndOriginalOccurrenceAt(
+            Event event,
             LocalDateTime originalOccurrenceAt
     );
 
-    void deleteByEvent_EventId(Long eventId);
+    void deleteByEvent(
+            Event event
+    );
 
-    void deleteByEvent_EventIdAndOriginalOccurrenceAtGreaterThanEqual(
-            Long eventId,
+    void deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
+            Event event,
             LocalDateTime originalOccurrenceAt
     );
 }

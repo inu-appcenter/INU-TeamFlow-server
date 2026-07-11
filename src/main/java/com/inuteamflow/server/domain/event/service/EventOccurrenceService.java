@@ -62,10 +62,15 @@ public class EventOccurrenceService {
         List<Long> eventIds = recurringEvents.stream()
                 .map(Event::getEventId)
                 .toList();
-        Map<Long, RecurrenceRule> ruleByEventId = recurrenceRuleRepository.findByEvent_EventIdIn(eventIds).stream()
-                .collect(Collectors.toMap(RecurrenceRule::getEventId, Function.identity()));
+
+        Map<Long, RecurrenceRule> ruleByEventId =
+                recurrenceRuleRepository
+                        .findByEventIn(recurringEvents).stream()
+                        .collect(Collectors.toMap(RecurrenceRule::getEventId, Function.identity()));
+
         Map<EventOccurrenceService.OccurrenceKey, RecurrenceException> exceptionByKey =
-                recurrenceExceptionRepository.findByEvent_EventIdIn(eventIds).stream()
+                recurrenceExceptionRepository
+                        .findByEventIn(recurringEvents).stream()
                         .collect(Collectors.toMap(
                                 exception -> new EventOccurrenceService.OccurrenceKey(
                                         exception.getEventId(),

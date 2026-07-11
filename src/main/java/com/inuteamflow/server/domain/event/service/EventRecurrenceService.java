@@ -3,15 +3,9 @@ package com.inuteamflow.server.domain.event.service;
 import com.inuteamflow.server.domain.event.dto.EventCreateCommand;
 import com.inuteamflow.server.domain.event.dto.EventUpdateCommand;
 import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
-import com.inuteamflow.server.domain.event.entity.Event;
-import com.inuteamflow.server.domain.event.entity.EventParticipant;
-import com.inuteamflow.server.domain.event.entity.RecurrenceException;
-import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
+import com.inuteamflow.server.domain.event.entity.*;
 import com.inuteamflow.server.domain.event.enums.RecurrenceEditScope;
-import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
-import com.inuteamflow.server.domain.event.repository.EventRepository;
-import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionRepository;
-import com.inuteamflow.server.domain.event.repository.RecurrenceRuleRepository;
+import com.inuteamflow.server.domain.event.repository.*;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
@@ -32,6 +26,7 @@ public class EventRecurrenceService {
     private final EventParticipantRepository eventParticipantRepository;
     private final RecurrenceRuleRepository recurrenceRuleRepository;
     private final RecurrenceExceptionRepository recurrenceExceptionRepository;
+    private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
 
     /**
      * 일정 생성을 처리하는 함수:
@@ -139,7 +134,8 @@ public class EventRecurrenceService {
 
         event.update(command);
         recurrenceRule.update(command.getRecurrence(), event.getStartAt());
-        recurrenceExceptionRepository.deleteByEvent_EventId(event.getEventId());
+        recurrenceExceptionParticipantRepository.deleteByEvent(event);
+        recurrenceExceptionRepository.deleteByEvent(event);
 
         return recurrenceRule;
     }
@@ -152,7 +148,7 @@ public class EventRecurrenceService {
         validateOccurrence(event, recurrenceRule, command.getOccurrenceAt());
 
         RecurrenceException recurrenceException = recurrenceExceptionRepository
-                .findByEvent_EventIdAndOriginalOccurrenceAt(event.getEventId(), command.getOccurrenceAt())
+                .findByEventAndOriginalOccurrenceAt(event, command.getOccurrenceAt())
                 .orElseGet(() -> recurrenceExceptionRepository.save(
                         RecurrenceException.createModified(event, command)
                 ));
@@ -170,8 +166,12 @@ public class EventRecurrenceService {
         validateOccurrence(event, recurrenceRule, command.getOccurrenceAt());
 
         recurrenceRule.finishBefore(command.getOccurrenceAt());
-        recurrenceExceptionRepository.deleteByEvent_EventIdAndOriginalOccurrenceAtGreaterThanEqual(
-                event.getEventId(),
+        recurrenceExceptionParticipantRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
+                event,
+                command.getOccurrenceAt()
+        );
+        recurrenceExceptionRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
+                event,
                 command.getOccurrenceAt()
         );
 
@@ -197,7 +197,7 @@ public class EventRecurrenceService {
         }
 
         List<EventParticipant> copiedParticipants = eventParticipantRepository
-                .findByEvent_EventId(originalEvent.getEventId())
+                .findByEvent(originalEvent)
                 .stream()
                 .map(participant -> EventParticipant.create(
                         followingEvent,
@@ -249,8 +249,9 @@ public class EventRecurrenceService {
     private void deleteAllSeries(
             Event event
     ) {
-        recurrenceExceptionRepository.deleteByEvent_EventId(event.getEventId());
-        recurrenceRuleRepository.deleteByEvent_EventId(event.getEventId());
+        recurrenceExceptionParticipantRepository.deleteByEvent(event);
+        recurrenceExceptionRepository.deleteByEvent(event);
+        recurrenceRuleRepository.deleteByEvent(event);
     }
 
     private void deleteThisInstance(
@@ -260,8 +261,9 @@ public class EventRecurrenceService {
         RecurrenceRule recurrenceRule = getRecurrenceRule(event);
         validateOccurrence(event, recurrenceRule, occurrenceAt);
 
+        recurrenceExceptionParticipantRepository.deleteByEventAndOccurrenceAt(event, occurrenceAt);
         RecurrenceException recurrenceException = recurrenceExceptionRepository
-                .findByEvent_EventIdAndOriginalOccurrenceAt(event.getEventId(), occurrenceAt)
+                .findByEventAndOriginalOccurrenceAt(event, occurrenceAt)
                 .orElseGet(() -> recurrenceExceptionRepository.save(
                         RecurrenceException.createCancelled(event, occurrenceAt)
                 ));
@@ -276,8 +278,12 @@ public class EventRecurrenceService {
         validateOccurrence(event, recurrenceRule, occurrenceAt);
 
         recurrenceRule.finishBefore(occurrenceAt);
-        recurrenceExceptionRepository.deleteByEvent_EventIdAndOriginalOccurrenceAtGreaterThanEqual(
-                event.getEventId(),
+        recurrenceExceptionParticipantRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
+                event,
+                occurrenceAt
+        );
+        recurrenceExceptionRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
+                event,
                 occurrenceAt
         );
     }
@@ -285,7 +291,7 @@ public class EventRecurrenceService {
     private RecurrenceRule getRecurrenceRule(
             Event event
     ) {
-        return recurrenceRuleRepository.findByEvent_EventId(event.getEventId())
+        return recurrenceRuleRepository.findByEvent(event)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_RECURRENCE_RULE_NOT_FOUND));
     }
 
