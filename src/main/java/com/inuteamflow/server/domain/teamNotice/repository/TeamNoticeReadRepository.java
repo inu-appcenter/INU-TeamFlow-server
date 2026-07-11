@@ -20,4 +20,8 @@ public interface TeamNoticeReadRepository extends JpaRepository<TeamNoticeRead, 
 	@Modifying
 	@Query("DELETE FROM TeamNoticeRead r WHERE r.teamNotice IN :notices")
 	void deleteAllByTeamNoticeIn(@Param("notices") List<TeamNotice> notices);
+
+	@Modifying
+	@Query("DELETE FROM TeamNoticeRead r WHERE r.teamNotice = :teamNotice")
+    void deleteByTeamNotice(TeamNotice notice);
 }

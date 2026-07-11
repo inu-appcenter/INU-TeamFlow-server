@@ -167,8 +167,9 @@ public class TeamNoticeService {
 		// DB 삭제 전에 S3 키를 수집해두어야 이후 삭제 가능
 		List<TeamNoticeImage> images = teamNoticeImageRepository.findByTeamNoticeOrderBySortOrderAsc(notice);
 		teamNoticeImageRepository.deleteByTeamNotice(notice);
-		images.forEach(img -> s3Service.deleteImage(img.getImageKey()));
+		teamNoticeReadRepository.deleteByTeamNotice(notice);
 		teamNoticeRepository.delete(notice);
+		images.forEach(img -> s3Service.deleteImage(img.getImageKey()));
 	}
 
 	/**
