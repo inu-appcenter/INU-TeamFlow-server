@@ -116,7 +116,10 @@ public class RecurrenceRule extends BaseTimeEntity {
     }
 
     public void finishBefore(LocalDateTime occurrenceAt) {
-        this.untilAt = occurrenceAt.minusNanos(1);
+        // DB timestamp 컬럼은 초 미만 정밀도가 낮아 minusNanos(1)로 만든 경계값이 저장 후 반올림되어 occurrenceAt과 같아진다.
+        // 초 단위로 차감해 이 문제를 피한다.
+        // THIS_AND_FOLLOWING 으로 수정 및 삭제 시 분기의 기준이 되는 일정도 함께 처리하는 효과를 낸다.
+        this.untilAt = occurrenceAt.minusSeconds(1);
         this.occurrenceCount = null;
     }
 }
