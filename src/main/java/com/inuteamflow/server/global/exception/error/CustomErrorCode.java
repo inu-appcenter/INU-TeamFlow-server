@@ -16,6 +16,7 @@ public enum CustomErrorCode implements ErrorCode {
     USER_EMAIL_CONFLICT(HttpStatus.CONFLICT, 409, "이미 사용 중인 이메일입니다."),
     USER_SCHOOL_VERIFY_FAILED(HttpStatus.BAD_REQUEST, 400, "학교 인증에 실패했습니다."),
     USER_SCHOOL_VERIFY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, 503, "학교 인증 서비스를 현재 사용할 수 없습니다."),
+    USER_SCHOOL_VERIFICATION_REQUIRED(HttpStatus.FORBIDDEN, 403, "학교 인증이 필요한 기능입니다."),
 
     // JWT 인증 에러
     JWT_INVALID(HttpStatus.UNAUTHORIZED, 401, ""),

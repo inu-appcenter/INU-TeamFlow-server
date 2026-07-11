@@ -42,6 +42,11 @@ public class RecruitmentApplicationService {
     // 모집글에 신청하기
     @Transactional
     public ApplicationSummaryResponse apply (Long recruitmentId, ApplicationCreateRequest request, User user) {
+
+        if (!Boolean.TRUE.equals(user.getIsSchoolVerified())) {
+            throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFICATION_REQUIRED);
+        }
+
         Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
 

@@ -5,5 +5,7 @@ public enum Category {
     STUDY,
     CLUB,
     PROJECT,
-    ETC
+    ETC,
+    EXTERNAL_ACTIVITY,
+    INTERN
 }

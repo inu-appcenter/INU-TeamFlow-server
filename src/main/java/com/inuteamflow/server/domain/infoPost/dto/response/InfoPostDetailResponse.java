@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.infoPost.dto.response;
 
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.enums.Category;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,7 +23,7 @@ public class InfoPostDetailResponse {
     private Long infoPostId;
 
     @Schema(description = "카테고리", example = "CONTEST")
-    private Category category;
+    private InfoPostCategory category;
 
     @Schema(description = "모집글 연결 가능 여부", example = "true")
     private Boolean linkable;
@@ -73,7 +74,7 @@ public class InfoPostDetailResponse {
         return new InfoPostDetailResponse(
                 infoPost.getInfoPostId(),
                 infoPost.getCategory(),
-                infoPost.getLinkable(),
+                infoPost.isLinkable(),
                 infoPost.getTitle(),
                 infoPost.getContent(),
                 imageList,

@@ -80,6 +80,16 @@ public class RecruitmentController implements RecruitmentControllerDocument {
                 .body(recruitmentService.updateRecruitment(recruitmentId, request, user));
     }
 
+    @DeleteMapping("/{recruitmentId}")
+    public ResponseEntity<Void> deleteRecruitment(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long recruitmentId
+    ) {
+        User user = userDetails.getUser();
+        recruitmentService.deleteRecruitment(recruitmentId, user);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
     @PostMapping("/{recruitmentId}/applications")
     public ResponseEntity<ApplicationSummaryResponse> apply(
             @AuthenticationPrincipal UserDetailsImpl userDetails,

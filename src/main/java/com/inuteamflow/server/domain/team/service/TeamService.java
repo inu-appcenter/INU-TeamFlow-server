@@ -137,6 +137,10 @@ public class TeamService {
     @Transactional
     public TeamDetailResponse createTeam(User user, TeamCreateRequest request) {
 
+        if (!Boolean.TRUE.equals(user.getIsSchoolVerified())) {
+            throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFICATION_REQUIRED);
+        }
+
         Team team = Team.create(request);
         teamRepository.save(team);
 

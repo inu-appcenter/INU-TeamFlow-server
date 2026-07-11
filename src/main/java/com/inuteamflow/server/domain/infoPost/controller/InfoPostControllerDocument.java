@@ -4,6 +4,8 @@ import com.inuteamflow.server.domain.infoPost.dto.request.InfoPostCreateRequest;
 import com.inuteamflow.server.domain.infoPost.dto.request.InfoPostUpdateRequest;
 import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostDetailResponse;
 import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostSummaryResponse;
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
+import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.global.enums.Category;
@@ -27,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Tag(name = "InfoPost Controller", description = "정보글 컨트롤러")
 public interface InfoPostControllerDocument {
 
-    @Operation(summary = "getInfoPosts", description = "정보글 목록 조회 (category/keyword/linkable 필터 가능)")
+    @Operation(summary = "getInfoPosts", description = "정보글 목록 조회 (category/type/keyword 필터 가능)")
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
@@ -47,9 +49,9 @@ public interface InfoPostControllerDocument {
             )
     })
     ResponseEntity<Page<InfoPostSummaryResponse>> getInfoPosts(
-            @RequestParam(required = false) Category category,
+            @RequestParam(required = false) InfoPostCategory category,
+            @RequestParam(required = false) InfoPostType type,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Boolean linkable,
             Pageable pageable
     );
 
