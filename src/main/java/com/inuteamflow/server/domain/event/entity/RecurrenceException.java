@@ -56,6 +56,9 @@ public class RecurrenceException extends BaseTimeEntity {
     @Column(name = "modified_is_all_day")
     private Boolean modifiedIsAllDay;
 
+    @Column(name = "modified_is_finished")
+    private Boolean modifiedIsFinished;
+
     @Builder
     private RecurrenceException(
             Event event,
@@ -66,7 +69,8 @@ public class RecurrenceException extends BaseTimeEntity {
             LocalDateTime modifiedStartAt,
             LocalDateTime modifiedEndAt,
             EventColor modifiedColor,
-            Boolean modifiedAllDay
+            Boolean modifiedAllDay,
+            Boolean modifiedIsFinished
     ) {
         this.event = event;
         this.originalOccurrenceAt = originalOccurrenceAt;
@@ -77,6 +81,7 @@ public class RecurrenceException extends BaseTimeEntity {
         this.modifiedEndAt = modifiedEndAt;
         this.modifiedColor = modifiedColor;
         this.modifiedIsAllDay = modifiedAllDay;
+        this.modifiedIsFinished = modifiedIsFinished;
     }
 
     public static RecurrenceException createModified(
@@ -93,6 +98,7 @@ public class RecurrenceException extends BaseTimeEntity {
                 .modifiedEndAt(command.getEndAt())
                 .modifiedColor(command.getColor())
                 .modifiedAllDay(command.getIsAllDay())
+                .modifiedIsFinished(command.getIsFinished())
                 .build();
     }
 
@@ -121,6 +127,7 @@ public class RecurrenceException extends BaseTimeEntity {
         this.modifiedEndAt = command.getEndAt();
         this.modifiedColor = command.getColor();
         this.modifiedIsAllDay = command.getIsAllDay();
+        this.modifiedIsFinished = command.getIsFinished();
     }
 
     public void cancel() {
@@ -131,5 +138,6 @@ public class RecurrenceException extends BaseTimeEntity {
         this.modifiedEndAt = null;
         this.modifiedColor = null;
         this.modifiedIsAllDay = false;
+        this.modifiedIsFinished = false;
     }
 }

@@ -100,7 +100,7 @@ public class EventDetailResponse {
                 recurrenceException.getModifiedIsAllDay(),
                 recurrenceException.getModifiedColor(),
                 event.getIsSingle(),
-                event.getIsFinished(),
+                recurrenceException.getModifiedIsFinished(),
                 true,
                 Recurrence.create(recurrenceRule)
         );
