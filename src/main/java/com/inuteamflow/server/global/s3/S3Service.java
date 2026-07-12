@@ -6,6 +6,7 @@ import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.RequiredArgsConstructor;
@@ -101,6 +102,14 @@ public class S3Service {
                 ? cloudFrontDomain
                 : "https://" + cloudFrontDomain;
         return normalizedDomain + "/" + imageKey;
+    }
+
+    public String getTeamImageUrl(String imageKey, Category category) {
+        if (StringUtils.hasText(imageKey)) {
+            return getImageUrl(imageKey);
+        }
+        String defaultKey = "teams/banner/default/" + category.name().toLowerCase() + ".png";
+        return getImageUrl(defaultKey);
     }
 
     public void deleteImage(String imageKey) {

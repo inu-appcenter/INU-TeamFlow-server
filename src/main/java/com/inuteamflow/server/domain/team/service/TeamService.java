@@ -68,7 +68,7 @@ public class TeamService {
                 .map(tm -> {
                     Team team = tm.getTeam();
                     int memberCount = countMap.getOrDefault(team.getTeamId(), 0L).intValue();
-                    String imageUrl = s3Service.getImageUrl(team.getImageKey());
+                    String imageUrl = s3Service.getTeamImageUrl(team.getImageKey(), team.getCategory());
                     return TeamSummaryResponse.create(team, imageUrl, memberCount);
                 })
                 .toList();
@@ -85,7 +85,7 @@ public class TeamService {
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         int memberCount = teamMemberRepository.countByTeam(team);
-        String imageUrl = s3Service.getImageUrl(team.getImageKey());
+        String imageUrl = s3Service.getTeamImageUrl(team.getImageKey(), team.getCategory());
 
         return TeamDetailResponse.create(team, teamMember, imageUrl, memberCount);
     }
@@ -148,7 +148,7 @@ public class TeamService {
         TeamMember teamMember = TeamMember.create(team, user, TeamRole.LEADER);
         teamMemberRepository.save(teamMember);
 
-        String imageUrl = s3Service.getImageUrl(team.getImageKey());
+        String imageUrl = s3Service.getTeamImageUrl(team.getImageKey(), team.getCategory());
 
         // 생성 직후라 memberCount 1
         return TeamDetailResponse.create(team, teamMember, imageUrl, 1);
@@ -178,7 +178,7 @@ public class TeamService {
         }
 
         int memberCount = teamMemberRepository.countByTeam(team);
-        String imageUrl = s3Service.getImageUrl(newImageKey);
+        String imageUrl = s3Service.getTeamImageUrl(newImageKey, team.getCategory());
 
         return TeamDetailResponse.create(team, teamMember, imageUrl, memberCount);
 
