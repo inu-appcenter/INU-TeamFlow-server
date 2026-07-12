@@ -89,4 +89,31 @@ public interface UserControllerDocument {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody UserUpdateRequest request
     );
+
+    @Operation(summary = "deleteUser", description = "계정 탈퇴")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "계정 탈퇴 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 또는 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "팀장 권한 보유 또는 진행 중인 투표 존재",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<Void> deleteUser(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    );
 }

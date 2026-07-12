@@ -37,4 +37,14 @@ public class UserController implements UserControllerDocument{
                 .body(userService.updateMyInfo(userDetails.getUser(), request));
     }
 
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteUser(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        userService.deleteUser(userDetails.getUser());
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
+    }
+
 }
