@@ -84,6 +84,10 @@ public class AuthService {
             User user,
             VerifySchoolRequest request
     ) {
+        if (user.getIsSchoolVerified()) {
+            throw new RestApiException(CustomErrorCode.USER_SCHOOL_ALREADY_VERIFIED);
+        }
+
         SchoolLoginRepository schoolLoginRepository = schoolLoginRepositoryProvider.getIfAvailable();
         if (schoolLoginRepository == null) {
             throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFY_UNAVAILABLE);
@@ -96,6 +100,10 @@ public class AuthService {
 
         if (loginCheckResult == null || "N".equalsIgnoreCase(loginCheckResult.trim())) {
             throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFY_FAILED);
+        }
+
+        if (userRepository.existsByStudentNumber(request.getStudentNumber())) {
+            throw new RestApiException(CustomErrorCode.USER_STUDENT_NUMBER_CONFLICT);
         }
 
         User requester = userRepository.findById(user.getUserId())

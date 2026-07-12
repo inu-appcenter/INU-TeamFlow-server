@@ -3,6 +3,9 @@ package com.inuteamflow.server.domain.event.repository;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,5 +23,28 @@ public interface RecurrenceRuleRepository extends JpaRepository<RecurrenceRule, 
 
     void deleteByEvent(
             Event event
+    );
+
+    @Modifying
+    @Query(value = """
+            DELETE FROM recurrence_rule_by_day
+            WHERE recurrence_rule_id IN (
+                SELECT rr.recurrence_rule_id
+                FROM recurrence_rule rr
+                JOIN event e ON rr.event_id = e.event_id
+                WHERE e.created_by = :userId AND e.team_id IS NULL
+            )
+            """, nativeQuery = true)
+    void deleteByDaysByEventCreatedByAndTeamIsNull(
+            @Param("userId") Long userId
+    );
+
+    @Modifying
+    @Query("""
+            DELETE FROM RecurrenceRule rr 
+            WHERE rr.event.createdBy = :userId AND rr.event.team IS NULL
+            """)
+    void deleteByEventCreatedByAndTeamIsNull(
+            @Param("userId") Long userId
     );
 }

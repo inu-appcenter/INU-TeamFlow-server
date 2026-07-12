@@ -22,4 +22,11 @@ public interface TeamNoticeImageRepository extends JpaRepository<TeamNoticeImage
 	@Modifying
 	@Query("DELETE FROM TeamNoticeImage i WHERE i.teamNotice IN :notices")
 	void deleteAllByTeamNoticeIn(@Param("notices") List<TeamNotice> notices);
+
+	@Query("SELECT i.imageKey FROM TeamNoticeImage i WHERE i.teamNotice.createdBy = :userId")
+	List<String> findImageKeysByTeamNoticeCreatedBy(@Param("userId") Long userId);
+
+	@Modifying
+	@Query("DELETE FROM TeamNoticeImage i WHERE i.teamNotice.createdBy = :userId")
+    void deleteByTeamNoticeCreatedBy(@Param("userId") Long userId);
 }

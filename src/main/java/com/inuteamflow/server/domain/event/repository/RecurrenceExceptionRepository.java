@@ -3,6 +3,9 @@ package com.inuteamflow.server.domain.event.repository;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceException;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -28,4 +31,11 @@ public interface RecurrenceExceptionRepository extends JpaRepository<RecurrenceE
             Event event,
             LocalDateTime originalOccurrenceAt
     );
+
+    @Modifying
+    @Query("""
+            DELETE FROM RecurrenceException re 
+            WHERE re.event.createdBy = :userId AND re.event.team IS NULL
+            """)
+    void deleteByEventCreatedByAndTeamIsNull(@Param("userId") Long userId);
 }

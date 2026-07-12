@@ -2,6 +2,7 @@ package com.inuteamflow.server.global.exception.error;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 
 @Getter
@@ -17,6 +18,8 @@ public enum CustomErrorCode implements ErrorCode {
     USER_SCHOOL_VERIFY_FAILED(HttpStatus.BAD_REQUEST, 400, "학교 인증에 실패했습니다."),
     USER_SCHOOL_VERIFY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, 503, "학교 인증 서비스를 현재 사용할 수 없습니다."),
     USER_SCHOOL_VERIFICATION_REQUIRED(HttpStatus.FORBIDDEN, 403, "학교 인증이 필요한 기능입니다."),
+    USER_STUDENT_NUMBER_CONFLICT(HttpStatus.CONFLICT, 409, "이미 다른 계정에 연결된 학번입니다."),
+    USER_SCHOOL_ALREADY_VERIFIED(HttpStatus.CONFLICT, 409, "이미 학교 인증이 된 계정입니다."),
 
     // JWT 인증 에러
     JWT_INVALID(HttpStatus.UNAUTHORIZED, 401, ""),
@@ -35,6 +38,7 @@ public enum CustomErrorCode implements ErrorCode {
     TEAM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, ""),
     TEAM_FORBIDDEN(HttpStatus.FORBIDDEN, 403, ""),
     TEAM_MEMBER_ALREADY_ROLE(HttpStatus.BAD_REQUEST, 400, ""),
+    TEAM_MEMBER_IS_HOST(HttpStatus.FORBIDDEN, 403, ""),
 
     // 팀 초대 관련 에러
     INVITATION_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "멤버 초대 권한이 없습니다."),
@@ -63,6 +67,7 @@ public enum CustomErrorCode implements ErrorCode {
     // 투표 관련 에러
     VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "투표를 찾을 수 없습니다."),
     VOTE_NOT_OPENED(HttpStatus.BAD_REQUEST, 400, "열려 있는 투표가 아닙니다."),
+    VOTE_IS_OPEN(HttpStatus.FORBIDDEN, 403, "진행 중인 투표가 존재합니다."),
     VOTE_PARTICIPANT_INVALID(HttpStatus.BAD_REQUEST, 400, "유효하지 않은 투표 참여자입니다."),
     VOTE_PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "해당 투표의 참여자를 찾을 수 없습니다."),
     VOTE_DATE_INVALID(HttpStatus.BAD_REQUEST, 400, "투표 날짜 범위가 올바르지 않습니다."),

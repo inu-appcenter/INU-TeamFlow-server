@@ -10,4 +10,6 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
 
     List<Vote> findByTeam(Team team);
 
+    boolean existsByCreatedByAndIsOpenedTrue(Long createdBy);
+
 }
