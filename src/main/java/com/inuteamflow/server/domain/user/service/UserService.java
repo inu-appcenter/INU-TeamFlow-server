@@ -1,6 +1,5 @@
 package com.inuteamflow.server.domain.user.service;
 
-import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.repository.*;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
@@ -9,17 +8,16 @@ import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicati
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
-import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeImageRepository;
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadRepository;
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.user.enums.UserConstants;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteAvailabilityRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
-import com.inuteamflow.server.domain.vote.repository.VoteResultRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
@@ -47,7 +45,6 @@ public class UserService {
     private final InfoPostRepository infoPostRepository;
     private final VoteAvailabilityRepository voteAvailabilityRepository;
     private final VoteParticipantRepository voteParticipantRepository;
-    private final VoteResultRepository voteResultRepository;
     private final VoteRepository voteRepository;
     private final TeamInvitationRepository teamInvitationRepository;
     private final TeamNoticeReadRepository teamNoticeReadRepository;
@@ -60,7 +57,6 @@ public class UserService {
     private final EventParticipantRepository eventParticipantRepository;
     private final EventRepository eventRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final TeamRepository teamRepository;
 
 
     public MyInfoResponse getMyInfo(
@@ -90,7 +86,9 @@ public class UserService {
 
         // 요청 DTO에 담긴 이미지키가 새로운거라면 기존의 S3의 파일을 삭제
         String newImageKey = requester.getImageKey();
-        if (StringUtils.hasText(oldImageKey) && !oldImageKey.equals(newImageKey)) {
+        if (StringUtils.hasText(oldImageKey)
+                && !oldImageKey.equals(newImageKey)
+                && !oldImageKey.equals(UserConstants.DEFAULT_PROFILE_KEY)) {
             s3Service.deleteImage(oldImageKey);
         }
 
@@ -164,7 +162,7 @@ public class UserService {
         for (String teamNoticeImage : teamNoticeImages) {
             s3Service.deleteImage(teamNoticeImage);
         }
-        if (StringUtils.hasText(userProfile)) {
+        if (StringUtils.hasText(userProfile) && !userProfile.equals(UserConstants.DEFAULT_PROFILE_KEY)) {
             s3Service.deleteImage(userProfile);
         }
     }

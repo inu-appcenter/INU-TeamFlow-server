@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.user.dto.request;
 
+import com.inuteamflow.server.domain.user.enums.UserConstants;
 import com.inuteamflow.server.domain.user.enums.Department;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -37,5 +38,9 @@ public class SignupRequest {
 
     @Schema(description = "S3 이미지 Key", example = "users/1/profile.png")
     private String imageKey;
+
+    public String getImageKey() {
+        return imageKey != null ? imageKey : UserConstants.DEFAULT_PROFILE_KEY;
+    }
 
 }
