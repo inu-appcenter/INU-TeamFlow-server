@@ -2,8 +2,10 @@ package com.inuteamflow.server.domain.team.repository;
 
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
+import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -50,4 +52,13 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
 
     @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user JOIN FETCH tm.team WHERE tm.team IN :teams")
     List<TeamMember> findByTeamInWithUser(@Param("teams") List<Team> teams);
+
+    @Query("SELECT tm.team FROM TeamMember tm WHERE tm.user = :user")
+    List<Team> findTeamsByUser(@Param("user") User user);
+
+    boolean existsByUserAndTeamRole(User user, TeamRole teamRole);
+
+    @Modifying
+    @Query("DELETE FROM TeamMember tm WHERE tm.user = :user")
+    void deleteByUser(@Param("user") User user);
 }

@@ -39,7 +39,7 @@ public class User extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private Department department;
 
-    @Column(name = "student_number")
+    @Column(name = "student_number", unique = true)
     private String studentNumber;
 
     @Column(name = "is_school_verified")

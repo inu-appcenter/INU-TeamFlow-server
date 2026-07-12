@@ -6,6 +6,9 @@ import com.inuteamflow.server.domain.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -21,4 +24,12 @@ public interface TeamInvitationRepository extends JpaRepository<TeamInvitation, 
     Optional<TeamInvitation> findByTeam_TeamIdAndReceiver(Long teamTeamId, User receiver);
 
     void deleteAllByTeam(Team team);
+
+    @Modifying
+    @Query("DELETE FROM TeamInvitation ti WHERE ti.receiver = :receiver")
+    void deleteByReceiver(@Param("receiver") User receiver);
+
+    @Modifying
+    @Query("DELETE FROM TeamInvitation ti WHERE ti.createdBy = :createdBy")
+    void deleteByCreatedBy(@Param("createdBy") Long createdBy);
 }

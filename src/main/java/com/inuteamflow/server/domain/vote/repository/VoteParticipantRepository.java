@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.vote.repository;
 
 import com.inuteamflow.server.domain.team.entity.TeamMember;
+import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,4 +22,5 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
 
     Optional<VoteParticipant> findByVoteAndTeamMember(Vote vote, TeamMember teamMember);
 
+    void deleteByTeamMember_User(User teamMemberUser);
 }

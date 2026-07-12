@@ -6,6 +6,9 @@ import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.user.entity.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 
@@ -22,4 +25,12 @@ public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> 
     Page<Recruitment> findAllByInfoPost(InfoPost infoPost, Pageable pageable);
 
     long countByInfoPost(InfoPost infoPost);
+
+    @Modifying
+    @Query("DELETE FROM Recruitment r WHERE r.recruiter = :recruiter")
+    void deleteByRecruiter(@Param("recruiter") User recruiter);
+
+    @Modifying
+    @Query("UPDATE Recruitment r SET r.infoPost = null WHERE r.infoPost.createdBy = :userId")
+    void clearInfoPostByCreatedBy(@Param("userId") Long userId);
 }

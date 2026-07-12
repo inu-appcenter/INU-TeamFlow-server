@@ -3,6 +3,7 @@ package com.inuteamflow.server.domain.event.repository;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.team.entity.Team;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -72,5 +73,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("team") Team team,
             @Param("isSingle") Boolean isSingle,
             @Param("endAt") LocalDateTime endAt
+    );
+
+    @Modifying
+    @Query("""
+            DELETE FROM Event e 
+            WHERE e.createdBy = :createdBy AND e.team IS NULL
+            """)
+    void deleteByCreatedByAndTeamIsNull(
+            @Param("createdBy") Long createdBy
     );
 }

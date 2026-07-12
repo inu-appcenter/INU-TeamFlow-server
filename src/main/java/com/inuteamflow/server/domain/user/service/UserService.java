@@ -1,17 +1,37 @@
 package com.inuteamflow.server.domain.user.service;
 
+import com.inuteamflow.server.domain.event.entity.Event;
+import com.inuteamflow.server.domain.event.repository.*;
+import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
+import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
+import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
+import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
+import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
+import com.inuteamflow.server.domain.team.enums.TeamRole;
+import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
+import com.inuteamflow.server.domain.team.repository.TeamRepository;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeImageRepository;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadRepository;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteAvailabilityRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteResultRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import com.inuteamflow.server.global.s3.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +41,27 @@ public class UserService {
     private final S3Service s3Service;
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final RecruitmentApplicationRepository recruitmentApplicationRepository;
+    private final RecruitmentRepository recruitmentRepository;
+    private final InfoPostImageRepository infoPostImageRepository;
+    private final InfoPostRepository infoPostRepository;
+    private final VoteAvailabilityRepository voteAvailabilityRepository;
+    private final VoteParticipantRepository voteParticipantRepository;
+    private final VoteResultRepository voteResultRepository;
+    private final VoteRepository voteRepository;
+    private final TeamInvitationRepository teamInvitationRepository;
+    private final TeamNoticeReadRepository teamNoticeReadRepository;
+    private final TeamNoticeImageRepository teamNoticeImageRepository;
+    private final TeamNoticeRepository teamNoticeRepository;
+    private final TeamMemberRepository teamMemberRepository;
+    private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
+    private final RecurrenceExceptionRepository recurrenceExceptionRepository;
+    private final RecurrenceRuleRepository recurrenceRuleRepository;
+    private final EventParticipantRepository eventParticipantRepository;
+    private final EventRepository eventRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final TeamRepository teamRepository;
+
 
     public MyInfoResponse getMyInfo(
             User user
@@ -56,5 +97,75 @@ public class UserService {
         // 새로운 이미지키 저장
         String imageUrl = s3Service.getImageUrl(newImageKey);
         return MyInfoResponse.create(requester, imageUrl);
+    }
+
+    @Transactional
+    public void deleteUser(
+            User user
+    ) {
+        // 이미지 키 수집
+        // 정보글 이미지 → 팀 공지 이미지 → 사용자 프로필
+        List<String> infoPostImages = infoPostImageRepository.findImageKeysByInfoPostCreatedBy(user.getUserId());
+        List<String> teamNoticeImages = teamNoticeImageRepository.findImageKeysByTeamNoticeCreatedBy(user.getUserId());
+        String userProfile = user.getImageKey();
+
+        // 팀장 여부 체크
+        if (teamMemberRepository.existsByUserAndTeamRole(user, TeamRole.LEADER)) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_IS_HOST);
+        }
+        // 진행 중인 투표 생성자 여부 체크
+        if (voteRepository.existsByCreatedByAndIsOpenedTrue(user.getUserId())) {
+            throw new RestApiException(CustomErrorCode.VOTE_IS_OPEN);
+        }
+
+        // RecruitmentApplication → RecruitmentApplication → Recruitment
+        recruitmentApplicationRepository.deleteByCreatedBy(user.getUserId());
+        recruitmentApplicationRepository.deleteByRecruitmentCreatedBy(user.getUserId());
+        recruitmentRepository.deleteByRecruiter(user);
+
+        // InfoPostImage → InfoPost
+        recruitmentRepository.clearInfoPostByCreatedBy(user.getUserId());
+        infoPostImageRepository.deleteByInfoPostCreatedBy(user.getUserId());
+        infoPostRepository.deleteByCreatedBy(user.getUserId());
+
+        // TeamInvitation
+        teamInvitationRepository.deleteByReceiver(user);
+        teamInvitationRepository.deleteByCreatedBy(user.getUserId());
+
+        // VoteAvailability → VoteParticipant
+        voteAvailabilityRepository.deleteByVoteParticipant_TeamMember_User(user);
+        voteParticipantRepository.deleteByTeamMember_User(user);
+
+        // EventParticipant
+        recurrenceExceptionParticipantRepository.deleteByTeamMemberUser(user);
+        eventParticipantRepository.deleteByTeamMemberUser(user);
+
+        // TeamNoticeRead → TeamNoticeImage → TeamNotice → TeamMember
+        teamNoticeReadRepository.deleteByTeamNoticeCreatedBy(user.getUserId());
+        teamNoticeImageRepository.deleteByTeamNoticeCreatedBy(user.getUserId());
+        teamNoticeRepository.deleteByCreatedBy(user.getUserId());
+        teamMemberRepository.deleteByUser(user);
+
+        // 개인 일정: RecurrenceException → RecurrenceRule → Event
+        recurrenceExceptionRepository.deleteByEventCreatedByAndTeamIsNull(user.getUserId());
+        recurrenceRuleRepository.deleteByDaysByEventCreatedByAndTeamIsNull(user.getUserId());
+        recurrenceRuleRepository.deleteByEventCreatedByAndTeamIsNull(user.getUserId());
+        eventRepository.deleteByCreatedByAndTeamIsNull(user.getUserId());
+
+        // RefreshToken
+        refreshTokenRepository.deleteByUserId(user.getUserId());
+        // User
+        userRepository.deleteById(user.getUserId());
+
+        // 정보글 이미지 삭제 → 팀 공지 이미지 삭제 → 사용자 프로필 삭제
+        for (String infoPostImage : infoPostImages) {
+            s3Service.deleteImage(infoPostImage);
+        }
+        for (String teamNoticeImage : teamNoticeImages) {
+            s3Service.deleteImage(teamNoticeImage);
+        }
+        if (StringUtils.hasText(userProfile)) {
+            s3Service.deleteImage(userProfile);
+        }
     }
 }

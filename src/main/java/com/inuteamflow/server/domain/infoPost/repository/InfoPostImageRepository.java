@@ -20,4 +20,11 @@ public interface InfoPostImageRepository extends JpaRepository<InfoPostImage, Lo
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM InfoPostImage i WHERE i.infoPost = :infoPost")
     void deleteByInfoPost(@Param("infoPost") InfoPost infoPost);
+
+    @Query("SELECT i.imageKey FROM InfoPostImage i WHERE i.infoPost.createdBy = :userId")
+    List<String> findImageKeysByInfoPostCreatedBy(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("DELETE FROM InfoPostImage i WHERE i.infoPost.createdBy = :userId")
+    void deleteByInfoPostCreatedBy(@Param("userId") Long userId);
 }

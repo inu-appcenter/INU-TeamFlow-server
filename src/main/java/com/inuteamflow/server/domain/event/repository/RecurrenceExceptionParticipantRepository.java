@@ -3,6 +3,7 @@ package com.inuteamflow.server.domain.event.repository;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceException;
 import com.inuteamflow.server.domain.event.entity.RecurrenceExceptionParticipant;
+import com.inuteamflow.server.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -43,12 +44,22 @@ public interface RecurrenceExceptionParticipantRepository extends JpaRepository<
     // THIS_INSTANCE 삭제(cancel) 시 — 해당 occurrence 하나에 대한 참석자만 정리
     @Modifying
     @Query("""
-        DELETE FROM RecurrenceExceptionParticipant p
-        WHERE p.recurrenceException.event = :event
-        AND p.recurrenceException.originalOccurrenceAt = :occurrenceAt
-        """)
+            DELETE FROM RecurrenceExceptionParticipant p
+            WHERE p.recurrenceException.event = :event
+            AND p.recurrenceException.originalOccurrenceAt = :occurrenceAt
+            """)
     void deleteByEventAndOccurrenceAt(
             @Param("event") Event event,
             @Param("occurrenceAt") LocalDateTime occurrenceAt
+    );
+
+    // 회원 탈퇴 시 — 해당 유저가 참석자로 있는 모든 exception 참석자 레코드 삭제
+    @Modifying
+    @Query("""
+            DELETE FROM RecurrenceExceptionParticipant p 
+            WHERE p.teamMember.user = :user
+            """)
+    void deleteByTeamMemberUser(
+            @Param("user") User user
     );
 }
