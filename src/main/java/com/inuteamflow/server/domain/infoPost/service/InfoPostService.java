@@ -68,6 +68,11 @@ public class InfoPostService {
     // 정보글 작성
     @Transactional
     public InfoPostDetailResponse createInfoPost(InfoPostCreateRequest request, User user) {
+
+        if (!Boolean.TRUE.equals(user.getIsSchoolVerified())) {
+            throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFICATION_REQUIRED);
+        }
+
         InfoPost infoPost = InfoPost.create(request.getCategory(), request.getTitle(), request.getContent());
         infoPostRepository.save(infoPost);
 
