@@ -39,6 +39,7 @@ public enum CustomErrorCode implements ErrorCode {
     TEAM_FORBIDDEN(HttpStatus.FORBIDDEN, 403, ""),
     TEAM_MEMBER_ALREADY_ROLE(HttpStatus.BAD_REQUEST, 400, ""),
     TEAM_MEMBER_IS_HOST(HttpStatus.FORBIDDEN, 403, "사용자가 팀장으로 있는 팀이 존재합니다"),
+    TEAM_CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, 400, "자기 자신은 방출할 수 없습니다."),
 
     // 팀 초대 관련 에러
     INVITATION_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "멤버 초대 권한이 없습니다."),
