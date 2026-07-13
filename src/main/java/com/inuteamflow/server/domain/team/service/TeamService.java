@@ -1,5 +1,7 @@
 package com.inuteamflow.server.domain.team.service;
 
+import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
+import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionParticipantRepository;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
@@ -20,6 +22,8 @@ import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteAvailabilityRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
@@ -47,6 +51,10 @@ public class TeamService {
     private final TeamNoticeRepository teamNoticeRepository;
     private final TeamNoticeReadRepository teamNoticeReadRepository;
     private final TeamNoticeImageRepository teamNoticeImageRepository;
+    private final VoteAvailabilityRepository voteAvailabilityRepository;
+    private final VoteParticipantRepository voteParticipantRepository;
+    private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
+    private final EventParticipantRepository eventParticipantRepository;
 
     // 팀 리스트 조회 (내가 속한 팀)
     public List<TeamSummaryResponse> getMyTeams(User user) {
@@ -172,6 +180,7 @@ public class TeamService {
         // 이미지가 변경된 경우 기존 S3 이미지 삭제 (orphan image 방지)
         String oldImageKey = team.getImageKey();
         team.update(request);
+
         String newImageKey = team.getImageKey();
         if (StringUtils.hasText(oldImageKey) && !oldImageKey.equals(newImageKey)) {
             s3Service.deleteImage(oldImageKey);
@@ -228,5 +237,69 @@ public class TeamService {
 
         teamRepository.delete(team);
     }
+
+    // 팀 탈퇴
+    @Transactional
+    public void leaveTeam(User user, Long teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+
+        TeamMember member = teamMemberRepository.findByTeamAndUser(team, user)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+
+        // 리더는 탈퇴 불가 (팀 삭제 또는 리더 위임 후 가능)
+        if (member.getTeamRole() == TeamRole.LEADER) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_IS_HOST);
+        }
+
+        removeMemberCascade(member);
+    }
+
+    // 팀원 방출
+    @Transactional
+    public void kickMember(User user, Long teamId, Long targetMemberId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+
+        TeamMember requester = teamMemberRepository.findByTeamAndUser(team, user)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+
+        TeamMember target = teamMemberRepository.findById(targetMemberId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+
+        if (!target.getTeam().getTeamId().equals(teamId)) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+        }
+
+        if (target.getTeamMemberId().equals(requester.getTeamMemberId())) {
+            throw new RestApiException(CustomErrorCode.TEAM_CANNOT_KICK_SELF);
+        }
+
+        if (target.getTeamRole() == TeamRole.LEADER) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_IS_HOST);
+        }
+
+        if (requester.getTeamRole() == TeamRole.MEMBER) {
+            throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
+        }
+
+        if (requester.getTeamRole() == TeamRole.MANAGER && target.getTeamRole() == TeamRole.MANAGER) {
+            throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
+        }
+
+        removeMemberCascade(target);
+    }
+
+    // ---- 헬퍼 함수 ----
+
+    // 팀원 제거 시 연관된 투표/일정 참여 기록 정리 (FK 제약 위반 방지)
+    private void removeMemberCascade(TeamMember member) {
+        voteAvailabilityRepository.deleteByVoteParticipant_TeamMember(member);
+        voteParticipantRepository.deleteByTeamMember(member);
+        recurrenceExceptionParticipantRepository.deleteByTeamMember(member);
+        eventParticipantRepository.deleteByTeamMember(member);
+        teamMemberRepository.delete(member);
+    }
+
 
 }

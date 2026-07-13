@@ -23,4 +23,6 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
     Optional<VoteParticipant> findByVoteAndTeamMember(Vote vote, TeamMember teamMember);
 
     void deleteByTeamMember_User(User teamMemberUser);
+
+    void deleteByTeamMember(TeamMember teamMember);
 }

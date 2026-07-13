@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.event.repository;
 
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.EventParticipant;
+import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -26,4 +27,8 @@ public interface EventParticipantRepository extends JpaRepository<EventParticipa
     @Modifying
     @Query("DELETE FROM EventParticipant ep WHERE ep.teamMember.user = :user")
     void deleteByTeamMemberUser(@Param("user") User user);
+
+    @Modifying
+    @Query("DELETE FROM EventParticipant ep WHERE ep.teamMember = :teamMember")
+    void deleteByTeamMember(@Param("teamMember") TeamMember teamMember);
 }

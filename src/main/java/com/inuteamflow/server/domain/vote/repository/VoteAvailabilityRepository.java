@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.vote.repository;
 
+import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.vote.entity.VoteAvailability;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
@@ -30,4 +31,6 @@ public interface VoteAvailabilityRepository extends JpaRepository<VoteAvailabili
     void deleteByVoteParticipant(VoteParticipant voteParticipant);
 
     void deleteByVoteParticipant_TeamMember_User(User voteParticipantTeamMemberUser);
+
+    void deleteByVoteParticipant_TeamMember(TeamMember teamMember);
 }

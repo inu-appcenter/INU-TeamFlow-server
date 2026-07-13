@@ -92,4 +92,23 @@ public class TeamController implements TeamControllerDocument {
                 .body(null);
     }
 
+    @DeleteMapping("/{teamId}/members/me")
+    public ResponseEntity<Void> leaveTeam(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long teamId
+    ) {
+        teamService.leaveTeam(userDetails.getUser(), teamId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @DeleteMapping("/{teamId}/members/{memberId}")
+    public ResponseEntity<Void> kickMember(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long teamId,
+            @PathVariable Long memberId
+    ) {
+        teamService.kickMember(userDetails.getUser(), teamId, memberId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
 }
