@@ -92,7 +92,13 @@ public enum CustomErrorCode implements ErrorCode {
     EVENT_RECURRENCE_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "반복 일정 규칙을 찾을 수 없습니다."),
     EVENT_RECURRENCE_REQUIRED(HttpStatus.BAD_REQUEST, 400, "반복 일정 정보가 필요합니다."),
     EVENT_RECURRENCE_OCCURRENCE_REQUIRED(HttpStatus.BAD_REQUEST, 400, "반복 일정 발생 시점(occurrenceAt)이 필요합니다."),
-    EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "해당 반복 일정 발생 시점을 찾을 수 없습니다.");
+    EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "해당 반복 일정 발생 시점을 찾을 수 없습니다."),
+
+    // 알림 관련 에러
+    FIREBASE_INITIALIZATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Firebase SDK 초기화에 실패하였습니다."),
+    FCM_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "FCM 토큰을 찾을 수 없습니다."),
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "알림을 찾을 수 없습니다."),
+    NOTIFICATION_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "알림에 대한 권한이 없습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

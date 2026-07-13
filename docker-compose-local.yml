@@ -17,6 +17,8 @@ services:
       AWS_REGION: ${AWS_REGION}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       CLOUDFRONT_DOMAIN: ${CLOUDFRONT_DOMAIN}
+      FCM_FILE_PATH: ${FCM_FILE_PATH}
+      FCM_PROJECT_ID: ${FCM_PROJECT_ID}
       TZ: ${TZ}
     depends_on:
       postgres:
