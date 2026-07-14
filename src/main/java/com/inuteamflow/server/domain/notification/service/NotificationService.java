@@ -15,6 +15,8 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -87,7 +89,22 @@ public class NotificationService {
             String redirectUrl
     ) {
         notificationRepository.save(Notification.create(receiver, title, content, type, redirectUrl));
-        fcmService.send(receiver, title, content);
+        fcmService.sendToUser(receiver, title, content);
+    }
+
+    @Transactional
+    public void createNotifications(
+            List<User> receivers,
+            String title,
+            String content,
+            NotificationType type,
+            String redirectUrl
+    ) {
+        List<Notification> notifications = receivers.stream()
+                .map(receiver -> Notification.create(receiver, title, content, type, redirectUrl))
+                .toList();
+        notificationRepository.saveAll(notifications);
+        fcmService.sendToUsers(receivers, title, content);
     }
 
 }

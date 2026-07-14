@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -47,7 +48,7 @@ public class FcmService {
     }
 
     @Transactional
-    public void send(User receiver, String title, String body) {
+    public void sendToUser(User receiver, String title, String body) {
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedBy(receiver.getUserId());
         if (tokens.isEmpty()) return;
 
@@ -61,9 +62,33 @@ public class FcmService {
 
         try {
             BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
+            log.info("FCM 발송 완료 - userId: {}, 성공: {}/{}", receiver.getUserId(), response.getSuccessCount(), tokens.size());
             removeInvalidTokens(tokens, response);
         } catch (FirebaseMessagingException e) {
             log.error("FCM 발송 실패 - userId: {}", receiver.getUserId(), e);
+        }
+    }
+
+    @Transactional
+    public void sendToUsers(List<User> receivers, String title, String body) {
+        List<Long> userIds = receivers.stream().map(User::getUserId).collect(Collectors.toList());
+        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(userIds);
+        if (tokens.isEmpty()) return;
+
+        MulticastMessage message = MulticastMessage.builder()
+                .setNotification(com.google.firebase.messaging.Notification.builder()
+                        .setTitle(title)
+                        .setBody(body)
+                        .build())
+                .addAllTokens(tokens)
+                .build();
+
+        try {
+            BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
+            log.info("FCM 다중 발송 완료 - userIds: {}, 성공: {}/{}", userIds, response.getSuccessCount(), tokens.size());
+            removeInvalidTokens(tokens, response);
+        } catch (FirebaseMessagingException e) {
+            log.error("FCM 다중 발송 실패", e);
         }
     }
 

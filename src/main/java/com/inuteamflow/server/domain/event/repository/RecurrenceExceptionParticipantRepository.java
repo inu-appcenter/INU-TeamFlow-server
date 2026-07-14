@@ -11,10 +11,33 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 
 public interface RecurrenceExceptionParticipantRepository extends JpaRepository<RecurrenceExceptionParticipant, Long> {
 
-    // THIS_INSTANCE sync 시 기존 참석자 교체를 위한 삭제
+    @Query("""
+            SELECT tm.user FROM RecurrenceExceptionParticipant rep
+            JOIN rep.teamMember tm
+            WHERE rep.recurrenceException = :recurrenceException AND tm.user.userId != :excludeUserId
+            """)
+    List<User> findUsersByExceptionExcluding(
+            @Param("recurrenceException") RecurrenceException recurrenceException,
+            @Param("excludeUserId") Long excludeUserId
+    );
+
+    @Query("""
+            SELECT rep.recurrenceException.recurrenceExceptionId
+            FROM RecurrenceExceptionParticipant rep
+            WHERE rep.recurrenceException.event IN :events
+            AND rep.teamMember.user = :user
+            """)
+    Set<Long> findExceptionIdsByEventsAndUser(
+            @Param("events") List<Event> events,
+            @Param("user") User user
+    );
+
+    // THIS_INSTANCE sync 시 기존 참착자 교체를 위한 삭제
     void deleteByRecurrenceException(
             RecurrenceException recurrenceException
     );

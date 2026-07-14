@@ -73,7 +73,8 @@ public class MyEventService {
             );
             recurringOccurrences.addAll(eventOccurrenceService.expandRecurringEvents(
                     participatingRecurringEvents,
-                    dateRange
+                    dateRange,
+                    user
             ));
         }
 

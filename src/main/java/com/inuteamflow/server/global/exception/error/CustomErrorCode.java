@@ -2,7 +2,6 @@ package com.inuteamflow.server.global.exception.error;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 
 @Getter
@@ -22,22 +21,22 @@ public enum CustomErrorCode implements ErrorCode {
     USER_SCHOOL_ALREADY_VERIFIED(HttpStatus.CONFLICT, 409, "이미 학교 인증이 된 계정입니다."),
 
     // JWT 인증 에러
-    JWT_INVALID(HttpStatus.UNAUTHORIZED, 401, ""),
-    JWT_EXPIRED(HttpStatus.UNAUTHORIZED, 401, ""),
-    JWT_MALFORMED(HttpStatus.UNAUTHORIZED, 401, ""),
-    JWT_UNSUPPORTED(HttpStatus.UNAUTHORIZED, 401, ""),
-    JWT_REFRESH_NOT_MATCH(HttpStatus.BAD_REQUEST, 400, ""),
-    JWT_REFRESH_NOT_FOUND(HttpStatus.NOT_FOUND, 404, ""),
+    JWT_INVALID(HttpStatus.UNAUTHORIZED, 401, "유효하지 않은 토큰입니다."),
+    JWT_EXPIRED(HttpStatus.UNAUTHORIZED, 401, "만료된 토큰입니다."),
+    JWT_MALFORMED(HttpStatus.UNAUTHORIZED, 401, "잘못된 형식의 토큰입니다."),
+    JWT_UNSUPPORTED(HttpStatus.UNAUTHORIZED, 401, "지원하지 않는 토큰입니다."),
+    JWT_REFRESH_NOT_MATCH(HttpStatus.BAD_REQUEST, 400, "리프레시 토큰이 일치하지 않습니다."),
+    JWT_REFRESH_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "리프레시 토큰을 찾을 수 없습니다."),
 
     // 요청 관련 에러
-    COMMON_INVALID_REQUEST(HttpStatus.BAD_REQUEST, 400, ""),
-    COMMON_HANDLER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, ""),
+    COMMON_INVALID_REQUEST(HttpStatus.BAD_REQUEST, 400, "잘못된 요청입니다."),
+    COMMON_HANDLER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "요청한 API를 찾을 수 없습니다."),
 
     // 팀 관련 에러
-    TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, 404, ""),
-    TEAM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, ""),
-    TEAM_FORBIDDEN(HttpStatus.FORBIDDEN, 403, ""),
-    TEAM_MEMBER_ALREADY_ROLE(HttpStatus.BAD_REQUEST, 400, ""),
+    TEAM_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "팀을 찾을 수 없습니다."),
+    TEAM_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "팀 멤버를 찾을 수 없습니다."),
+    TEAM_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "팀에 대한 권한이 없습니다."),
+    TEAM_MEMBER_ALREADY_ROLE(HttpStatus.BAD_REQUEST, 400, "이미 해당 역할을 가진 멤버입니다."),
     TEAM_MEMBER_IS_HOST(HttpStatus.FORBIDDEN, 403, "사용자가 팀장으로 있는 팀이 존재합니다"),
     TEAM_CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, 400, "자기 자신은 방출할 수 없습니다."),
 

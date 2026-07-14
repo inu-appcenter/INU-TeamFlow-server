@@ -6,8 +6,10 @@ import com.inuteamflow.server.domain.event.entity.RecurrenceException;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.RecurrenceExceptionType;
 import com.inuteamflow.server.domain.event.enums.RecurrenceFrequency;
+import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceRuleRepository;
+import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,6 +36,7 @@ public class EventOccurrenceService {
 
     private final RecurrenceRuleRepository recurrenceRuleRepository;
     private final RecurrenceExceptionRepository recurrenceExceptionRepository;
+    private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
 
     // year/month 요청값을 실제 조회 범위인 [이번 달 1일 00:00, 다음 달 1일 00:00]로 변환한다.
     public DateRange createMonthlyDateRange(
@@ -51,17 +55,15 @@ public class EventOccurrenceService {
     }
 
     // 반복 일정 후보들의 rule/exception을 한 번에 조회한 뒤, 각 반복 일정을 실제 occurrence 목록으로 펼친다.
+    // user가 non-null이면 RecurrenceExceptionParticipant 기준으로 참석자 필터링을 적용한다.
     public List<EventListResponse> expandRecurringEvents(
             List<Event> recurringEvents,
-            EventOccurrenceService.DateRange dateRange
+            EventOccurrenceService.DateRange dateRange,
+            User user
     ) {
         if (recurringEvents.isEmpty()) {
             return List.of();
         }
-
-        List<Long> eventIds = recurringEvents.stream()
-                .map(Event::getEventId)
-                .toList();
 
         Map<Long, RecurrenceRule> ruleByEventId =
                 recurrenceRuleRepository
@@ -80,17 +82,28 @@ public class EventOccurrenceService {
                                 (first, second) -> second
                         ));
 
+        Set<Long> participatingExceptionIds = user == null ? null :
+                recurrenceExceptionParticipantRepository.findExceptionIdsByEventsAndUser(recurringEvents, user);
+
         List<EventListResponse> responses = new ArrayList<>();
         for (Event event : recurringEvents) {
             responses.addAll(expandRecurringEvent(
                     event,
                     ruleByEventId.get(event.getEventId()),
                     exceptionByKey,
-                    dateRange
+                    dateRange,
+                    participatingExceptionIds
             ));
         }
 
         return responses;
+    }
+
+    public List<EventListResponse> expandRecurringEvents(
+            List<Event> recurringEvents,
+            EventOccurrenceService.DateRange dateRange
+    ) {
+        return expandRecurringEvents(recurringEvents, dateRange, null);
     }
 
     // 반복 일정 하나를 조회 범위 안의 occurrence 들로 변환한다. DB row를 만들지 않고 메모리에서만 계산한다.
@@ -98,7 +111,8 @@ public class EventOccurrenceService {
             Event event,
             RecurrenceRule rule,
             Map<OccurrenceKey, RecurrenceException> exceptionByKey,
-            DateRange dateRange
+            DateRange dateRange,
+            Set<Long> participatingExceptionIds
     ) {
         if (rule == null || !canAffectDateRange(rule, dateRange)) {
             return List.of();
@@ -130,7 +144,7 @@ public class EventOccurrenceService {
             );
             if (recurrenceException != null) {
                 // 예외 회차가 존재하면: - CANCELLED → 제외, - MODIFIED → 수정된 값 기준으로 응답 생성
-                addExceptionOccurrence(event, rule, recurrenceException, dateRange, responses);
+                addExceptionOccurrence(event, rule, recurrenceException, dateRange, responses, participatingExceptionIds);
             } else {
                 // 예외가 없으면 일반 반복 occurrence 생성
                 addNormalOccurrence(event, rule, occurrenceAt, durationSeconds, dateRange, responses);
@@ -202,14 +216,21 @@ public class EventOccurrenceService {
     }
 
     // 반복 예외를 반영한다. CANCELLED는 제외하고, MODIFIED는 수정된 시간 기준으로 조회 범위와 겹칠 때 추가한다.
+    // participatingExceptionIds가 non-null이면 해당 유저가 참석자인 예외 회차만 포함한다.
     private void addExceptionOccurrence(
             Event event,
             RecurrenceRule rule,
             RecurrenceException recurrenceException,
             DateRange dateRange,
-            List<EventListResponse> responses
+            List<EventListResponse> responses,
+            Set<Long> participatingExceptionIds
     ) {
         if (recurrenceException.getExceptionType() == RecurrenceExceptionType.CANCELLED) {
+            return;
+        }
+
+        if (participatingExceptionIds != null
+                && !participatingExceptionIds.contains(recurrenceException.getRecurrenceExceptionId())) {
             return;
         }
 

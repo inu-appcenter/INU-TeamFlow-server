@@ -1,5 +1,7 @@
 package com.inuteamflow.server.domain.teamNotice.service;
 
+import com.inuteamflow.server.domain.notification.enums.NotificationType;
+import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
@@ -43,6 +45,7 @@ public class TeamNoticeService {
 	private final TeamRepository teamRepository;
 	private final TeamMemberRepository teamMemberRepository;
 	private final S3Service s3Service;
+	private final NotificationService notificationService;
 
 	public Page<TeamNoticeSummaryResponse> getTeamNotices(Long teamId, User user, Pageable pageable) {
 		Team team = getTeamById(teamId);
@@ -131,6 +134,17 @@ public class TeamNoticeService {
 		// TeamNoticeImage 생성
 		List<TeamNoticeImage> images = saveImages(notice, request.getImageKeys());
 		String authorProfileUrl = s3Service.getImageUrl(user.getImageKey());
+
+		// 팀 멤버의 유저 객체들을 한 번에 조회
+		List<User> receivers = teamMemberRepository.findUsersByTeamExcluding(team, user.getUserId());
+
+		notificationService.createNotifications(
+				receivers,
+				"[" + team.getName() + "] 팀에 새 공지가 올라왔어요",
+				notice.getTitle(),
+				NotificationType.NOTICE,
+				"/team/" + team.getTeamId() + "/notice/" + notice.getTeamNoticeId()
+		);
 
 		return TeamNoticeDetailResponse.create(notice, member, authorProfileUrl, images, s3Service::getImageUrl, true);
 	}
