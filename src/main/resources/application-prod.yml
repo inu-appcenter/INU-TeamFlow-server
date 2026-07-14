@@ -46,3 +46,7 @@ aws:
     bucket: ${S3_BUCKET_NAME}
   cloudfront:
     domain: ${CLOUDFRONT_DOMAIN}
+
+fcm:
+  file_path: firebase/inu-teamflow-firebase-adminsdk.json
+  project_id: ${FCM_PROJECT_ID}

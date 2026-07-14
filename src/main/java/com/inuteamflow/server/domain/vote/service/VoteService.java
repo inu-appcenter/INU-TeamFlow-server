@@ -1,6 +1,8 @@
 package com.inuteamflow.server.domain.vote.service;
 
 import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
+import com.inuteamflow.server.domain.notification.enums.NotificationType;
+import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
@@ -36,6 +38,7 @@ public class VoteService {
     private final VoteTimeService voteTimeService;
     private final VoteAvailabilityService voteAvailabilityService;
     private final VoteResultService voteResultService;
+    private final NotificationService notificationService;
 
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
@@ -68,10 +71,23 @@ public class VoteService {
         Vote vote = Vote.create(team, request);
         voteRepository.save(vote);
 
-        voteParticipantService.createVoteParticipants(vote, request.getParticipants());
+        List<TeamMember> voteMembers = voteParticipantService.createVoteParticipants(vote, request.getParticipants());
 
         List<VoteDate> dates = voteTimeService.createVoteDates(vote, request.getDates());
         voteTimeService.createVoteTimeSlots(dates, request);
+
+        List<User> receivers = voteMembers.stream()
+                .map(TeamMember::getUser)
+                .filter(u -> !u.getUserId().equals(user.getUserId()))
+                .toList();
+
+        notificationService.createNotifications(
+                receivers,
+                "[" + team.getName() + "] 팀에서 일정 투표가 시작됐어요",
+                "'" + vote.getTitle() + "' 투표에 참여해주세요",
+                NotificationType.TEAM_SCHEDULE,
+                "/team/" + team.getTeamId() + "/vote/" + vote.getVoteId()
+        );
 
         return createEventVoteResponse(vote);
     }
@@ -151,6 +167,16 @@ public class VoteService {
         );
 
         List<TeamMember> availableTeamMembers = voteAvailabilityService.getAvailableTeamMembers(selectedVoteTimeSlots);
+
+        List<User> receivers = voteParticipantService.getUsersByVoteExcluding(vote, user.getUserId());
+
+        notificationService.createNotifications(
+                receivers,
+                "\"" + vote.getTitle() + "\" 일정이 확정됐어요",
+                "확정된 일정을 캘린더에서 확인해보세요",
+                NotificationType.TEAM_SCHEDULE,
+                "/team/" + vote.getTeam().getTeamId() + "/vote/" + vote.getVoteId()
+        );
 
         return voteResultService.createVoteResult(vote, host, availableTeamMembers, request);
     }

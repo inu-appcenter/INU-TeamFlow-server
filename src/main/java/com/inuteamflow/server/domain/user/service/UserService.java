@@ -1,9 +1,11 @@
 package com.inuteamflow.server.domain.user.service;
 
 import com.inuteamflow.server.domain.event.repository.*;
+import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
+import com.inuteamflow.server.domain.notification.repository.NotificationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
@@ -57,6 +59,8 @@ public class UserService {
     private final EventParticipantRepository eventParticipantRepository;
     private final EventRepository eventRepository;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final FcmTokenRepository fcmTokenRepository;
+    private final NotificationRepository notificationRepository;
 
 
     public MyInfoResponse getMyInfo(
@@ -149,6 +153,10 @@ public class UserService {
         recurrenceRuleRepository.deleteByDaysByEventCreatedByAndTeamIsNull(user.getUserId());
         recurrenceRuleRepository.deleteByEventCreatedByAndTeamIsNull(user.getUserId());
         eventRepository.deleteByCreatedByAndTeamIsNull(user.getUserId());
+
+        // FCM + Notification
+        fcmTokenRepository.deleteByCreatedBy(user.getUserId());
+        notificationRepository.deleteByReceiver(user);
 
         // RefreshToken
         refreshTokenRepository.deleteByUserId(user.getUserId());

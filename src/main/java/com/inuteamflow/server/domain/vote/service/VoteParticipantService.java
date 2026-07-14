@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.vote.service;
 
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
+import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.vote.dto.response.VoterInfoResponse;
 import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
@@ -28,12 +29,12 @@ public class VoteParticipantService {
     private final TeamMemberRepository teamMemberRepository;
 
     @Transactional
-    public void createVoteParticipants(
+    public List<TeamMember> createVoteParticipants(
             Vote vote,
             List<Long> teamMemberIds
     ) {
         if (teamMemberIds == null || teamMemberIds.isEmpty()) {
-            return;
+            return List.of();
         }
 
         List<Long> uniqueIds = teamMemberIds.stream()
@@ -42,7 +43,7 @@ public class VoteParticipantService {
                 .toList();
 
         if (uniqueIds.isEmpty()) {
-            return;
+            return List.of();
         }
 
         Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(vote.getTeam(), uniqueIds)
@@ -58,6 +59,8 @@ public class VoteParticipantService {
         }
 
         voteParticipantRepository.saveAll(participants);
+
+        return uniqueIds.stream().map(memberMap::get).toList();
     }
 
     public VoteParticipant getVoteParticipant(
@@ -84,6 +87,13 @@ public class VoteParticipantService {
         }
 
         return new VoteParticipants(completedVoters, uncompletedVoters);
+    }
+
+    public List<User> getUsersByVoteExcluding(Vote vote, Long excludeUserId) {
+        return voteParticipantRepository.findByVote(vote).stream()
+                .map(vp -> vp.getTeamMember().getUser())
+                .filter(u -> !u.getUserId().equals(excludeUserId))
+                .toList();
     }
 
     public record VoteParticipants(
