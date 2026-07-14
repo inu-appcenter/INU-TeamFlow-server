@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir -p src/main/resources/firebase
           cat > src/main/resources/firebase/inu-teamflow-firebase-adminsdk.json << 'EOF'
-          ${{ secrets.FCM_DEV_ADMIN_KEY }}
+          ${{ secrets.FCM_ADMIN_KEY }}
           EOF
 
       - name: Build
