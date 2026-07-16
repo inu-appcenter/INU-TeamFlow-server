@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.invitation.service;
 
+import com.inuteamflow.server.domain.chat.service.ChatRoomService;
 import com.inuteamflow.server.domain.invitation.dto.request.TeamInvitationCreateRequest;
 import com.inuteamflow.server.domain.invitation.dto.request.TeamInvitationStatusUpdateRequest;
 import com.inuteamflow.server.domain.invitation.dto.response.TeamInvitationResponse;
@@ -33,6 +34,7 @@ public class TeamInvitationService {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final ChatRoomService chatRoomService;
     private final NotificationService notificationService;
 
     // 내가 받은/보낸 팀 초대 목록
@@ -130,6 +132,7 @@ public class TeamInvitationService {
                     receiver,
                     TeamRole.MEMBER
             ));
+            chatRoomService.addTeamChatRoomMember(invitation.getTeam(), receiver);
             notificationService.createNotification(
                     sender,
                     "[" + invitation.getTeam().getName()+ "] 팀에 새 팀원이 합류했어요",

@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.recruitment.service;
 
+import com.inuteamflow.server.domain.chat.service.ChatRoomService;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.recruitment.dto.request.ApplicationCreateRequest;
@@ -40,6 +41,7 @@ public class RecruitmentApplicationService {
     private final UserRepository userRepository;
     private final RecruitmentRepository recruitmentRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final ChatRoomService chatRoomService;
     private final NotificationService notificationService;
 
     // 모집글에 신청하기
@@ -190,6 +192,7 @@ public class RecruitmentApplicationService {
                         TeamMember.create(recruitment.getTeam(), applicant, TeamRole.MEMBER)
                 );
             }
+            chatRoomService.addTeamChatRoomMember(recruitment.getTeam(), applicant);
 
             notificationService.createNotification(
                     applicant,
@@ -198,7 +201,6 @@ public class RecruitmentApplicationService {
                     NotificationType.APPLICATION,
                     "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/" + recruitmentApplication.getRecruitmentApplicationId()
             );
-
         } else {
             recruitmentApplication.decline();
 

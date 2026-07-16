@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.team.service;
 
+import com.inuteamflow.server.domain.chat.service.ChatRoomService;
 import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionParticipantRepository;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
@@ -55,6 +56,7 @@ public class TeamService {
     private final VoteParticipantRepository voteParticipantRepository;
     private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
     private final EventParticipantRepository eventParticipantRepository;
+    private final ChatRoomService chatRoomService;
 
     // 팀 리스트 조회 (내가 속한 팀)
     public List<TeamSummaryResponse> getMyTeams(User user) {
@@ -156,6 +158,8 @@ public class TeamService {
         TeamMember teamMember = TeamMember.create(team, user, TeamRole.LEADER);
         teamMemberRepository.save(teamMember);
 
+        chatRoomService.createTeamChatRoom(team, user);
+
         String imageUrl = s3Service.getTeamImageUrl(team.getImageKey(), team.getCategory());
 
         // 생성 직후라 memberCount 1
@@ -231,6 +235,9 @@ public class TeamService {
         // 팀 멤버 삭제
         teamMemberRepository.deleteAllByTeam(team);
 
+        // 팀 채팅방 삭제
+        chatRoomService.deleteTeamChatRoom(team);
+
         if (StringUtils.hasText(team.getImageKey())) {
             s3Service.deleteImage(team.getImageKey());
         }
@@ -298,6 +305,7 @@ public class TeamService {
         voteParticipantRepository.deleteByTeamMember(member);
         recurrenceExceptionParticipantRepository.deleteByTeamMember(member);
         eventParticipantRepository.deleteByTeamMember(member);
+        chatRoomService.removeTeamChatRoomMember(member.getTeam(), member.getUser());
         teamMemberRepository.delete(member);
     }
 
