@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.recruitment.service;
 
+import com.inuteamflow.server.domain.chat.service.ChatRoomService;
 import com.inuteamflow.server.domain.recruitment.dto.request.ApplicationCreateRequest;
 import com.inuteamflow.server.domain.recruitment.dto.request.ApplicationStatusUpdateRequest;
 import com.inuteamflow.server.domain.recruitment.dto.response.ApplicationDetailResponse;
@@ -38,6 +39,7 @@ public class RecruitmentApplicationService {
     private final UserRepository userRepository;
     private final RecruitmentRepository recruitmentRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final ChatRoomService chatRoomService;
 
     // 모집글에 신청하기
     @Transactional
@@ -179,7 +181,9 @@ public class RecruitmentApplicationService {
                         TeamMember.create(recruitment.getTeam(), applicant, TeamRole.MEMBER)
                 );
             }
-        } else {
+            chatRoomService.addTeamChatRoomMember(recruitment.getTeam(), applicant);
+        }
+        else {
             recruitmentApplication.decline();
         }
 

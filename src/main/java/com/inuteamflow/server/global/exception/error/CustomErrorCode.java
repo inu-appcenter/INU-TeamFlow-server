@@ -92,7 +92,13 @@ public enum CustomErrorCode implements ErrorCode {
     EVENT_RECURRENCE_RULE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "반복 일정 규칙을 찾을 수 없습니다."),
     EVENT_RECURRENCE_REQUIRED(HttpStatus.BAD_REQUEST, 400, "반복 일정 정보가 필요합니다."),
     EVENT_RECURRENCE_OCCURRENCE_REQUIRED(HttpStatus.BAD_REQUEST, 400, "반복 일정 발생 시점(occurrenceAt)이 필요합니다."),
-    EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "해당 반복 일정 발생 시점을 찾을 수 없습니다.");
+    EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "해당 반복 일정 발생 시점을 찾을 수 없습니다."),
+
+    // 채팅 관련 에러
+    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "채팅방을 찾을 수 없습니다."),
+    CHAT_ROOM_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "채팅방 멤버가 아닙니다."),
+    CHAT_MESSAGE_TYPE_INVALID(HttpStatus.BAD_REQUEST, 400, "잘못된 메시지 타입입니다."),
+    CHAT_ROOM_INVALID_TARGET(HttpStatus.BAD_REQUEST, 400, "자기 자신과는 1:1 채팅을 할 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

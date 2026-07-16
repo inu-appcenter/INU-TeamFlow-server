@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.invitation.service;
 
+import com.inuteamflow.server.domain.chat.service.ChatRoomService;
 import com.inuteamflow.server.domain.invitation.dto.request.TeamInvitationCreateRequest;
 import com.inuteamflow.server.domain.invitation.dto.request.TeamInvitationStatusUpdateRequest;
 import com.inuteamflow.server.domain.invitation.dto.response.TeamInvitationResponse;
@@ -31,6 +32,7 @@ public class TeamInvitationService {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final ChatRoomService chatRoomService;
 
     // 내가 받은/보낸 팀 초대 목록
     public Page<TeamInvitationResponse> getInvitations(User user, InvitationDirection direction, Pageable pageable) {
@@ -116,6 +118,7 @@ public class TeamInvitationService {
                     receiver,
                     TeamRole.MEMBER
             ));
+            chatRoomService.addTeamChatRoomMember(invitation.getTeam(), receiver);
         } else if (newStatus == Status.DECLINED) {
             invitation.decline();
         } else {

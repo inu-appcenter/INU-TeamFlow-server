@@ -34,7 +34,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/v3/api-docs",
-                                "/api/v1/users/me/profile/presigned-url"
+                                "/api/v1/users/me/profile/presigned-url",
+                                "/ws-chat/**"
                         ).permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll() // 로그인 및 회원가입
                         .anyRequest().authenticated())
