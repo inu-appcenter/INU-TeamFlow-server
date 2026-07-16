@@ -1,6 +1,8 @@
 package com.inuteamflow.server.domain.recruitment.service;
 
 import com.inuteamflow.server.domain.chat.service.ChatRoomService;
+import com.inuteamflow.server.domain.notification.enums.NotificationType;
+import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.recruitment.dto.request.ApplicationCreateRequest;
 import com.inuteamflow.server.domain.recruitment.dto.request.ApplicationStatusUpdateRequest;
 import com.inuteamflow.server.domain.recruitment.dto.response.ApplicationDetailResponse;
@@ -40,6 +42,7 @@ public class RecruitmentApplicationService {
     private final RecruitmentRepository recruitmentRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final ChatRoomService chatRoomService;
+    private final NotificationService notificationService;
 
     // 모집글에 신청하기
     @Transactional
@@ -71,6 +74,14 @@ public class RecruitmentApplicationService {
                 .build();
 
         recruitmentApplicationRepository.save(application);
+
+        notificationService.createNotification(
+                recruitment.getRecruiter(),
+                "[" + recruitment.getTitle() + "] 새 지원자가 있어요",
+                user.getName() + "님이 지원서를 보냈어요",
+                NotificationType.APPLICATION,
+                "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/" + application.getRecruitmentApplicationId()
+        );
 
         return ApplicationSummaryResponse.of(application, user.getName());
     }
@@ -165,12 +176,12 @@ public class RecruitmentApplicationService {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
         }
 
+        User applicant = userRepository.findById(recruitmentApplication.getCreatedBy())
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
+
         if (newStatus == Status.ACCEPTED) {
             recruitment.increaseCurrentMemberCount();
             recruitmentApplication.accept();
-
-            User applicant = userRepository.findById(recruitmentApplication.getCreatedBy())
-                    .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
 
             boolean alreadyMember = teamMemberRepository
                     .findByTeamAndUser(recruitment.getTeam(), applicant)
@@ -182,9 +193,24 @@ public class RecruitmentApplicationService {
                 );
             }
             chatRoomService.addTeamChatRoomMember(recruitment.getTeam(), applicant);
-        }
-        else {
+
+            notificationService.createNotification(
+                    applicant,
+                    "합격을 축하드려요!",
+                    "'" + recruitment.getTitle() + "' 모집에 합격하셨어요",
+                    NotificationType.APPLICATION,
+                    "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/" + recruitmentApplication.getRecruitmentApplicationId()
+            );
+        } else {
             recruitmentApplication.decline();
+
+            notificationService.createNotification(
+                    applicant,
+                    "지원 결과를 알려드려요",
+                    "'" + recruitment.getTitle() + "' 모집에 아쉽게도 선발되지 못했어요",
+                    NotificationType.APPLICATION,
+                    "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/" + recruitmentApplication.getRecruitmentApplicationId()
+            );
         }
 
         return ApplicationStatusResponse.from(recruitmentApplication);

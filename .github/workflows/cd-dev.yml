@@ -23,6 +23,13 @@ jobs:
           chmod +x ./gradlew
           ./gradlew test
 
+      - name: Make Firebase Admin Key
+        run: |
+          mkdir -p src/main/resources/firebase
+          cat > src/main/resources/firebase/inu-teamflow-firebase-adminsdk.json << 'EOF'
+          ${{ secrets.FCM_ADMIN_KEY }}
+          EOF
+
       - name: Build
         run: |
           ./gradlew clean bootJar
@@ -87,6 +94,7 @@ jobs:
             AWS_REGION=${{ secrets.AWS_REGION }}
             S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
             CLOUDFRONT_DOMAIN=${{ secrets.CLOUDFRONT_DOMAIN }}
+            FCM_PROJECT_ID=${{ secrets.FCM_PROJECT_ID }}
             TZ=Asia/Seoul
             EOF
             

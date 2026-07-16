@@ -36,7 +36,7 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     List<Object[]> countByTeams(@Param("teams") List<Team> teams);
 
     @Query("""
-    SELECT tm FROM TeamMember tm
+    SELECT tm FROM TeamMember tm JOIN FETCH tm.user
     WHERE tm.team = :team AND tm.teamMemberId IN :ids
     """)
     List<TeamMember> findByTeamAndIds(@Param("team") Team team, @Param("ids") List<Long> ids);
@@ -47,18 +47,31 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     """)
     Optional<TeamMember> findByTeamAndUserUserId(@Param("team") Team team, @Param("userId") Long userId);
 
-    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user WHERE tm.team = :team")
+    @Query("""
+    SELECT tm FROM TeamMember tm JOIN FETCH tm.user
+    WHERE tm.team = :team
+    """)
     List<TeamMember> findByTeamWithUser(@Param("team") Team team);
 
-    @Query("SELECT tm FROM TeamMember tm JOIN FETCH tm.user JOIN FETCH tm.team WHERE tm.team IN :teams")
+    @Query("""
+    SELECT tm FROM TeamMember tm
+    JOIN FETCH tm.user JOIN FETCH tm.team
+    WHERE tm.team IN :teams
+    """)
     List<TeamMember> findByTeamInWithUser(@Param("teams") List<Team> teams);
 
-    @Query("SELECT tm.team FROM TeamMember tm WHERE tm.user = :user")
-    List<Team> findTeamsByUser(@Param("user") User user);
+    @Query("""
+    SELECT tm.user FROM TeamMember tm
+    WHERE tm.team = :team AND tm.user.userId != :excludeUserId
+    """)
+    List<User> findUsersByTeamExcluding(@Param("team") Team team, @Param("excludeUserId") Long excludeUserId);
 
     boolean existsByUserAndTeamRole(User user, TeamRole teamRole);
 
     @Modifying
-    @Query("DELETE FROM TeamMember tm WHERE tm.user = :user")
+    @Query("""
+    DELETE FROM TeamMember tm
+    WHERE tm.user = :user
+    """)
     void deleteByUser(@Param("user") User user);
 }

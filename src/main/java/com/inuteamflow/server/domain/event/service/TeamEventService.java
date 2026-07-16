@@ -11,6 +11,8 @@ import com.inuteamflow.server.domain.event.repository.EventParticipantRepository
 import com.inuteamflow.server.domain.event.repository.EventRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionRepository;
+import com.inuteamflow.server.domain.notification.enums.NotificationType;
+import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
@@ -44,6 +46,8 @@ public class TeamEventService {
     private final TeamMemberRepository teamMemberRepository;
     private final RecurrenceExceptionRepository recurrenceExceptionRepository;
     private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
+
+    private final NotificationService notificationService;
 
     public List<EventListResponse> getTeamEventList(
             User user,
@@ -86,6 +90,16 @@ public class TeamEventService {
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
         createParticipants(event, team, host, request.getParticipants());
 
+        List<User> receivers = eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId());
+
+        notificationService.createNotifications(
+                receivers,
+                "[" + team.getName() + "] 팀에 새 일정이 추가됐어요",
+                "'" + event.getTitle() + "' 일정을 확인해보세요",
+                NotificationType.TEAM_SCHEDULE,
+                "/team/"+team.getTeamId()
+        );
+
         return EventDetailResponse.create(event, recurrenceRule, team.getName());
     }
 
@@ -97,25 +111,46 @@ public class TeamEventService {
             TeamEventUpdateRequest request
     ) {
         Event event = getTeamEvent(teamId, eventId);
-        validateTeamEventManager(event.getTeam(), user);
+        Team team = getTeam(teamId);
+        validateTeamEventManager(team, user);
 
         boolean isRecurring = !Boolean.TRUE.equals(event.getIsSingle());
         boolean isThisInstance = isRecurring && request.getRecurrenceEditScope() == RecurrenceEditScope.THIS_INSTANCE;
         boolean isThisAndFollowing = isRecurring && request.getRecurrenceEditScope() == RecurrenceEditScope.THIS_AND_FOLLOWING;
 
-        EventDetailResponse response = eventRecurrenceService.updateEvent(event, event.getTeam(), request);
+        EventDetailResponse response = eventRecurrenceService.updateEvent(event, team, request);
 
+        List<User> receivers;
         if (isThisInstance) {
             RecurrenceException recurrenceException = recurrenceExceptionRepository
                     .findByEventAndOriginalOccurrenceAt(event, request.getOccurrenceAt())
                     .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND));
-            syncExceptionParticipants(recurrenceException, event.getTeam(), request.getParticipants());
+            syncExceptionParticipants(recurrenceException, team, request.getParticipants());
+            receivers = recurrenceExceptionParticipantRepository.findUsersByExceptionExcluding(recurrenceException, user.getUserId());
         } else if (isThisAndFollowing) {
             Event followingEvent = getTeamEvent(teamId, response.getEventId());
-            syncParticipants(followingEvent, event.getTeam(), request.getParticipants());
+            syncParticipants(followingEvent, team, request.getParticipants());
+            receivers = eventParticipantRepository.findUsersByEventExcluding(followingEvent, user.getUserId());
         } else {
-            syncParticipants(event, event.getTeam(), request.getParticipants());
+            syncParticipants(event, team, request.getParticipants());
+            receivers = eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId());
         }
+
+        String updateContent;
+        if (isThisInstance) {
+            updateContent = "'" + event.getTitle() + "' 이번 회차 일정이 변경됐어요";
+        } else if (isThisAndFollowing) {
+            updateContent = "'" + event.getTitle() + "' 이후 일정이 변경됐어요";
+        } else {
+            updateContent = "'" + event.getTitle() + "' 일정이 변경됐어요";
+        }
+        notificationService.createNotifications(
+                receivers,
+                "[" + event.getTeam().getName() + "] 팀의 일정이 변경됐어요",
+                updateContent,
+                NotificationType.TEAM_SCHEDULE,
+                "/team/" + team.getTeamId()
+        );
 
         return response;
     }
@@ -129,7 +164,28 @@ public class TeamEventService {
             LocalDateTime occurrenceAt
     ) {
         Event event = getTeamEvent(teamId, eventId);
-        validateTeamEventManager(event.getTeam(), user);
+        Team team = getTeam(teamId);
+        validateTeamEventManager(team, user);
+
+        List<User> receivers;
+        // RecurrenceException이 이미 존재하면 RecurrenceExceptionParticipant 기준으로 조회한다.
+        // 없으면 EventParticipant 기준으로 조회한다.
+        if (recurrenceEditScope == RecurrenceEditScope.THIS_INSTANCE) {
+            receivers = recurrenceExceptionRepository
+                    .findByEventAndOriginalOccurrenceAt(event, occurrenceAt)
+                    .map(re -> recurrenceExceptionParticipantRepository.findUsersByExceptionExcluding(re, user.getUserId()))
+                    .orElseGet(() -> eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId()));
+        } else {
+            receivers = eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId());
+        }
+
+        notificationService.createNotifications(
+                receivers,
+                "'" + event.getTitle() + "' 일정이 삭제됐어요",
+                user.getName() + "님이 일정을 삭제했어요",
+                NotificationType.TEAM_SCHEDULE,
+                "/team/" + team.getTeamId()
+        );
 
         if (eventRecurrenceService.deleteEvent(event, recurrenceEditScope, occurrenceAt)) {
             eventParticipantRepository.deleteByEvent(event);

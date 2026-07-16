@@ -82,11 +82,15 @@ public class EventRecurrenceService {
         if (Boolean.TRUE.equals(event.getIsSingle())) {
             return updateSingleEvent(event, command, teamName);
         }
-        validateRecurrenceRequired(command);
 
         RecurrenceEditScope editScope = command.getRecurrenceEditScope() == null
                 ? RecurrenceEditScope.ALL_SERIES
                 : command.getRecurrenceEditScope();
+
+        // THIS_INSTANCE는 해당 회차만 수정하므로 반복 규칙 데이터 불필요
+        if (editScope != RecurrenceEditScope.THIS_INSTANCE) {
+            validateRecurrenceRequired(command);
+        }
 
         if ((editScope == RecurrenceEditScope.THIS_INSTANCE || editScope == RecurrenceEditScope.THIS_AND_FOLLOWING)
                 && command.getOccurrenceAt() == null) {

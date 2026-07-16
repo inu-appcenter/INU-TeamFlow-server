@@ -7,6 +7,8 @@ import com.inuteamflow.server.domain.invitation.dto.response.TeamInvitationRespo
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
 import com.inuteamflow.server.domain.invitation.enums.InvitationDirection;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
+import com.inuteamflow.server.domain.notification.enums.NotificationType;
+import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
@@ -33,6 +35,7 @@ public class TeamInvitationService {
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
     private final ChatRoomService chatRoomService;
+    private final NotificationService notificationService;
 
     // 내가 받은/보낸 팀 초대 목록
     public Page<TeamInvitationResponse> getInvitations(User user, InvitationDirection direction, Pageable pageable) {
@@ -91,6 +94,14 @@ public class TeamInvitationService {
                         TeamInvitation.create(team, receiver)
                 ));
 
+        notificationService.createNotification(
+                receiver,
+                "[" + team.getName() + "] 팀에서 초대장이 도착했어요",
+                sender.getName() + "님이 팀에 초대했어요",
+                NotificationType.INVITE,
+                "/mypage/invitations"
+        );
+
         return TeamInvitationResponse.from(invitation, sender.getName());
 
     }
@@ -100,6 +111,9 @@ public class TeamInvitationService {
     public TeamInvitationResponse updateStatus(User receiver, Long invitationId, TeamInvitationStatusUpdateRequest request) {
         TeamInvitation invitation = teamInvitationRepository.findById(invitationId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.INVITATION_NOT_FOUND));
+
+        User sender = userRepository.findById(invitation.getCreatedBy())
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
 
         if (!invitation.getReceiverId().equals(receiver.getUserId())) {
             throw new RestApiException(CustomErrorCode.INVITATION_FORBIDDEN);
@@ -119,17 +133,27 @@ public class TeamInvitationService {
                     TeamRole.MEMBER
             ));
             chatRoomService.addTeamChatRoomMember(invitation.getTeam(), receiver);
+            notificationService.createNotification(
+                    sender,
+                    "[" + invitation.getTeam().getName()+ "] 팀에 새 팀원이 합류했어요",
+                    receiver.getName() + "님이 초대를 수락했어요",
+                    NotificationType.INVITE,
+                    "/team/" + invitation.getTeam().getTeamId()
+            );
         } else if (newStatus == Status.DECLINED) {
             invitation.decline();
+            notificationService.createNotification(
+                    sender,
+                    "[" + invitation.getTeam().getName() + "] 초대가 거절됐어요",
+                    receiver.getName() + "님이 초대를 거절했어요",
+                    NotificationType.INVITE,
+                    "/mypage/invitations/"
+            );
         } else {
             throw new RestApiException(CustomErrorCode.INVITATION_STATUS_INVALID);
         }
 
-        String senderName = invitation.getCreatedBy() == null ? null :
-                userRepository.findById(invitation.getCreatedBy())
-                        .map(User::getName)
-                        .orElse(null);
-        return TeamInvitationResponse.from(invitation, senderName);
+        return TeamInvitationResponse.from(invitation, sender.getName());
 
     }
 
