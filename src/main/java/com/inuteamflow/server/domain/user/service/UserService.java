@@ -15,6 +15,7 @@ import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadReposit
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
+import com.inuteamflow.server.domain.user.dto.response.UserSearchResponse;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.enums.UserConstants;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
@@ -173,5 +174,15 @@ public class UserService {
         if (StringUtils.hasText(userProfile) && !userProfile.equals(UserConstants.DEFAULT_PROFILE_KEY)) {
             s3Service.deleteImage(userProfile);
         }
+    }
+
+    public List<UserSearchResponse> getUsers(
+            String name,
+            User user
+    ) {
+        return userRepository.searchByName(name, user.getUserId())
+                .stream()
+                .map(UserSearchResponse::create)
+                .toList();
     }
 }

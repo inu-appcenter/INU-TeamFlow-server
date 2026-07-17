@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -50,6 +49,7 @@ public class FcmService {
         fcmTokenRepository.delete(fcmToken);
     }
 
+    @Transactional
     public void sendToUser(Long receiverId, String title, String body, String redirectUrl, NotificationType type, Long notificationId) {
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedBy(receiverId);
         if (tokens.isEmpty()) return;
@@ -74,6 +74,7 @@ public class FcmService {
         }
     }
 
+    @Transactional
     public void sendToUsers(List<Long> receiverIds, String title, String body, String redirectUrl, NotificationType type) {
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
         if (tokens.isEmpty()) return;
