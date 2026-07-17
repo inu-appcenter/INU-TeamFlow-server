@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.user.controller;
 
 import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
+import com.inuteamflow.server.domain.user.dto.response.UserSearchResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.service.UserService;
 import jakarta.validation.Valid;
@@ -10,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -45,6 +48,16 @@ public class UserController implements UserControllerDocument{
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<UserSearchResponse>> getUsers(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam("name") String name
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(userService.getUsers(name, userDetails.getUser()));
     }
 
 }
