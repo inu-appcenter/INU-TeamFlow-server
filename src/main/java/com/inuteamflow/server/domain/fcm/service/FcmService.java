@@ -5,6 +5,7 @@ import com.inuteamflow.server.domain.fcm.dto.req.FcmRequest;
 import com.inuteamflow.server.domain.fcm.dto.res.FcmResponse;
 import com.inuteamflow.server.domain.fcm.entity.FcmToken;
 import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
+import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
@@ -24,6 +25,8 @@ import java.util.stream.Collectors;
 public class FcmService {
 
     private final FcmTokenRepository fcmTokenRepository;
+
+    private static final int FCM_MAX_BATCH_SIZE = 500;
 
     @Transactional
     public FcmResponse createFcmToken(
@@ -47,9 +50,8 @@ public class FcmService {
         fcmTokenRepository.delete(fcmToken);
     }
 
-    @Transactional
-    public void sendToUser(User receiver, String title, String body) {
-        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedBy(receiver.getUserId());
+    public void sendToUser(Long receiverId, String title, String body, String redirectUrl, NotificationType type, Long notificationId) {
+        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedBy(receiverId);
         if (tokens.isEmpty()) return;
 
         MulticastMessage message = MulticastMessage.builder()
@@ -57,39 +59,52 @@ public class FcmService {
                         .setTitle(title)
                         .setBody(body)
                         .build())
+                .putData("redirectUrl", redirectUrl)
+                .putData("type", type.name())
+                .putData("notificationId", String.valueOf(notificationId))
                 .addAllTokens(tokens)
                 .build();
 
         try {
             BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
-            log.info("FCM 발송 완료 - userId: {}, 성공: {}/{}", receiver.getUserId(), response.getSuccessCount(), tokens.size());
+            log.info("FCM 발송 완료 - userId: {}, 성공: {}/{}", receiverId, response.getSuccessCount(), tokens.size());
             removeInvalidTokens(tokens, response);
         } catch (FirebaseMessagingException e) {
-            log.error("FCM 발송 실패 - userId: {}", receiver.getUserId(), e);
+            log.error("FCM 발송 실패 - userId: {}", receiverId, e);
         }
     }
 
-    @Transactional
-    public void sendToUsers(List<User> receivers, String title, String body) {
-        List<Long> userIds = receivers.stream().map(User::getUserId).collect(Collectors.toList());
-        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(userIds);
+    public void sendToUsers(List<Long> receiverIds, String title, String body, String redirectUrl, NotificationType type) {
+        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
         if (tokens.isEmpty()) return;
 
-        MulticastMessage message = MulticastMessage.builder()
-                .setNotification(com.google.firebase.messaging.Notification.builder()
-                        .setTitle(title)
-                        .setBody(body)
-                        .build())
-                .addAllTokens(tokens)
-                .build();
+        for (List<String> batch : partitionTokens(tokens)) {
+            MulticastMessage message = MulticastMessage.builder()
+                    .setNotification(com.google.firebase.messaging.Notification.builder()
+                            .setTitle(title)
+                            .setBody(body)
+                            .build())
+                    .putData("redirectUrl", redirectUrl)
+                    .putData("type", type.name())
+                    .addAllTokens(batch)
+                    .build();
 
-        try {
-            BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
-            log.info("FCM 다중 발송 완료 - userIds: {}, 성공: {}/{}", userIds, response.getSuccessCount(), tokens.size());
-            removeInvalidTokens(tokens, response);
-        } catch (FirebaseMessagingException e) {
-            log.error("FCM 다중 발송 실패", e);
+            try {
+                BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
+                log.info("FCM 다중 발송 완료 - userIds: {}, 성공: {}/{}", receiverIds, response.getSuccessCount(), batch.size());
+                removeInvalidTokens(batch, response);
+            } catch (FirebaseMessagingException e) {
+                log.error("FCM 다중 발송 실패", e);
+            }
         }
+    }
+
+    private List<List<String>> partitionTokens(List<String> tokens) {
+        List<List<String>> batches = new ArrayList<>();
+        for (int i = 0; i < tokens.size(); i += FCM_MAX_BATCH_SIZE) {
+            batches.add(tokens.subList(i, Math.min(i + FCM_MAX_BATCH_SIZE, tokens.size())));
+        }
+        return batches;
     }
 
     private void removeInvalidTokens(List<String> tokens, BatchResponse response) {

@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.notification.service;
 
-import com.inuteamflow.server.domain.fcm.service.FcmService;
+import com.inuteamflow.server.domain.fcm.dto.FcmMultiEvent;
+import com.inuteamflow.server.domain.fcm.dto.FcmSingleEvent;
 import com.inuteamflow.server.domain.notification.dto.req.NotificationRequest;
 import com.inuteamflow.server.domain.notification.dto.res.NotificationSliceResponse;
 import com.inuteamflow.server.domain.notification.entity.Notification;
@@ -10,6 +11,7 @@ import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -22,8 +24,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class NotificationService {
 
-    private final FcmService fcmService;
-
+    private final ApplicationEventPublisher eventPublisher;
     private final NotificationRepository notificationRepository;
 
     public NotificationSliceResponse getNotifications(
@@ -88,8 +89,8 @@ public class NotificationService {
             NotificationType type,
             String redirectUrl
     ) {
-        notificationRepository.save(Notification.create(receiver, title, content, type, redirectUrl));
-        fcmService.sendToUser(receiver, title, content);
+        Notification notification = notificationRepository.save(Notification.create(receiver, title, content, type, redirectUrl));
+        eventPublisher.publishEvent(new FcmSingleEvent(receiver.getUserId(), title, content, redirectUrl, type, notification.getNotificationId()));
     }
 
     @Transactional
@@ -104,7 +105,8 @@ public class NotificationService {
                 .map(receiver -> Notification.create(receiver, title, content, type, redirectUrl))
                 .toList();
         notificationRepository.saveAll(notifications);
-        fcmService.sendToUsers(receivers, title, content);
+        List<Long> receiverIds = receivers.stream().map(User::getUserId).toList();
+        eventPublisher.publishEvent(new FcmMultiEvent(receiverIds, title, content, redirectUrl, type));
     }
 
 }
