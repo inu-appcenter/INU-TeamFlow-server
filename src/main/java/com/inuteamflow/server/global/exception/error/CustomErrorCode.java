@@ -30,6 +30,8 @@ public enum CustomErrorCode implements ErrorCode {
 
     // 요청 관련 에러
     COMMON_INVALID_REQUEST(HttpStatus.BAD_REQUEST, 400, "잘못된 요청입니다."),
+    COMMON_INVALID_REQUEST_TYPE(HttpStatus.BAD_REQUEST, 400, "요청 타입이 잘못되었습니다"),
+    COMMON_INVALID_PARAMETER(HttpStatus.BAD_REQUEST, 400, "요청 파라미터가 누락되었습니다."),
     COMMON_HANDLER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "요청한 API를 찾을 수 없습니다."),
 
     // 팀 관련 에러
