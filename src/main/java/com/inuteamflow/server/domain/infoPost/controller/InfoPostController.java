@@ -33,7 +33,7 @@ public class InfoPostController implements InfoPostControllerDocument {
             @RequestParam(required = false) InfoPostCategory category,
             @RequestParam(required = false) InfoPostType type,
             @RequestParam(required = false) String keyword,
-            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getInfoPosts(category, type, keyword, pageable));
