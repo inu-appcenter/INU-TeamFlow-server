@@ -114,7 +114,7 @@ public class TeamService {
                 .toList();
     }
 
-    // 팀 매니저 지정, 해제
+    // 팀 매니저 지정/해제, 리더 위임
     @Transactional
     public void updateMemberRole(User user, Long teamId, Long targetMemberId, TeamRole newRole) {
 
@@ -138,6 +138,14 @@ public class TeamService {
         // 이미 같은 역할
         if (targetMember.getTeamRole() == newRole) {
             throw new RestApiException(CustomErrorCode.TEAM_MEMBER_ALREADY_ROLE);
+        }
+
+        // 리더 위임: 기존 리더(requester) 는 MEMBER 로 내려가고, target이 새 리더가 됨
+        // (target이 MANAGER였든 MEMBER였든 상관없이 그대로 LEADER로 승격)
+        if (newRole == TeamRole.LEADER) {
+            requester.updateRole(TeamRole.MEMBER);
+            targetMember.updateRole(TeamRole.LEADER);
+            return;
         }
 
         targetMember.updateRole(newRole);

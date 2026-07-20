@@ -18,6 +18,8 @@ public class TeamMemberResponse {
 
     private String username;
 
+    private String userNickname;
+
     private TeamRole teamRole;
 
     private Department department;
@@ -27,6 +29,7 @@ public class TeamMemberResponse {
                 teamMember.getTeamMemberId(),
                 user.getUserId(),
                 user.getUsername(),
+                user.getName(),
                 teamMember.getTeamRole(),
                 user.getDepartment()
         );
