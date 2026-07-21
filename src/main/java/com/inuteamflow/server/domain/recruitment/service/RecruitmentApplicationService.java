@@ -129,15 +129,20 @@ public class RecruitmentApplicationService {
         boolean isRecruiter = recruitmentApplication.getRecruitment().getRecruiter().getUserId().equals(user.getUserId());
 
         if (!recruitmentApplication.getCreatedBy().equals(user.getUserId()) &&
-            !isRecruiter) {
+                !isRecruiter) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICANT_FORBIDDEN);
         }
 
-        String applicantName = userRepository.findById(recruitmentApplication.getCreatedBy())
-                .map(User::getName)
+        User applicant = userRepository.findById(recruitmentApplication.getCreatedBy())
                 .orElse(null);
 
-        return ApplicationDetailResponse.of(recruitmentApplication, applicantName, isRecruiter);
+        return ApplicationDetailResponse.of(
+                recruitmentApplication,
+                applicant != null ? applicant.getName() : null,
+                applicant != null ? applicant.getDepartment() : null,
+                applicant != null ? applicant.getStudentNumber() : null,
+                isRecruiter
+        );
     }
 
     // 신청서 취소 (신청자 본인만 가능)
