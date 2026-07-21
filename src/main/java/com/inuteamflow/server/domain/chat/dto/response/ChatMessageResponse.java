@@ -43,7 +43,10 @@ public class ChatMessageResponse {
     @Schema(description = "전송 시각", example = "2026-07-13T14:02:00")
     private LocalDateTime createdAt;
 
-    public static ChatMessageResponse of(ChatMessage message, User sender, Function<String, String> imageUrlResolver) {
+    @Schema(description = "이 메시지를 읽은 인원 수 (발신자 본인 제외, 누가 읽었는지는 노출 안 함)", example = "2")
+    private int readCount;
+
+    public static ChatMessageResponse of(ChatMessage message, User sender, Function<String, String> imageUrlResolver, int readCount) {
         boolean isImage = message.getMessageType() == ChatMessageType.IMAGE;
 
         return new ChatMessageResponse(
@@ -55,7 +58,8 @@ public class ChatMessageResponse {
                 message.getMessageType(),
                 message.getContent(),
                 isImage ? imageUrlResolver.apply(message.getImageKey()) : null,
-                message.getCreatedAt()
+                message.getCreatedAt(),
+                readCount
         );
     }
 }

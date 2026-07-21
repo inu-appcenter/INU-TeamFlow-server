@@ -47,4 +47,8 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
         AND crm2.user = :userB
         """)
     Optional<ChatRoom> findDirectRoomBetween(@Param("userA") User userA, @Param("userB") User userB, @Param("type") ChatRoomType type);
+
+    // 채팅방 멤버 전체 조회 (기본 이미지 콜라주, 읽음 명수 계산용)
+    @Query("SELECT crm FROM ChatRoomMember crm JOIN FETCH crm.user WHERE crm.chatRoom = :chatRoom")
+    List<ChatRoomMember> findByChatRoomWithUser(@Param("chatRoom") ChatRoom chatRoom);
 }

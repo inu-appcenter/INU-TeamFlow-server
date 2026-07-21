@@ -44,7 +44,7 @@ public class ChatMessageService {
         };
         chatMessageRepository.save(message);
 
-        broadcast(roomId, ChatMessageResponse.of(message, sender, s3Service::getImageUrl));
+        broadcast(roomId, ChatMessageResponse.of(message, sender, s3Service::getImageUrl, 0));
     }
 
     // 시스템 메시지 생성 + 브로드캐스트
@@ -53,7 +53,7 @@ public class ChatMessageService {
         ChatMessage message = ChatMessage.createSystem(chatRoom, content);
         chatMessageRepository.save(message);
 
-        broadcast(chatRoom.getChatRoomId(), ChatMessageResponse.of(message, triggeredBy, s3Service::getImageUrl));
+        broadcast(chatRoom.getChatRoomId(), ChatMessageResponse.of(message, triggeredBy, s3Service::getImageUrl, 0));
     }
 
     private void broadcast(Long roomId, ChatMessageResponse response) {

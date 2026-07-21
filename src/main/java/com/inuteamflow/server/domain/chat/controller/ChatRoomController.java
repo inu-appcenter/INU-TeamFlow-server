@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.chat.controller;
 
 import com.inuteamflow.server.domain.chat.dto.request.ChatReadRequest;
+import com.inuteamflow.server.domain.chat.dto.request.ChatRoomImageUpdateRequest;
 import com.inuteamflow.server.domain.chat.dto.request.DirectChatRoomCreateRequest;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageAnchorResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageResponse;
@@ -76,6 +77,17 @@ public class ChatRoomController implements ChatRoomControllerDocument{
     ) {
         chatRoomService.markAsRead(roomId, userDetails.getUser(), request);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    // 팀 채팅방 이미지 설정 (리더만 가능)
+    @PatchMapping("/{roomId}/image")
+    public ResponseEntity<Void> updateChatRoomImage(
+            @PathVariable Long roomId,
+            @Valid @RequestBody ChatRoomImageUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        chatRoomService.updateTeamChatRoomImage(userDetails.getUser(), roomId, request.getImageKey());
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
 }
