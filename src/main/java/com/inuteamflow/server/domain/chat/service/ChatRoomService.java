@@ -4,6 +4,7 @@ import com.inuteamflow.server.domain.chat.dto.request.ChatReadRequest;
 import com.inuteamflow.server.domain.chat.dto.request.DirectChatRoomCreateRequest;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageAnchorResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageResponse;
+import com.inuteamflow.server.domain.chat.dto.response.ChatReadEventResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatRoomSummaryResponse;
 import com.inuteamflow.server.domain.chat.entity.ChatMessage;
 import com.inuteamflow.server.domain.chat.entity.ChatRoom;
@@ -13,6 +14,9 @@ import com.inuteamflow.server.domain.chat.repository.ChatMessageRepository;
 import com.inuteamflow.server.domain.chat.repository.ChatRoomRepository;
 import com.inuteamflow.server.domain.chat.repository.ChatRoomMemberRepository;
 import com.inuteamflow.server.domain.team.entity.Team;
+import com.inuteamflow.server.domain.team.entity.TeamMember;
+import com.inuteamflow.server.domain.team.enums.TeamRole;
+import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
@@ -23,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,12 +45,15 @@ public class ChatRoomService {
 
     private static final int CONTEXT_MESSAGE_SIZE = 5;
     private static final int PREVIEW_MAX_LENGTH = 30;
+    private static final int COLLAGE_MAX_MEMBERS = 4;
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final TeamMemberRepository teamMemberRepository;
     private final UserRepository userRepository;
     private final S3Service s3Service;
+    private final SimpMessagingTemplate messagingTemplate;
 
     // 내 채팅방 목록 조회
     public List<ChatRoomSummaryResponse> getMyChatRooms(User user, ChatRoomType type) {
@@ -96,7 +104,7 @@ public class ChatRoomService {
         // 맥락 메시지가 5개 꽉 찼으면 그 이전에도 더 있을 가능선이 높다고 판단 -> 이전 메시지 불러오기
         boolean hasMoreBefore = context.size() == CONTEXT_MESSAGE_SIZE;
 
-        return ChatMessageAnchorResponse.of(lastReadMessageId, hasMoreBefore, toResponses(combined));
+        return ChatMessageAnchorResponse.of(lastReadMessageId, hasMoreBefore, toResponses(chatRoom, combined));
     }
 
     // 히스토리 조회 (과거로 스크롤)
@@ -112,7 +120,7 @@ public class ChatRoomService {
         List<ChatMessage> reversed = new ArrayList<>(slice.getContent());
         Collections.reverse(reversed); // 오래된순으로 뒤집어서 응답
 
-        return new SliceImpl<>(toResponses(reversed), pageable, slice.hasNext());
+        return new SliceImpl<>(toResponses(chatRoom, reversed), pageable, slice.hasNext());
     }
 
     // 1:1 채팅방 진입/생성
@@ -138,9 +146,11 @@ public class ChatRoomService {
 
         return ChatRoomSummaryResponse.create(
                 chatRoom.getChatRoomId(),
+                null,
                 chatRoom.getChatRoomType(),
                 target.getName(),
                 s3Service.getImageUrl(target.getImageKey()),
+                null,
                 lastMessage != null ? previewOf(lastMessage) : null,
                 lastMessage != null ? lastMessage.getCreatedAt() : null,
                 (int) unreadCount
@@ -153,6 +163,31 @@ public class ChatRoomService {
         ChatRoom chatRoom = getChatRoomById(roomId);
         ChatRoomMember member = getMemberOrThrow(chatRoom, user);
         member.updateLastReadMessageId(request.getLastReadMessageId());
+
+        // 실시간으로 읽음 명수 갱신할 수 있게 브로드캐스트 (누가 읽었는지는 프론트에서 노출하지 않고, 카운트 갱신 트리거로만 사용)
+        messagingTemplate.convertAndSend(
+                "/sub/chat-rooms/" + roomId + "/read",
+                ChatReadEventResponse.of(roomId, user.getUserId(), request.getLastReadMessageId())
+        );
+    }
+
+    // 팀 채팅방 이미지 설정 (리더만 가능, imageKey=null이면 기본 콜라주로 리셋)
+    @Transactional
+    public void updateTeamChatRoomImage(User user, Long roomId, String imageKey) {
+        ChatRoom chatRoom = getChatRoomById(roomId);
+
+        if (chatRoom.getChatRoomType() != ChatRoomType.TEAM) {
+            throw new RestApiException(CustomErrorCode.CHAT_ROOM_INVALID_TARGET);
+        }
+
+        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(chatRoom.getTeam(), user)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+
+        if (teamMember.getTeamRole() != TeamRole.LEADER) {
+            throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
+        }
+
+        chatRoom.updateImage(imageKey);
     }
 
     // 팀 생성 시 팀 채팅방 자동 생성 (리더를 첫 멤버로 추가)
@@ -208,9 +243,26 @@ public class ChatRoomService {
 
         String roomName;
         String imageUrl;
+        List<String> memberProfileUrls = null;
+        Long teamId = null;
+
         if (chatRoom.getChatRoomType() == ChatRoomType.TEAM) {
-            roomName = chatRoom.getTeam().getName();
-            imageUrl = s3Service.getTeamImageUrl(chatRoom.getTeam().getImageKey(), chatRoom.getTeam().getCategory());
+            Team team = chatRoom.getTeam();
+            teamId = team.getTeamId();
+            roomName = team.getName();
+
+            if (chatRoom.getImageKey() != null) {
+                // 리더가 커스텀 이미지 설정한 경우
+                imageUrl = s3Service.getImageUrl(chatRoom.getImageKey());
+            } else {
+                // 기본: 멤버 프로필 콜라주용 URL 목록 제공 (프론트에서 조합)
+                imageUrl = null;
+                memberProfileUrls = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
+                        .map(ChatRoomMember::getUser)
+                        .limit(COLLAGE_MAX_MEMBERS)
+                        .map(u -> s3Service.getImageUrl(u.getImageKey()))
+                        .toList();
+            }
         } else {
             User partner = partnerByRoomId.get(chatRoom.getChatRoomId());
             roomName = partner != null ? partner.getName() : "알 수 없음";
@@ -219,9 +271,11 @@ public class ChatRoomService {
 
         return ChatRoomSummaryResponse.create(
                 chatRoom.getChatRoomId(),
+                teamId,
                 chatRoom.getChatRoomType(),
                 roomName,
                 imageUrl,
+                memberProfileUrls,
                 lastMessage != null ? previewOf(lastMessage) : null,
                 lastMessage != null ? lastMessage.getCreatedAt() : null,
                 (int) unreadCount
@@ -257,7 +311,8 @@ public class ChatRoomService {
         return chatRoom;
     }
 
-    private List<ChatMessageResponse> toResponses(List<ChatMessage> messages) {
+    // 메시지 리스트 -> 응답 DTO 리스트 (발신자 배치 조회 + 읽음 명수 계산)
+    private List<ChatMessageResponse> toResponses(ChatRoom chatRoom, List<ChatMessage> messages) {
         if (messages.isEmpty()) {
             return List.of();
         }
@@ -265,8 +320,19 @@ public class ChatRoomService {
                 messages.stream().map(ChatMessage::getCreatedBy).distinct().toList()
         ).stream().collect(Collectors.toMap(User::getUserId, Function.identity()));
 
+        // 읽음 명수 계산용으로 방 멤버 전체를 한 번만 조회 (N+1 방지)
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
+
         return messages.stream()
-                .map(m -> ChatMessageResponse.of(m, senderById.get(m.getCreatedBy()), s3Service::getImageUrl))
+                .map(m -> {
+                    User sender = senderById.get(m.getCreatedBy());
+                    int readCount = (int) members.stream()
+                            .filter(member -> !member.getUser().getUserId().equals(m.getCreatedBy())) // 발신자 본인 제외
+                            .filter(member -> member.getLastReadMessageId() != null
+                                    && member.getLastReadMessageId() >= m.getChatMessageId())
+                            .count();
+                    return ChatMessageResponse.of(m, sender, s3Service::getImageUrl, readCount);
+                })
                 .toList();
     }
 

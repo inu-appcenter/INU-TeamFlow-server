@@ -28,6 +28,9 @@ public class ChatRoom extends BaseEntity {
     @JoinColumn(name = "team_id")
     private Team team; // Team 타입일 때만 값 존재
 
+    @Column(name = "image_key")
+    private String imageKey;
+
     @Builder
     private ChatRoom(ChatRoomType chatRoomType, Team team) {
         this.chatRoomType = chatRoomType;
@@ -45,5 +48,9 @@ public class ChatRoom extends BaseEntity {
         return ChatRoom.builder()
                 .chatRoomType(ChatRoomType.DIRECT)
                 .build();
+    }
+
+    public void updateImage(String imageKey) {
+        this.imageKey = imageKey; // null 넘기면 기본 콜라주로 리셋
     }
 }
