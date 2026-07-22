@@ -138,6 +138,7 @@ public class RecruitmentApplicationService {
 
         return ApplicationDetailResponse.of(
                 recruitmentApplication,
+                recruitmentApplication.getCreatedBy(),
                 applicant != null ? applicant.getName() : null,
                 applicant != null ? applicant.getDepartment() : null,
                 applicant != null ? applicant.getStudentNumber() : null,

@@ -21,6 +21,7 @@ public class ApplicationDetailResponse {
     private String recruitmentTitle;
     private Category category;
     private String recruiterName;
+    private Long applicantId;
     private String applicantName;
     private Department applicantDepartment;
     private String applicantStudentNumber;
@@ -29,6 +30,7 @@ public class ApplicationDetailResponse {
     private LocalDateTime respondedAt;
 
     public static ApplicationDetailResponse of(RecruitmentApplication application,
+                                               Long applicantId,
                                                String applicantName,
                                                Department applicantDepartment,
                                                String applicantStudentNumber,
@@ -41,6 +43,7 @@ public class ApplicationDetailResponse {
                 application.getRecruitment().getTitle(),
                 application.getRecruitment().getCategory(),
                 application.getRecruitment().getRecruiter().getName(),
+                applicantId,
                 applicantName,
                 applicantDepartment,
                 applicantStudentNumber,
