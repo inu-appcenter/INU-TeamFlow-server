@@ -45,9 +45,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     void bulkDelete(@Param("ids") List<Long> ids, @Param("receiver") User receiver);
 
     @Modifying
-    @Query("""
-            DELETE FROM Notification n
-            WHERE n.receiver = :receiver
-            """)
+    @Query("DELETE FROM Notification n WHERE n.receiver = :receiver")
     void deleteByReceiver(@Param("receiver") User receiver);
 }

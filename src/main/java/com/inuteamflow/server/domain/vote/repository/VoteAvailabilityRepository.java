@@ -6,6 +6,7 @@ import com.inuteamflow.server.domain.vote.entity.VoteAvailability;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
 import com.inuteamflow.server.domain.vote.entity.VoteTimeSlot;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -30,7 +31,20 @@ public interface VoteAvailabilityRepository extends JpaRepository<VoteAvailabili
 
     void deleteByVoteParticipant(VoteParticipant voteParticipant);
 
-    void deleteByVoteParticipant_TeamMember_User(User voteParticipantTeamMemberUser);
+    @Modifying
+    @Query("""
+    DELETE FROM VoteAvailability va
+    WHERE va.voteParticipant.teamMember.user = :user
+    """)
+    void deleteByVoteParticipantTeamMemberUser(@Param("user") User user);
+
+    @Modifying
+    @Query("""
+    DELETE FROM VoteAvailability va
+    WHERE va.voteParticipant.vote.createdBy = :createdBy
+      AND va.voteParticipant.vote.isOpened = false
+    """)
+    void deleteByClosedVoteCreatedBy(@Param("createdBy") Long createdBy);
 
     void deleteByVoteParticipant_TeamMember(TeamMember teamMember);
 }

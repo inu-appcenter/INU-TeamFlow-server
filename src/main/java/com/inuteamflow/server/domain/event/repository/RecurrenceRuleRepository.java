@@ -27,23 +27,28 @@ public interface RecurrenceRuleRepository extends JpaRepository<RecurrenceRule, 
 
     @Modifying
     @Query(value = """
-            DELETE FROM recurrence_rule_by_day
-            WHERE recurrence_rule_id IN (
-                SELECT rr.recurrence_rule_id
-                FROM recurrence_rule rr
-                JOIN event e ON rr.event_id = e.event_id
-                WHERE e.created_by = :userId AND e.team_id IS NULL
-            )
-            """, nativeQuery = true)
+    DELETE FROM recurrence_rule_by_day
+    WHERE recurrence_rule_id IN (
+        SELECT rr.recurrence_rule_id
+        FROM recurrence_rule rr
+        JOIN event e ON rr.event_id = e.event_id
+        WHERE e.created_by = :userId AND e.team_id IS NULL
+    )
+    """, nativeQuery = true)
     void deleteByDaysByEventCreatedByAndTeamIsNull(
             @Param("userId") Long userId
     );
 
     @Modifying
-    @Query("""
-            DELETE FROM RecurrenceRule rr 
-            WHERE rr.event.createdBy = :userId AND rr.event.team IS NULL
-            """)
+    @Query(value = """
+    DELETE FROM recurrence_rule
+    WHERE event_id IN (
+        SELECT e.event_id
+        FROM event e
+        WHERE e.created_by = :userId
+          AND e.team_id IS NULL
+    )
+    """, nativeQuery = true)
     void deleteByEventCreatedByAndTeamIsNull(
             @Param("userId") Long userId
     );
