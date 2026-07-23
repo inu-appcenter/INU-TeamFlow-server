@@ -241,4 +241,28 @@ public interface TeamNoticeControllerDocument {
 			@AuthenticationPrincipal UserDetailsImpl userDetails,
 			Pageable pageable
 	);
+
+	@Operation(summary = "getMyNotices", description = "내가 작성한 공지 목록 조회")
+	@ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "내가 작성한 공지 목록 조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = TeamNoticeSummaryResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 또는 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+	ResponseEntity<Page<TeamNoticeSummaryResponse>> getMyNotices(
+			@AuthenticationPrincipal UserDetailsImpl userDetails,
+			Pageable pageable
+	);
 }

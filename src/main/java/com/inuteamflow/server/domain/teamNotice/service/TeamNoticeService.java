@@ -101,6 +101,25 @@ public class TeamNoticeService {
 		});
 	}
 
+	public Page<TeamNoticeSummaryResponse> getMyNotices(User user, Pageable pageable) {
+		Page<TeamNotice> noticePage = teamNoticeRepository.findByCreatedBy(user.getUserId(), pageable);
+		List<TeamNotice> notices = noticePage.getContent();
+
+		Set<Long> readNoticeIds = notices.isEmpty() ? Set.of()
+				: teamNoticeReadRepository.findReadNoticeIds(notices, user.getUserId());
+		Map<Long, TeamMember> memberByTeamId = teamMemberRepository.findByUserWithTeam(user).stream()
+				.collect(Collectors.toMap(
+						tm -> tm.getTeam().getTeamId(),
+						Function.identity()
+				));
+
+		return noticePage.map(notice -> {
+			boolean isRead = readNoticeIds.contains(notice.getTeamNoticeId());
+			TeamMember authorMember = memberByTeamId.get(notice.getTeam().getTeamId());
+			return TeamNoticeSummaryResponse.create(notice, isRead, user.getName(), authorMember.getTeamRole());
+		});
+	}
+
 	@Transactional
 	public TeamNoticeDetailResponse getTeamNotice(Long teamId, Long noticeId, User user) {
 		Team team = getTeamById(teamId);
