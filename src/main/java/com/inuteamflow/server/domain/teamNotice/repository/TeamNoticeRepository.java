@@ -19,13 +19,22 @@ public interface TeamNoticeRepository extends JpaRepository<TeamNotice, Long> {
 
 	Optional<TeamNotice> findByTeamNoticeIdAndTeam(Long teamNoticeId, Team team);
 
-	@Query(value = "SELECT n FROM TeamNotice n JOIN FETCH n.team WHERE n.team = :team ORDER BY n.isPinned DESC, n.createdAt DESC",
-			countQuery = "SELECT COUNT(n) FROM TeamNotice n WHERE n.team = :team")
+	@Query(
+			value = "SELECT n FROM TeamNotice n JOIN FETCH n.team WHERE n.team = :team ORDER BY n.isPinned DESC, n.createdAt DESC",
+			countQuery = "SELECT COUNT(n) FROM TeamNotice n WHERE n.team = :team"
+	)
 	Page<TeamNotice> findByTeam(@Param("team") Team team, Pageable pageable);
 
-	@Query(value = "SELECT n FROM TeamNotice n JOIN FETCH n.team WHERE n.team IN :teams ORDER BY n.isPinned DESC, n.createdAt DESC",
-			countQuery = "SELECT COUNT(n) FROM TeamNotice n WHERE n.team IN :teams")
+	@Query(
+			value = "SELECT n FROM TeamNotice n JOIN FETCH n.team WHERE n.team IN :teams ORDER BY n.createdAt DESC",
+			countQuery = "SELECT COUNT(n) FROM TeamNotice n WHERE n.team IN :teams"
+	)
 	Page<TeamNotice> findByTeamIn(@Param("teams") List<Team> teams, Pageable pageable);
+
+	@Query(value = "SELECT n FROM TeamNotice n JOIN FETCH n.team WHERE n.createdBy = :createdBy ORDER BY n.createdAt DESC",
+			countQuery = "SELECT COUNT(n) FROM TeamNotice n WHERE n.createdBy = :createdBy"
+	)
+	Page<TeamNotice> findByCreatedBy(@Param("createdBy") Long createdBy, Pageable pageable);
 
 	@Modifying
 	@Query("DELETE FROM TeamNotice tn WHERE tn.createdBy = :createdBy")

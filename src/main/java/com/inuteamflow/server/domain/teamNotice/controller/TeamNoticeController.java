@@ -91,4 +91,14 @@ public class TeamNoticeController implements TeamNoticeControllerDocument {
                 .status(HttpStatus.OK)
 				.body(teamNoticeService.getMyTeamNotices(userDetails.getUser(), pageable));
 	}
+
+	@GetMapping("/notices/me")
+	public ResponseEntity<Page<TeamNoticeSummaryResponse>> getMyNotices(
+			@AuthenticationPrincipal UserDetailsImpl userDetails,
+			@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+	) {
+		return ResponseEntity
+				.status(HttpStatus.OK)
+				.body(teamNoticeService.getMyNotices(userDetails.getUser(), pageable));
+	}
 }
