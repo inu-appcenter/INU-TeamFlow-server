@@ -5,6 +5,7 @@ import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,7 +23,17 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
 
     Optional<VoteParticipant> findByVoteAndTeamMember(Vote vote, TeamMember teamMember);
 
-    void deleteByTeamMember_User(User teamMemberUser);
+    @Modifying
+    @Query("DELETE FROM VoteParticipant vp WHERE vp.teamMember.user = :user")
+    void deleteByTeamMemberUser(@Param("user") User user);
+
+    @Modifying
+    @Query("""
+    DELETE FROM VoteParticipant vp
+    WHERE vp.vote.createdBy = :createdBy
+      AND vp.vote.isOpened = false
+    """)
+    void deleteByClosedVoteCreatedBy(@Param("createdBy") Long createdBy);
 
     void deleteByTeamMember(TeamMember teamMember);
 }

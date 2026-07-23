@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.user.service;
 
+import com.inuteamflow.server.domain.chat.repository.ChatRoomMemberRepository;
 import com.inuteamflow.server.domain.event.repository.*;
 import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
@@ -20,8 +21,11 @@ import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.enums.UserConstants;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteAvailabilityRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteDateRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteResultRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteTimeSlotRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
@@ -48,6 +52,9 @@ public class UserService {
     private final InfoPostRepository infoPostRepository;
     private final VoteAvailabilityRepository voteAvailabilityRepository;
     private final VoteParticipantRepository voteParticipantRepository;
+    private final VoteResultRepository voteResultRepository;
+    private final VoteTimeSlotRepository voteTimeSlotRepository;
+    private final VoteDateRepository voteDateRepository;
     private final VoteRepository voteRepository;
     private final TeamInvitationRepository teamInvitationRepository;
     private final TeamNoticeReadRepository teamNoticeReadRepository;
@@ -62,6 +69,7 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final FcmTokenRepository fcmTokenRepository;
     private final NotificationRepository notificationRepository;
+    private final ChatRoomMemberRepository chatRoomMemberRepository;
 
 
     public MyInfoResponse getMyInfo(
@@ -135,19 +143,33 @@ public class UserService {
         teamInvitationRepository.deleteByReceiver(user);
         teamInvitationRepository.deleteByCreatedBy(user.getUserId());
 
-        // VoteAvailability → VoteParticipant
-        voteAvailabilityRepository.deleteByVoteParticipant_TeamMember_User(user);
-        voteParticipantRepository.deleteByTeamMember_User(user);
+        // 사용자가 생성한 종료 투표:
+        // VoteAvailability → VoteParticipant/VoteResult → VoteTimeSlot → VoteDate → Vote
+        voteAvailabilityRepository.deleteByClosedVoteCreatedBy(user.getUserId());
+        voteParticipantRepository.deleteByClosedVoteCreatedBy(user.getUserId());
+        voteResultRepository.deleteByClosedVoteCreatedBy(user.getUserId());
+        voteTimeSlotRepository.deleteByClosedVoteCreatedBy(user.getUserId());
+        voteDateRepository.deleteByClosedVoteCreatedBy(user.getUserId());
+        voteRepository.deleteClosedByCreatedBy(user.getUserId());
+
+        // 다른 사용자가 만든 투표에 참여한 데이터: VoteAvailability → VoteParticipant
+        voteAvailabilityRepository.deleteByVoteParticipantTeamMemberUser(user);
+        voteParticipantRepository.deleteByTeamMemberUser(user);
 
         // EventParticipant
         recurrenceExceptionParticipantRepository.deleteByTeamMemberUser(user);
         eventParticipantRepository.deleteByTeamMemberUser(user);
 
-        // TeamNoticeRead → TeamNoticeImage → TeamNotice → TeamMember
+        // TeamNoticeRead (다른 사람의 공지를 읽은 경우) → TeamNoticeRead (사용자가 작성한 공지를 다른 사람이 읽은 경우) →
+        // TeamNoticeImage → TeamNotice → TeamMember
+        teamNoticeReadRepository.deleteByCreatedBy(user.getUserId());
         teamNoticeReadRepository.deleteByTeamNoticeCreatedBy(user.getUserId());
         teamNoticeImageRepository.deleteByTeamNoticeCreatedBy(user.getUserId());
         teamNoticeRepository.deleteByCreatedBy(user.getUserId());
         teamMemberRepository.deleteByUser(user);
+
+        // ChatRoomMember (팀/1:1 채팅방 멤버십 전체 제거)
+        chatRoomMemberRepository.deleteByUser(user);
 
         // 개인 일정: RecurrenceException → RecurrenceRule → Event
         recurrenceExceptionRepository.deleteByEventCreatedByAndTeamIsNull(user.getUserId());
@@ -176,6 +198,9 @@ public class UserService {
         }
     }
 
+    // ---- 헬퍼 함수 ----
+
+    // name과 일치하는 사용자를 찾아서 응답 객체로 변환
     public List<UserSearchResponse> getUsers(
             String name,
             User user

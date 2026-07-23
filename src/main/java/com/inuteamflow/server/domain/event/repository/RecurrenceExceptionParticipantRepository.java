@@ -79,13 +79,8 @@ public interface RecurrenceExceptionParticipantRepository extends JpaRepository<
 
     // 회원 탈퇴 시 — 해당 유저가 참석자로 있는 모든 exception 참석자 레코드 삭제
     @Modifying
-    @Query("""
-            DELETE FROM RecurrenceExceptionParticipant p 
-            WHERE p.teamMember.user = :user
-            """)
-    void deleteByTeamMemberUser(
-            @Param("user") User user
-    );
+    @Query("DELETE FROM RecurrenceExceptionParticipant p WHERE p.teamMember.user = :user")
+    void deleteByTeamMemberUser(@Param("user") User user);
 
     // 팀 탈퇴/방출 시 - 해당 팀원 1명이 참석자로 있는 exception 참석자 레코드만 삭제
     @Modifying

@@ -51,4 +51,9 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     // 채팅방 멤버 전체 조회 (기본 이미지 콜라주, 읽음 명수 계산용)
     @Query("SELECT crm FROM ChatRoomMember crm JOIN FETCH crm.user WHERE crm.chatRoom = :chatRoom")
     List<ChatRoomMember> findByChatRoomWithUser(@Param("chatRoom") ChatRoom chatRoom);
+
+    // 계정 삭제 시 이 유저의 채팅방 멤버십 전체 제거 (TEAM/DIRECT 구분 없이)
+    @Modifying
+    @Query("DELETE FROM ChatRoomMember crm WHERE crm.user = :user")
+    void deleteByUser(@Param("user") User user);
 }

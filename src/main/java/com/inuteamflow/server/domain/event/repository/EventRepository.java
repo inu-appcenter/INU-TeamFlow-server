@@ -76,11 +76,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     );
 
     @Modifying
-    @Query("""
-            DELETE FROM Event e 
-            WHERE e.createdBy = :createdBy AND e.team IS NULL
-            """)
-    void deleteByCreatedByAndTeamIsNull(
-            @Param("createdBy") Long createdBy
-    );
+    @Query("DELETE FROM Event e WHERE e.createdBy = :createdBy AND e.team IS NULL")
+    void deleteByCreatedByAndTeamIsNull(@Param("createdBy") Long createdBy);
 }

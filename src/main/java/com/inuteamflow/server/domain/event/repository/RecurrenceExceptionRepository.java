@@ -33,9 +33,6 @@ public interface RecurrenceExceptionRepository extends JpaRepository<RecurrenceE
     );
 
     @Modifying
-    @Query("""
-            DELETE FROM RecurrenceException re 
-            WHERE re.event.createdBy = :userId AND re.event.team IS NULL
-            """)
+    @Query("DELETE FROM RecurrenceException re WHERE re.event.createdBy = :userId AND re.event.team IS NULL")
     void deleteByEventCreatedByAndTeamIsNull(@Param("userId") Long userId);
 }

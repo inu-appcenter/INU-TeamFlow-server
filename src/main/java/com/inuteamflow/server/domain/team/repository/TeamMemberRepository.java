@@ -69,9 +69,6 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     boolean existsByUserAndTeamRole(User user, TeamRole teamRole);
 
     @Modifying
-    @Query("""
-    DELETE FROM TeamMember tm
-    WHERE tm.user = :user
-    """)
+    @Query("DELETE FROM TeamMember tm WHERE tm.user = :user")
     void deleteByUser(@Param("user") User user);
 }

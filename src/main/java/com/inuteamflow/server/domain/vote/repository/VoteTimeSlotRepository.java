@@ -4,6 +4,7 @@ import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteDate;
 import com.inuteamflow.server.domain.vote.entity.VoteTimeSlot;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -43,4 +44,12 @@ public interface VoteTimeSlotRepository extends JpaRepository<VoteTimeSlot, Long
             and vts.voteDate.vote = :vote
             """)
     List<VoteTimeSlot> findByIdsAndVote(@Param("ids") List<Long> ids, @Param("vote") Vote vote);
+
+    @Modifying
+    @Query("""
+    DELETE FROM VoteTimeSlot vts
+    WHERE vts.voteDate.vote.createdBy = :createdBy
+      AND vts.voteDate.vote.isOpened = false
+    """)
+    void deleteByClosedVoteCreatedBy(@Param("createdBy") Long createdBy);
 }
