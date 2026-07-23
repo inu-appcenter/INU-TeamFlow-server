@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.notification.service;
 
+import com.inuteamflow.server.domain.fcm.dto.ChatFcmEvent;
 import com.inuteamflow.server.domain.fcm.dto.FcmMultiEvent;
 import com.inuteamflow.server.domain.fcm.dto.FcmSingleEvent;
 import com.inuteamflow.server.domain.notification.dto.req.NotificationRequest;
@@ -90,7 +91,16 @@ public class NotificationService {
             String redirectUrl
     ) {
         Notification notification = notificationRepository.save(Notification.create(receiver, title, content, type, redirectUrl));
-        eventPublisher.publishEvent(new FcmSingleEvent(receiver.getUserId(), title, content, redirectUrl, type, notification.getNotificationId()));
+        eventPublisher.publishEvent(
+                new FcmSingleEvent(
+                        receiver.getUserId(),
+                        title,
+                        content,
+                        redirectUrl,
+                        type,
+                        notification.getNotificationId()
+                )
+        );
     }
 
     @Transactional
@@ -106,7 +116,36 @@ public class NotificationService {
                 .toList();
         notificationRepository.saveAll(notifications);
         List<Long> receiverIds = receivers.stream().map(User::getUserId).toList();
-        eventPublisher.publishEvent(new FcmMultiEvent(receiverIds, title, content, redirectUrl, type));
+        eventPublisher.publishEvent(
+                new FcmMultiEvent(
+                        receiverIds,
+                        title,
+                        content,
+                        redirectUrl,
+                        type
+                )
+        );
+    }
+
+    public void sendChatFcm(
+            List<Long> receiverIds,
+            String title,
+            String content,
+            NotificationType type,
+            String redirectUrl,
+            Long roomId
+    ) {
+        eventPublisher.publishEvent(
+                new ChatFcmEvent(
+                        receiverIds,
+                        title,
+                        content,
+                        type,
+                        redirectUrl,
+                        roomId,
+                        "chat-room-" + roomId
+                )
+        );
     }
 
 }
