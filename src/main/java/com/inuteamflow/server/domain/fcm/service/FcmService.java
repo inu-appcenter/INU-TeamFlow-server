@@ -100,6 +100,39 @@ public class FcmService {
         }
     }
 
+    @Transactional
+    public void sendChatNotification(List<Long> receiverIds, String title, String body, NotificationType type, String redirectUrl, Long roomId, String collapseKey) {
+        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
+        if (tokens.isEmpty()) return;
+
+        for (List<String> batch : partitionTokens(tokens)) {
+            MulticastMessage message = MulticastMessage.builder()
+                    .setNotification(Notification.builder()
+                            .setTitle(title)
+                            .setBody(body)
+                            .build())
+                    .setAndroidConfig(AndroidConfig.builder()   // 안드로이드의 경우
+                            .setCollapseKey(collapseKey)
+                            .build())
+                    .setApnsConfig(ApnsConfig.builder()         // iOS의 경우
+                            .putHeader("apns-collapse-id", collapseKey)
+                            .build())
+                    .putData("redirectUrl", redirectUrl)
+                    .putData("type", type.name())
+                    .putData("roomId", String.valueOf(roomId))
+                    .addAllTokens(batch)
+                    .build();
+
+            try {
+                BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
+                log.info("FCM 채팅 알림 발송 완료 - 성공: {}/{}", response.getSuccessCount(), batch.size());
+                removeInvalidTokens(batch, response);
+            } catch (FirebaseMessagingException e) {
+                log.error("FCM 채팅 알림 발송 실패", e);
+            }
+        }
+    }
+
     private List<List<String>> partitionTokens(List<String> tokens) {
         List<List<String>> batches = new ArrayList<>();
         for (int i = 0; i < tokens.size(); i += FCM_MAX_BATCH_SIZE) {

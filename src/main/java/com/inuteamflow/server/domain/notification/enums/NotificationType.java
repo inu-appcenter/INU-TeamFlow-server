@@ -5,4 +5,5 @@ public enum NotificationType {
     INVITE,
     APPLICATION,
     TEAM_SCHEDULE,
+    CHAT
 }
