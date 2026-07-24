@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.vote.service;
 
+import com.inuteamflow.server.domain.event.dto.Participant;
 import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.EventParticipant;
@@ -44,7 +45,9 @@ public class VoteResultService {
                 vote.getTeam(),
                 new VoteResultEventCreateCommand(vote, request)
         ));
-        createEventParticipants(event, host, participants);
+        List<Participant> eventParticipants = createEventParticipants(event, host, participants).stream()
+                .map(Participant::create)
+                .toList();
         voteResultRepository.save(VoteResult.create(
                 vote,
                 event,
@@ -54,7 +57,13 @@ public class VoteResultService {
         ));
         vote.close();
 
-        return EventDetailResponse.create(event, null, vote.getTeam().getName());
+        return EventDetailResponse.create(
+                event,
+                null,
+                vote.getTeam().getName(),
+                Participant.isParticipant(eventParticipants, host.getUser()),
+                eventParticipants
+        );
     }
 
     // 투표 결과 생성 가능 여부를 검증한다.
@@ -76,7 +85,7 @@ public class VoteResultService {
     }
 
     // 최종 선택 시간대에 공통적으로 참석 가능한 투표자를 일정 참여자로 편입한다.
-    private void createEventParticipants(
+    private List<EventParticipant> createEventParticipants(
             Event event,
             TeamMember host,
             List<TeamMember> participants
@@ -92,6 +101,6 @@ public class VoteResultService {
             eventParticipants.add(EventParticipant.create(event, participant, EventRole.PARTICIPANT));
         }
 
-        eventParticipantRepository.saveAll(eventParticipants);
+        return eventParticipantRepository.saveAll(eventParticipants);
     }
 }

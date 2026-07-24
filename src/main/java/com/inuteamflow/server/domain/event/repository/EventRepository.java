@@ -15,10 +15,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     // 참여 중인 이벤트 — 여러 팀에 걸칠 수 있으므로 LEFT JOIN FETCH
     @Query("""
-            SELECT e FROM Event e LEFT JOIN FETCH e.team
-            WHERE e.eventId IN :eventIds AND e.isSingle = :isSingle
-            AND e.startAt < :endAt AND e.endAt > :startAt
-            """)
+    SELECT e FROM Event e LEFT JOIN FETCH e.team
+    WHERE e.eventId IN :eventIds AND e.isSingle = :isSingle
+    AND e.startAt < :endAt AND e.endAt > :startAt
+    """)
     List<Event> findByEventIdInAndIsSingleAndStartAtBeforeAndEndAtAfter(
             @Param("eventIds") Collection<Long> eventIds,
             @Param("isSingle") Boolean isSingle,
@@ -27,10 +27,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     );
 
     @Query("""
-            SELECT e FROM Event e LEFT JOIN FETCH e.team
-            WHERE e.eventId IN :eventIds AND e.isSingle = :isSingle
-            AND e.startAt < :endAt
-            """)
+    SELECT e FROM Event e LEFT JOIN FETCH e.team
+    WHERE e.eventId IN :eventIds AND e.isSingle = :isSingle
+    AND e.startAt < :endAt
+    """)
     List<Event> findByEventIdInAndIsSingleAndStartAtBefore(
             @Param("eventIds") Collection<Long> eventIds,
             @Param("isSingle") Boolean isSingle,
@@ -53,10 +53,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     // 팀 이벤트 — 같은 팀의 이벤트만 반환되므로 JOIN FETCH로 team 한 번에 로딩
     @Query("""
-            SELECT e FROM Event e JOIN FETCH e.team
-            WHERE e.team = :team AND e.isSingle = :isSingle
-            AND e.startAt < :endAt AND e.endAt > :startAt
-            """)
+    SELECT e FROM Event e JOIN FETCH e.team
+    WHERE e.team = :team AND e.isSingle = :isSingle
+    AND e.startAt < :endAt AND e.endAt > :startAt
+    """)
     List<Event> findByTeamAndIsSingleAndStartAtBeforeAndEndAtAfter(
             @Param("team") Team team,
             @Param("isSingle") Boolean isSingle,
@@ -65,10 +65,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     );
 
     @Query("""
-            SELECT e FROM Event e JOIN FETCH e.team
-            WHERE e.team = :team AND e.isSingle = :isSingle
-            AND e.startAt < :endAt
-            """)
+    SELECT e FROM Event e JOIN FETCH e.team
+    WHERE e.team = :team AND e.isSingle = :isSingle
+    AND e.startAt < :endAt
+    """)
     List<Event> findByTeamAndIsSingleAndStartAtBefore(
             @Param("team") Team team,
             @Param("isSingle") Boolean isSingle,

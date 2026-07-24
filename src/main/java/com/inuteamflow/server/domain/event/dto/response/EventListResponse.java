@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.event.dto.response;
 
+import com.inuteamflow.server.domain.event.dto.Participant;
 import com.inuteamflow.server.domain.event.dto.Recurrence;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceException;
@@ -11,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -56,10 +58,20 @@ public class EventListResponse {
     @Schema(description = "반복 일정 예외 여부", example = "false")
     private Boolean isException;
 
+    @Schema(description = "요청자의 참석자 여부", example = "true")
+    private Boolean isParticipant;
+
+    @Schema(description = "팀 일정 참석자")
+    private List<Participant> participants;
+
     @Schema(description = "반복 일정 규칙")
     private Recurrence recurrence;
 
-    public static EventListResponse createSingle(Event event) {
+    public static EventListResponse createSingle(
+            Event event,
+            boolean isParticipant,
+            List<Participant> participants
+    ) {
         return new EventListResponse(
                 event.getEventId(),
                 event.getTeamId(),
@@ -74,6 +86,8 @@ public class EventListResponse {
                 event.getIsSingle(),
                 event.getIsFinished(),
                 false,
+                isParticipant,
+                participants,
                 null // 단건 일정임, RecurrenceRule 없음
         );
     }
@@ -83,7 +97,9 @@ public class EventListResponse {
             RecurrenceRule recurrenceRule,
             LocalDateTime occurrenceAt,
             LocalDateTime startAt,
-            LocalDateTime endAt
+            LocalDateTime endAt,
+            boolean isParticipant,
+            List<Participant> participants
     ) {
         return new EventListResponse(
                 event.getEventId(),
@@ -99,6 +115,8 @@ public class EventListResponse {
                 event.getIsSingle(),
                 event.getIsFinished(),
                 false,
+                isParticipant,
+                participants,
                 Recurrence.create(recurrenceRule)
         );
     }
@@ -106,7 +124,9 @@ public class EventListResponse {
     public static EventListResponse createModifiedOccurrence(
             Event event,
             RecurrenceRule recurrenceRule,
-            RecurrenceException recurrenceException
+            RecurrenceException recurrenceException,
+            boolean isParticipant,
+            List<Participant> participants
     ) {
         return new EventListResponse(
                 event.getEventId(),
@@ -122,6 +142,8 @@ public class EventListResponse {
                 event.getIsSingle(),
                 recurrenceException.getModifiedIsFinished(),
                 true,
+                isParticipant,
+                participants,
                 Recurrence.create(recurrenceRule)
         );
     }

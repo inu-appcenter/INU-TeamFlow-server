@@ -50,7 +50,8 @@ public class MyEventService {
         );
         List<EventListResponse> recurringOccurrences = new ArrayList<>(eventOccurrenceService.expandRecurringEvents(
                 recurringEvents,
-                dateRange
+                dateRange,
+                user
         ));
 
         List<Long> participatingEventIds = eventParticipantRepository.findEventIdsByUser(user)
@@ -74,11 +75,12 @@ public class MyEventService {
             recurringOccurrences.addAll(eventOccurrenceService.expandRecurringEvents(
                     participatingRecurringEvents,
                     dateRange,
-                    user
+                    user,
+                    true
             ));
         }
 
-        return eventOccurrenceService.mergeAndSort(singleEvents, recurringOccurrences);
+        return eventOccurrenceService.mergeAndSort(singleEvents, recurringOccurrences, user);
     }
 
     @Transactional
@@ -89,7 +91,7 @@ public class MyEventService {
         Event event = eventRepository.save(Event.create(request));
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
 
-        return EventDetailResponse.create(event, recurrenceRule, null);
+        return EventDetailResponse.create(event, recurrenceRule, null, false, List.of());
     }
 
     @Transactional
@@ -99,8 +101,27 @@ public class MyEventService {
             MyEventUpdateRequest request
     ) {
         Event event = getMyEvent(user, eventId);
+        EventRecurrenceService.EventUpdateResult updateResult =
+                eventRecurrenceService.updateEvent(event, null, request);
 
-        return eventRecurrenceService.updateEvent(event, null, request);
+        if (updateResult.recurrenceException() != null) {
+            return EventDetailResponse.createModifiedOccurrence(
+                    updateResult.event(),
+                    updateResult.recurrenceRule(),
+                    updateResult.recurrenceException(),
+                    null,
+                    false,
+                    List.of()
+            );
+        }
+
+        return EventDetailResponse.create(
+                updateResult.event(),
+                updateResult.recurrenceRule(),
+                null,
+                false,
+                List.of()
+        );
     }
 
     @Transactional
