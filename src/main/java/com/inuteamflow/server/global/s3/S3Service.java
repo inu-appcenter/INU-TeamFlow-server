@@ -1,11 +1,7 @@
 package com.inuteamflow.server.global.s3;
 
-import com.inuteamflow.server.domain.team.entity.Team;
-import com.inuteamflow.server.domain.team.entity.TeamMember;
-import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
-import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
@@ -113,6 +109,10 @@ public class S3Service {
     }
 
     public void deleteImage(String imageKey) {
+        if (!StringUtils.hasText(imageKey)) {
+            return;
+        }
+
         DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
                 .bucket(bucket)
                 .key(imageKey)
