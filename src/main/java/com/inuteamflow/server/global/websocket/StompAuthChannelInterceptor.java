@@ -6,6 +6,7 @@ import com.inuteamflow.server.global.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
@@ -21,10 +22,10 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
+        StompHeaderAccessor accessor =
+                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        // STOMP CONNECT 프레임에서만 인증, 이후 세션 동안은 재검증 안 함
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+        if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
             String token = resolveToken(accessor.getFirstNativeHeader("Authorization"));
 
             if (token == null || !jwtTokenProvider.validateToken(token)) {
@@ -32,7 +33,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             }
 
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
-            accessor.setUser(authentication); // 이후 이 세션의 Principal로 계속 유지됨
+            accessor.setUser(authentication); // 이제 원본 message에 실제로 반영됨
         }
 
         return message;
@@ -43,5 +44,4 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                 ? bearerToken.substring(7)
                 : null;
     }
-
 }
