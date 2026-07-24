@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -75,6 +76,13 @@ public class EventOccurrenceService {
 
         List<RecurrenceException> recurrenceExceptions =
                 recurrenceExceptionRepository.findByEventIn(recurringEvents);
+        List<RecurrenceException> movedIntoRangeExceptions =
+                recurrenceExceptionRepository.findModifiedOverlapping(
+                        RecurrenceExceptionType.MODIFIED,
+                        recurringEvents,
+                        dateRange.startAt(),
+                        dateRange.endAt()
+                );
 
         Map<EventOccurrenceService.OccurrenceKey, RecurrenceException> exceptionByKey =
                 recurrenceExceptions.stream()
@@ -104,6 +112,28 @@ public class EventOccurrenceService {
                     requester,
                     filterByParticipation
             ));
+        }
+
+        Set<OccurrenceKey> responseKeys = responses.stream()
+                .filter(response -> response.getOccurrenceAt() != null)
+                .map(response -> new OccurrenceKey(response.getEventId(), response.getOccurrenceAt()))
+                .collect(Collectors.toSet());
+
+        for (RecurrenceException recurrenceException : movedIntoRangeExceptions) {
+            OccurrenceKey occurrenceKey = new OccurrenceKey(recurrenceException.getEventId(), recurrenceException.getOriginalOccurrenceAt());
+
+            if (responseKeys.contains(occurrenceKey)) continue;
+
+            addExceptionOccurrence(
+                    recurrenceException.getEvent(),
+                    ruleByEventId.get(recurrenceException.getEventId()),
+                    recurrenceException,
+                    dateRange,
+                    responses,
+                    participantsByExceptionId,
+                    requester,
+                    filterByParticipation
+            );
         }
 
         return responses;
