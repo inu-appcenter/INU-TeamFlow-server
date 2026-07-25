@@ -18,4 +18,11 @@ public interface VoteResultRepository extends JpaRepository<VoteResult, Long> {
       AND vr.vote.isOpened = false
     """)
     void deleteByClosedVoteCreatedBy(@Param("createdBy") Long createdBy);
+
+    @Modifying
+    @Query("""
+    DELETE FROM VoteResult vr
+    WHERE vr.vote.voteId = :voteId
+    """)
+    void deleteByVoteId(@Param("voteId") Long voteId);
 }

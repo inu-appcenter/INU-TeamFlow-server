@@ -5,6 +5,7 @@ import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
+import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
@@ -181,6 +182,20 @@ public class VoteService {
         return voteResultService.createVoteResult(vote, host, availableTeamMembers, request);
     }
 
+    @Transactional
+    public void deleteVote(
+            User user,
+            Long voteId
+    ) {
+        Vote vote = getVoteById(voteId);
+        TeamMember requester = validateTeamMember(vote.getTeam(), user);
+        validateVoteDeletable(vote, requester);
+
+        deleteVoteCascade(voteId);
+    }
+
+    // ====== 헬퍼 함수 ======
+
     // 팀을 조회한다.
     private Team getTeamById(
             Long teamId
@@ -232,6 +247,33 @@ public class VoteService {
         if (!Boolean.TRUE.equals(vote.getIsOpened())) {
             throw new RestApiException(CustomErrorCode.VOTE_NOT_OPENED);
         }
+    }
+
+    // 투표를 삭제할 권한을 검증한다.
+    private void validateVoteDeletable(
+            Vote vote,
+            TeamMember requester
+    ) {
+        boolean isCreator = vote.getCreatedBy().equals(requester.getUser().getUserId());
+        boolean isManager = requester.getTeamRole() == TeamRole.LEADER || requester.getTeamRole() == TeamRole.MANAGER;
+
+        if (!isCreator && !isManager) {
+            throw new RestApiException(CustomErrorCode.VOTE_DELETE_FORBIDDEN);
+        }
+    }
+
+    // 투표와 연관된 객체들을 순차적으로 삭제한다.
+    // 다른 도메인에서도 사용할 수 있도록 public 으로 설정한다.
+    @Transactional
+    public void deleteVoteCascade(
+            Long voteId
+    ) {
+        // 각 객체의 삭제는 전용 하위 서비스에 위임한다.
+        voteAvailabilityService.deleteByVoteId(voteId);
+        voteResultService.deleteByVoteId(voteId);
+        voteParticipantService.deleteByVoteId(voteId);
+        voteTimeService.deleteByVoteId(voteId);
+        voteRepository.deleteByVoteId(voteId);
     }
 
 }

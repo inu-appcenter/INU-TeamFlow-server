@@ -22,4 +22,11 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
       AND v.isOpened = false
     """)
     void deleteClosedByCreatedBy(@Param("createdBy") Long createdBy);
+
+    @Modifying
+    @Query("""
+    DELETE FROM Vote v
+    WHERE v.voteId = :voteId
+    """)
+    void deleteByVoteId(@Param("voteId") Long voteId);
 }

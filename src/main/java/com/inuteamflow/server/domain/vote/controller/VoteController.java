@@ -84,4 +84,15 @@ public class VoteController implements VoteControllerDocument {
                 .body(voteService.createVoteResult(userDetails.getUser(), voteId, request));
     }
 
+    @DeleteMapping("/votes/{voteId}")
+    public ResponseEntity<Void> deleteVote(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable("voteId") Long voteId
+    ) {
+        voteService.deleteVote(userDetails.getUser(), voteId);
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
+    }
+
 }

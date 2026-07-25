@@ -66,6 +66,12 @@ public class VoteResultService {
         );
     }
 
+    // 투표 결과를 삭제한다.
+    @Transactional
+    public void deleteByVoteId(Long voteId) {
+        voteResultRepository.deleteByVoteId(voteId);
+    }
+
     // 투표 결과 생성 가능 여부를 검증한다.
     private void validateVoteResultCreatable(
             Vote vote,

@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.vote.repository;
 
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteAvailability;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
 import com.inuteamflow.server.domain.vote.entity.VoteTimeSlot;
@@ -45,6 +46,13 @@ public interface VoteAvailabilityRepository extends JpaRepository<VoteAvailabili
       AND va.voteParticipant.vote.isOpened = false
     """)
     void deleteByClosedVoteCreatedBy(@Param("createdBy") Long createdBy);
+
+    @Modifying
+    @Query("""
+    DELETE FROM VoteAvailability va
+    WHERE va.voteParticipant.vote.voteId = :voteId
+    """)
+    void deleteByVoteId(@Param("voteId") Long voteId);
 
     void deleteByVoteParticipant_TeamMember(TeamMember teamMember);
 }

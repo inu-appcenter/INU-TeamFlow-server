@@ -345,7 +345,6 @@ public class EventOccurrenceService {
         }
     }
 
-    // 반복 규칙이 조회 시작일 이후에도 영향을 줄 가능성이 있는지 확인한다.
     private Map<Long, List<Participant>> createParticipantsByEventId(
             List<Event> events
     ) {
@@ -376,6 +375,7 @@ public class EventOccurrenceService {
                 ));
     }
 
+    // 반복 규칙이 조회 시작일 이후에도 영향을 줄 가능성이 있는지 확인한다.
     private boolean canAffectDateRange(
             RecurrenceRule rule,
             DateRange dateRange
