@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.event.service;
 
+import com.inuteamflow.server.domain.event.dto.Participant;
 import com.inuteamflow.server.domain.event.dto.request.TeamEventCreateRequest;
 import com.inuteamflow.server.domain.event.dto.request.TeamEventUpdateRequest;
 import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
@@ -72,10 +73,11 @@ public class TeamEventService {
         );
         List<EventListResponse> recurringOccurrences = eventOccurrenceService.expandRecurringEvents(
                 recurringEvents,
-                dateRange
+                dateRange,
+                user
         );
 
-        return eventOccurrenceService.mergeAndSort(singleEvents, recurringOccurrences);
+        return eventOccurrenceService.mergeAndSort(singleEvents, recurringOccurrences, user);
     }
 
     @Transactional
@@ -88,7 +90,11 @@ public class TeamEventService {
         TeamMember host = validateTeamEventManager(team, user);
         Event event = eventRepository.save(Event.create(team, request));
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
-        createParticipants(event, team, host, request.getParticipants());
+
+        // 참여자 정보를 제공하기 위한 전용 DTO로 변환
+        List<Participant> participants = createParticipants(event, team, host, request.getParticipants()).stream()
+                .map(Participant::create)
+                .toList();
 
         List<User> receivers = eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId());
 
@@ -100,7 +106,7 @@ public class TeamEventService {
                 "/team/"+team.getTeamId()
         );
 
-        return EventDetailResponse.create(event, recurrenceRule, team.getName());
+        return EventDetailResponse.create(event, recurrenceRule, team.getName(), true ,participants);
     }
 
     @Transactional
@@ -114,26 +120,32 @@ public class TeamEventService {
         Team team = getTeam(teamId);
         validateTeamEventManager(team, user);
 
-        boolean isRecurring = !Boolean.TRUE.equals(event.getIsSingle());
-        boolean isThisInstance = isRecurring && request.getRecurrenceEditScope() == RecurrenceEditScope.THIS_INSTANCE;
-        boolean isThisAndFollowing = isRecurring && request.getRecurrenceEditScope() == RecurrenceEditScope.THIS_AND_FOLLOWING;
+        EventRecurrenceService.EventUpdateResult updateResult =
+                eventRecurrenceService.updateEvent(event, team, request);
+        boolean isThisInstance = updateResult.editScope() == RecurrenceEditScope.THIS_INSTANCE;
+        boolean isThisAndFollowing = updateResult.editScope() == RecurrenceEditScope.THIS_AND_FOLLOWING;
 
-        EventDetailResponse response = eventRecurrenceService.updateEvent(event, team, request);
+        TeamMember followingEventHost = isThisAndFollowing
+                ? findEventHost(event)
+                : null;
 
         List<User> receivers;
+        List<Participant> participants;
+
         if (isThisInstance) {
-            RecurrenceException recurrenceException = recurrenceExceptionRepository
-                    .findByEventAndOriginalOccurrenceAt(event, request.getOccurrenceAt())
-                    .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND));
-            syncExceptionParticipants(recurrenceException, team, request.getParticipants());
+            RecurrenceException recurrenceException = updateResult.recurrenceException();
+            participants = syncExceptionParticipants(recurrenceException, team, request.getParticipants());
             receivers = recurrenceExceptionParticipantRepository.findUsersByExceptionExcluding(recurrenceException, user.getUserId());
         } else if (isThisAndFollowing) {
-            Event followingEvent = getTeamEvent(teamId, response.getEventId());
-            syncParticipants(followingEvent, team, request.getParticipants());
+            Event followingEvent = updateResult.event();
+            participants = createParticipants(followingEvent, team, followingEventHost, request.getParticipants()).stream()
+                    .map(Participant::create)
+                    .toList();
             receivers = eventParticipantRepository.findUsersByEventExcluding(followingEvent, user.getUserId());
         } else {
-            syncParticipants(event, team, request.getParticipants());
-            receivers = eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId());
+            Event updatedEvent = updateResult.event();
+            participants = syncParticipants(updatedEvent, team, request.getParticipants());
+            receivers = eventParticipantRepository.findUsersByEventExcluding(updatedEvent, user.getUserId());
         }
 
         String updateContent;
@@ -152,7 +164,25 @@ public class TeamEventService {
                 "/team/" + team.getTeamId()
         );
 
-        return response;
+        boolean isParticipant = Participant.isParticipant(participants, user);
+        if (isThisInstance) {
+            return EventDetailResponse.createModifiedOccurrence(
+                    updateResult.event(),
+                    updateResult.recurrenceRule(),
+                    updateResult.recurrenceException(),
+                    team.getName(),
+                    isParticipant,
+                    participants
+            );
+        }
+
+        return EventDetailResponse.create(
+                updateResult.event(),
+                updateResult.recurrenceRule(),
+                team.getName(),
+                isParticipant,
+                participants
+        );
     }
 
     @Transactional
@@ -193,7 +223,7 @@ public class TeamEventService {
         }
     }
 
-    private void createParticipants(
+    private List<EventParticipant> createParticipants(
             Event event,
             Team team,
             TeamMember host,
@@ -223,10 +253,10 @@ public class TeamEventService {
             }
         }
 
-        eventParticipantRepository.saveAll(participants);
+        return eventParticipantRepository.saveAll(participants);
     }
 
-    private void createExceptionParticipants(
+    private List<RecurrenceExceptionParticipant> createExceptionParticipants(
             RecurrenceException recurrenceException,
             Team team,
             TeamMember host,
@@ -257,10 +287,10 @@ public class TeamEventService {
             }
         }
 
-        recurrenceExceptionParticipantRepository.saveAll(participants);
+        return recurrenceExceptionParticipantRepository.saveAll(participants);
     }
 
-    private void syncParticipants(
+    private List<Participant> syncParticipants(
             Event event,
             Team team,
             List<Long> participantIds
@@ -275,10 +305,12 @@ public class TeamEventService {
         eventParticipantRepository.deleteByEvent(event);
         eventParticipantRepository.flush();
 
-        createParticipants(targetEvent, team, host, participantIds);
+        return createParticipants(targetEvent, team, host, participantIds).stream()
+                .map(Participant::create)
+                .toList();
     }
 
-    private void syncExceptionParticipants(
+    private List<Participant> syncExceptionParticipants(
             RecurrenceException recurrenceException,
             Team team,
             List<Long> participantIds
@@ -292,7 +324,9 @@ public class TeamEventService {
         recurrenceExceptionParticipantRepository.deleteByRecurrenceException(recurrenceException);
         recurrenceExceptionParticipantRepository.flush();
 
-        createExceptionParticipants(recurrenceException, team, host, participantIds);
+        return createExceptionParticipants(recurrenceException, team, host, participantIds).stream()
+                .map(Participant::create)
+                .toList();
     }
 
     private Event getTeamEvent(
@@ -314,6 +348,16 @@ public class TeamEventService {
     ) {
         return teamRepository.findById(teamId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+    }
+
+    private TeamMember findEventHost(
+            Event event
+    ) {
+        return eventParticipantRepository.findByEvent(event).stream()
+                .filter(participant -> participant.getEventRole() == EventRole.HOST)
+                .findFirst()
+                .map(EventParticipant::getTeamMember)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_PARTICIPANT_HOST_NOT_FOUND                ));
     }
 
     private TeamMember validateTeamMember(

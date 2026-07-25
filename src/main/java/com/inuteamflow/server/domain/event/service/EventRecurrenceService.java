@@ -2,7 +2,6 @@ package com.inuteamflow.server.domain.event.service;
 
 import com.inuteamflow.server.domain.event.dto.EventCreateCommand;
 import com.inuteamflow.server.domain.event.dto.EventUpdateCommand;
-import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
 import com.inuteamflow.server.domain.event.entity.*;
 import com.inuteamflow.server.domain.event.enums.RecurrenceEditScope;
 import com.inuteamflow.server.domain.event.repository.*;
@@ -23,7 +22,7 @@ public class EventRecurrenceService {
 
     private final EventOccurrenceService eventOccurrenceService;
     private final EventRepository eventRepository;
-    private final EventParticipantRepository eventParticipantRepository;
+    // private final EventParticipantRepository eventParticipantRepository;
     private final RecurrenceRuleRepository recurrenceRuleRepository;
     private final RecurrenceExceptionRepository recurrenceExceptionRepository;
     private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
@@ -71,16 +70,15 @@ public class EventRecurrenceService {
      * 어차피 private 메서드이기 때문에
      * */
     @Transactional
-    public EventDetailResponse updateEvent(
+    public EventUpdateResult updateEvent(
             Event event,
             Team team,
             EventUpdateCommand command
     ) {
-        String teamName = team == null ? null : team.getName();
         event.increaseSequence();
 
         if (Boolean.TRUE.equals(event.getIsSingle())) {
-            return updateSingleEvent(event, command, teamName);
+            return updateSingleEvent(event, command);
         }
 
         RecurrenceEditScope editScope = command.getRecurrenceEditScope() == null
@@ -100,34 +98,58 @@ public class EventRecurrenceService {
         return switch (editScope) {
             case ALL_SERIES -> {
                 RecurrenceRule recurrenceRule = updateAllSeries(event, command);
-                yield EventDetailResponse.create(event, recurrenceRule, teamName);
+                yield new EventUpdateResult(
+                        event,
+                        recurrenceRule,
+                        null,
+                        RecurrenceEditScope.ALL_SERIES
+                );
             }
             case THIS_INSTANCE -> {
                 RecurrenceRule recurrenceRule = getRecurrenceRule(event);
                 RecurrenceException recurrenceException = updateThisInstance(event, command);
-                yield EventDetailResponse.createModifiedOccurrence(event, recurrenceRule, recurrenceException, teamName);
+                yield new EventUpdateResult(
+                        event,
+                        recurrenceRule,
+                        recurrenceException,
+                        RecurrenceEditScope.THIS_INSTANCE
+                );
             }
             case THIS_AND_FOLLOWING -> {
                 FollowingSeries followingSeries = updateThisAndFollowing(event, team, command);
-                yield EventDetailResponse.create(followingSeries.event(), followingSeries.recurrenceRule(), teamName);
+                yield new EventUpdateResult(
+                        followingSeries.event(),
+                        followingSeries.recurrenceRule(),
+                        null,
+                        RecurrenceEditScope.THIS_AND_FOLLOWING
+                );
             }
         };
     }
 
-    private EventDetailResponse updateSingleEvent(
+    private EventUpdateResult updateSingleEvent(
             Event event,
-            EventUpdateCommand command,
-            String teamName
+            EventUpdateCommand command
     ) {
         event.update(command);
         if (command.getRecurrence() == null) {
-            return EventDetailResponse.create(event, null, teamName);
+            return new EventUpdateResult(
+                    event,
+                    null,
+                    null,
+                    RecurrenceEditScope.ALL_SERIES
+            );
         }
 
         event.changeToRecurring();
         RecurrenceRule recurrenceRule = createRecurrenceRule(event, command);
 
-        return EventDetailResponse.create(event, recurrenceRule, teamName);
+        return new EventUpdateResult(
+                event,
+                recurrenceRule,
+                null,
+                RecurrenceEditScope.ALL_SERIES
+        );
     }
 
     private RecurrenceRule updateAllSeries(
@@ -182,7 +204,7 @@ public class EventRecurrenceService {
         Event followingEvent = team == null
                 ? eventRepository.save(Event.createRecurring(command))
                 : eventRepository.save(Event.createRecurring(team, command));
-        copyParticipants(event, followingEvent);
+        // copyParticipants(event, followingEvent);
         RecurrenceRule followingRule = recurrenceRuleRepository.save(RecurrenceRule.create(
                 followingEvent,
                 command.getRecurrence(),
@@ -192,7 +214,7 @@ public class EventRecurrenceService {
         return new FollowingSeries(followingEvent, followingRule);
     }
 
-    private void copyParticipants(
+/*    private void copyParticipants(
             Event originalEvent,
             Event followingEvent
     ) {
@@ -211,7 +233,7 @@ public class EventRecurrenceService {
                 .toList();
 
         eventParticipantRepository.saveAll(copiedParticipants);
-    }
+    }*/
 
     /**
      * 일정 삭제를 처리하는 함수:
@@ -320,6 +342,14 @@ public class EventRecurrenceService {
     private record FollowingSeries(
             Event event,
             RecurrenceRule recurrenceRule
+    ) {
+    }
+
+    public record EventUpdateResult(
+            Event event,
+            RecurrenceRule recurrenceRule,
+            RecurrenceException recurrenceException,
+            RecurrenceEditScope editScope
     ) {
     }
 }

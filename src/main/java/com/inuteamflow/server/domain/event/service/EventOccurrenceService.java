@@ -1,11 +1,13 @@
 package com.inuteamflow.server.domain.event.service;
 
+import com.inuteamflow.server.domain.event.dto.Participant;
 import com.inuteamflow.server.domain.event.dto.response.EventListResponse;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceException;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.RecurrenceExceptionType;
 import com.inuteamflow.server.domain.event.enums.RecurrenceFrequency;
+import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceRuleRepository;
@@ -36,6 +38,7 @@ public class EventOccurrenceService {
 
     private final RecurrenceRuleRepository recurrenceRuleRepository;
     private final RecurrenceExceptionRepository recurrenceExceptionRepository;
+    private final EventParticipantRepository eventParticipantRepository;
     private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
 
     // year/month 요청값을 실제 조회 범위인 [이번 달 1일 00:00, 다음 달 1일 00:00]로 변환한다.
@@ -59,7 +62,8 @@ public class EventOccurrenceService {
     public List<EventListResponse> expandRecurringEvents(
             List<Event> recurringEvents,
             EventOccurrenceService.DateRange dateRange,
-            User user
+            User requester,
+            boolean filterByParticipation
     ) {
         if (recurringEvents.isEmpty()) {
             return List.of();
@@ -70,9 +74,18 @@ public class EventOccurrenceService {
                         .findByEventIn(recurringEvents).stream()
                         .collect(Collectors.toMap(RecurrenceRule::getEventId, Function.identity()));
 
+        List<RecurrenceException> recurrenceExceptions =
+                recurrenceExceptionRepository.findByEventIn(recurringEvents);
+        List<RecurrenceException> movedIntoRangeExceptions =
+                recurrenceExceptionRepository.findModifiedOverlapping(
+                        RecurrenceExceptionType.MODIFIED,
+                        recurringEvents,
+                        dateRange.startAt(),
+                        dateRange.endAt()
+                );
+
         Map<EventOccurrenceService.OccurrenceKey, RecurrenceException> exceptionByKey =
-                recurrenceExceptionRepository
-                        .findByEventIn(recurringEvents).stream()
+                recurrenceExceptions.stream()
                         .collect(Collectors.toMap(
                                 exception -> new EventOccurrenceService.OccurrenceKey(
                                         exception.getEventId(),
@@ -82,8 +95,10 @@ public class EventOccurrenceService {
                                 (first, second) -> second
                         ));
 
-        Set<Long> participatingExceptionIds = user == null ? null :
-                recurrenceExceptionParticipantRepository.findExceptionIdsByEventsAndUser(recurringEvents, user);
+        Map<Long, List<Participant>> participantsByEventId =
+                createParticipantsByEventId(recurringEvents);
+        Map<Long, List<Participant>> participantsByExceptionId =
+                createParticipantsByExceptionId(recurrenceExceptions);
 
         List<EventListResponse> responses = new ArrayList<>();
         for (Event event : recurringEvents) {
@@ -92,8 +107,33 @@ public class EventOccurrenceService {
                     ruleByEventId.get(event.getEventId()),
                     exceptionByKey,
                     dateRange,
-                    participatingExceptionIds
+                    participantsByEventId,
+                    participantsByExceptionId,
+                    requester,
+                    filterByParticipation
             ));
+        }
+
+        Set<OccurrenceKey> responseKeys = responses.stream()
+                .filter(response -> response.getOccurrenceAt() != null)
+                .map(response -> new OccurrenceKey(response.getEventId(), response.getOccurrenceAt()))
+                .collect(Collectors.toSet());
+
+        for (RecurrenceException recurrenceException : movedIntoRangeExceptions) {
+            OccurrenceKey occurrenceKey = new OccurrenceKey(recurrenceException.getEventId(), recurrenceException.getOriginalOccurrenceAt());
+
+            if (responseKeys.contains(occurrenceKey)) continue;
+
+            addExceptionOccurrence(
+                    recurrenceException.getEvent(),
+                    ruleByEventId.get(recurrenceException.getEventId()),
+                    recurrenceException,
+                    dateRange,
+                    responses,
+                    participantsByExceptionId,
+                    requester,
+                    filterByParticipation
+            );
         }
 
         return responses;
@@ -101,9 +141,10 @@ public class EventOccurrenceService {
 
     public List<EventListResponse> expandRecurringEvents(
             List<Event> recurringEvents,
-            EventOccurrenceService.DateRange dateRange
+            EventOccurrenceService.DateRange dateRange,
+            User requester
     ) {
-        return expandRecurringEvents(recurringEvents, dateRange, null);
+        return expandRecurringEvents(recurringEvents, dateRange, requester, false);
     }
 
     // 반복 일정 하나를 조회 범위 안의 occurrence 들로 변환한다. DB row를 만들지 않고 메모리에서만 계산한다.
@@ -112,7 +153,10 @@ public class EventOccurrenceService {
             RecurrenceRule rule,
             Map<OccurrenceKey, RecurrenceException> exceptionByKey,
             DateRange dateRange,
-            Set<Long> participatingExceptionIds
+            Map<Long, List<Participant>> participantsByEventId,
+            Map<Long, List<Participant>> participantsByExceptionId,
+            User requester,
+            boolean filterByParticipation
     ) {
         if (rule == null || !canAffectDateRange(rule, dateRange)) {
             return List.of();
@@ -144,10 +188,28 @@ public class EventOccurrenceService {
             );
             if (recurrenceException != null) {
                 // 예외 회차가 존재하면: - CANCELLED → 제외, - MODIFIED → 수정된 값 기준으로 응답 생성
-                addExceptionOccurrence(event, rule, recurrenceException, dateRange, responses, participatingExceptionIds);
+                addExceptionOccurrence(
+                        event,
+                        rule,
+                        recurrenceException,
+                        dateRange,
+                        responses,
+                        participantsByExceptionId,
+                        requester,
+                        filterByParticipation
+                );
             } else {
                 // 예외가 없으면 일반 반복 occurrence 생성
-                addNormalOccurrence(event, rule, occurrenceAt, durationSeconds, dateRange, responses);
+                addNormalOccurrence(
+                        event,
+                        rule,
+                        occurrenceAt,
+                        durationSeconds,
+                        dateRange,
+                        responses,
+                        participantsByEventId,
+                        requester
+                );
             }
 
             occurrenceAt = nextOccurrenceAt(occurrenceAt, rule);
@@ -159,11 +221,24 @@ public class EventOccurrenceService {
     // 단건 일정 응답과 반복 occurrence 응답을 합친 뒤, 캘린더 표시용으로 시작 시간 기준 정렬한다.
     public List<EventListResponse> mergeAndSort(
             List<Event> singleEvents,
-            List<EventListResponse> recurringOccurrences
+            List<EventListResponse> recurringOccurrences,
+            User requester
     ) {
         List<EventListResponse> responses = new ArrayList<>();
+        Map<Long, List<Participant>> participantsByEventId =
+                createParticipantsByEventId(singleEvents);
         singleEvents.stream()
-                .map(EventListResponse::createSingle)
+                .map(event -> {
+                    List<Participant> participants = participantsByEventId.getOrDefault(
+                            event.getEventId(),
+                            List.of()
+                    );
+                    return EventListResponse.createSingle(
+                            event,
+                            Participant.isParticipant(participants, requester),
+                            participants
+                    );
+                })
                 .forEach(responses::add);
         responses.addAll(recurringOccurrences);
         responses.sort(Comparator.comparing(EventListResponse::getStartAt));
@@ -206,12 +281,26 @@ public class EventOccurrenceService {
             LocalDateTime occurrenceAt,
             long durationSeconds,
             DateRange dateRange,
-            List<EventListResponse> responses
+            List<EventListResponse> responses,
+            Map<Long, List<Participant>> participantsByEventId,
+            User requester
     ) {
         LocalDateTime startAt = occurrenceAt;
         LocalDateTime endAt = occurrenceAt.plusSeconds(durationSeconds);
         if (isOverlapped(startAt, endAt, dateRange)) {
-            responses.add(EventListResponse.createOccurrence(event, rule, occurrenceAt, startAt, endAt));
+            List<Participant> participants = participantsByEventId.getOrDefault(
+                    event.getEventId(),
+                    List.of()
+            );
+            responses.add(EventListResponse.createOccurrence(
+                    event,
+                    rule,
+                    occurrenceAt,
+                    startAt,
+                    endAt,
+                    Participant.isParticipant(participants, requester),
+                    participants
+            ));
         }
     }
 
@@ -223,14 +312,20 @@ public class EventOccurrenceService {
             RecurrenceException recurrenceException,
             DateRange dateRange,
             List<EventListResponse> responses,
-            Set<Long> participatingExceptionIds
+            Map<Long, List<Participant>> participantsByExceptionId,
+            User requester,
+            boolean filterByParticipation
     ) {
         if (recurrenceException.getExceptionType() == RecurrenceExceptionType.CANCELLED) {
             return;
         }
 
-        if (participatingExceptionIds != null
-                && !participatingExceptionIds.contains(recurrenceException.getRecurrenceExceptionId())) {
+        List<Participant> participants = participantsByExceptionId.getOrDefault(
+                recurrenceException.getRecurrenceExceptionId(),
+                List.of()
+        );
+        boolean isParticipant = Participant.isParticipant(participants, requester);
+        if (filterByParticipation && !isParticipant) {
             return;
         }
 
@@ -240,11 +335,47 @@ public class EventOccurrenceService {
                 recurrenceException.getModifiedEndAt(),
                 dateRange
         )) {
-            responses.add(EventListResponse.createModifiedOccurrence(event, rule, recurrenceException));
+            responses.add(EventListResponse.createModifiedOccurrence(
+                    event,
+                    rule,
+                    recurrenceException,
+                    isParticipant,
+                    participants
+            ));
         }
     }
 
     // 반복 규칙이 조회 시작일 이후에도 영향을 줄 가능성이 있는지 확인한다.
+    private Map<Long, List<Participant>> createParticipantsByEventId(
+            List<Event> events
+    ) {
+        if (events.isEmpty()) {
+            return Map.of();
+        }
+
+        return eventParticipantRepository.findByEventInWithMember(events).stream()
+                .collect(Collectors.groupingBy(
+                        participant -> participant.getEvent().getEventId(),
+                        Collectors.mapping(Participant::create, Collectors.toList())
+                ));
+    }
+
+    private Map<Long, List<Participant>> createParticipantsByExceptionId(
+            List<RecurrenceException> recurrenceExceptions
+    ) {
+        if (recurrenceExceptions.isEmpty()) {
+            return Map.of();
+        }
+
+        return recurrenceExceptionParticipantRepository
+                .findByRecurrenceExceptionInWithMember(recurrenceExceptions)
+                .stream()
+                .collect(Collectors.groupingBy(
+                        participant -> participant.getRecurrenceException().getRecurrenceExceptionId(),
+                        Collectors.mapping(Participant::create, Collectors.toList())
+                ));
+    }
+
     private boolean canAffectDateRange(
             RecurrenceRule rule,
             DateRange dateRange

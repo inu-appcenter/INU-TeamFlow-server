@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.event.dto.response;
 
+import com.inuteamflow.server.domain.event.dto.Participant;
 import com.inuteamflow.server.domain.event.dto.Recurrence;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceException;
@@ -11,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -56,13 +58,21 @@ public class EventDetailResponse {
     @Schema(description = "반복 일정 예외 여부", example = "false")
     private Boolean isException;
 
+    @Schema(description = "요청자의 참석자 여부", example = "true")
+    private Boolean isParticipant;
+
+    @Schema(description = "팀 일정 참석자")
+    private List<Participant> participants;
+
     @Schema(description = "반복 일정 규칙")
     private Recurrence recurrence;
 
     public static EventDetailResponse create(
             Event event,
             RecurrenceRule recurrenceRule,
-            String teamName
+            String teamName,
+            boolean isParticipant,
+            List<Participant> participants
     ) {
         return new EventDetailResponse(
                 event.getEventId(),
@@ -78,6 +88,8 @@ public class EventDetailResponse {
                 event.getIsSingle(),
                 event.getIsFinished(),
                 false,
+                isParticipant,
+                participants,
                 Recurrence.create(recurrenceRule)
         );
     }
@@ -86,7 +98,9 @@ public class EventDetailResponse {
             Event event,
             RecurrenceRule recurrenceRule,
             RecurrenceException recurrenceException,
-            String teamName
+            String teamName,
+            boolean isParticipant,
+            List<Participant> participants
     ) {
         return new EventDetailResponse(
                 event.getEventId(),
@@ -102,6 +116,8 @@ public class EventDetailResponse {
                 event.getIsSingle(),
                 recurrenceException.getModifiedIsFinished(),
                 true,
+                isParticipant,
+                participants,
                 Recurrence.create(recurrenceRule)
         );
     }
