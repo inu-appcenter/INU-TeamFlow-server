@@ -303,11 +303,7 @@ public interface VoteControllerDocument {
     @ApiResponses({
             @ApiResponse(
                     responseCode = "204",
-                    description = "투표 삭제 완료",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = EventDetailResponse.class)
-                    )
+                    description = "투표 삭제 완료"
             ),
             @ApiResponse(
                     responseCode = "401",

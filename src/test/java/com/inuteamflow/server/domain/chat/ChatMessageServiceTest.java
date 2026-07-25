@@ -33,7 +33,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * {@link ChatMessageService#sendMessage(Long, ChatMessageSendRequest, User)}의 메시지 전송 및 FCM 발송 조건을 Mockito 기반 단위 테스트로 검증한다.
+ * {@link ChatMessageService}의 메시지 전송 및 FCM 발송 조건을 Mockito 기반 단위 테스트로 검증한다.
  * - Spring Context와 실제 데이터베이스를 사용하지 않는다.
  * - 서비스의 모든 협력 객체를 Mock으로 대체해 분기 로직과 호출 결과만 확인한다.
  */

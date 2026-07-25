@@ -36,8 +36,7 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@link TeamNoticeService#getMyNotices(User, org.springframework.data.domain.Pageable)}의
- * 작성자별 공지 조회와 페이지네이션을 실제 Repository 및 H2 데이터베이스로 검증한다.
+ * {@link TeamNoticeService#getMyNotices(User, org.springframework.data.domain.Pageable)}의 작성자별 공지 조회와 페이지네이션을 실제 Repository 및 H2 데이터베이스로 검증한다.
  * - 로그인 사용자가 작성한 공지만 조회되고 다른 사용자의 공지는 제외되는지 확인한다.
  * - 조회 결과의 페이지 크기, 전체 요소 수, 전체 페이지 수 등 페이지 정보를 확인한다.
  */

@@ -27,6 +27,7 @@ import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
+import com.inuteamflow.server.domain.teamNotice.service.TeamNoticeService;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.enums.Department;
@@ -51,6 +52,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * {@link TeamEventService}의 팀 반복 일정에 대한 동작을 검증한다
+ * - 참석자가 정상적으로 포함되어 노출되는지 확인한다.
+ * - 반복 일정을 특정 스코프로 변경하였을 때 올바르게 저장되며 응답하는지 확인한다.
+ */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
