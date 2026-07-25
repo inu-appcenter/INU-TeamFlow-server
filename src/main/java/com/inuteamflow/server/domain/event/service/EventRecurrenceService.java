@@ -22,7 +22,6 @@ public class EventRecurrenceService {
 
     private final EventOccurrenceService eventOccurrenceService;
     private final EventRepository eventRepository;
-    // private final EventParticipantRepository eventParticipantRepository;
     private final RecurrenceRuleRepository recurrenceRuleRepository;
     private final RecurrenceExceptionRepository recurrenceExceptionRepository;
     private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
@@ -204,7 +203,7 @@ public class EventRecurrenceService {
         Event followingEvent = team == null
                 ? eventRepository.save(Event.createRecurring(command))
                 : eventRepository.save(Event.createRecurring(team, command));
-        // copyParticipants(event, followingEvent);
+
         RecurrenceRule followingRule = recurrenceRuleRepository.save(RecurrenceRule.create(
                 followingEvent,
                 command.getRecurrence(),
@@ -213,27 +212,6 @@ public class EventRecurrenceService {
 
         return new FollowingSeries(followingEvent, followingRule);
     }
-
-/*    private void copyParticipants(
-            Event originalEvent,
-            Event followingEvent
-    ) {
-        if (followingEvent.getTeamId() == null) {
-            return;
-        }
-
-        List<EventParticipant> copiedParticipants = eventParticipantRepository
-                .findByEvent(originalEvent)
-                .stream()
-                .map(participant -> EventParticipant.create(
-                        followingEvent,
-                        participant.getTeamMember(),
-                        participant.getEventRole()
-                ))
-                .toList();
-
-        eventParticipantRepository.saveAll(copiedParticipants);
-    }*/
 
     /**
      * 일정 삭제를 처리하는 함수:

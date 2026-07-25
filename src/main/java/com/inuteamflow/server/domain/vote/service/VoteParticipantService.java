@@ -101,4 +101,10 @@ public class VoteParticipantService {
             List<VoterInfoResponse> uncompletedVoters
     ) {
     }
+
+    // 투표 참여자를 삭제한다.
+    @Transactional
+    public void deleteByVoteId(Long voteId) {
+        voteParticipantRepository.deleteByVoteId(voteId);
+    }
 }

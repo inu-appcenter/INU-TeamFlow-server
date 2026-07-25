@@ -24,7 +24,10 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
     Optional<VoteParticipant> findByVoteAndTeamMember(Vote vote, TeamMember teamMember);
 
     @Modifying
-    @Query("DELETE FROM VoteParticipant vp WHERE vp.teamMember.user = :user")
+    @Query("""
+    DELETE FROM VoteParticipant vp
+    WHERE vp.teamMember.user = :user
+    """)
     void deleteByTeamMemberUser(@Param("user") User user);
 
     @Modifying
@@ -36,4 +39,11 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
     void deleteByClosedVoteCreatedBy(@Param("createdBy") Long createdBy);
 
     void deleteByTeamMember(TeamMember teamMember);
+
+    @Modifying
+    @Query("""
+    DELETE FROM VoteParticipant vp
+    WHERE vp.vote.voteId = :voteId
+    """)
+    void deleteByVoteId(@Param("voteId") Long voteId);
 }

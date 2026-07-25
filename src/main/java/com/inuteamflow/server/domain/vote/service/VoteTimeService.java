@@ -57,6 +57,30 @@ public class VoteTimeService {
         voteTimeSlotRepository.saveAll(voteTimeSlots);
     }
 
+    // 특정 날짜의 시간 슬롯 목록을 생성한다.
+    private List<VoteTimeSlot> createVoteTimeSlots(
+            VoteDate voteDate,
+            EventVoteCreateRequest request
+    ) {
+        if (Boolean.TRUE.equals(request.getIsAllDay())) {
+            return List.of(VoteTimeSlot.create(voteDate, LocalTime.MIN, LocalTime.MAX));
+        }
+
+        List<VoteTimeSlot> voteTimeSlots = new ArrayList<>();
+        LocalTime slotStartAt = request.getDailyTimeStart();
+
+        while (slotStartAt.isBefore(request.getDailyTimeEnd())) {
+            LocalTime slotEndAt = slotStartAt.plusMinutes(voteDate.getVote().getSlotUnitMinute());
+
+            if (slotEndAt.isAfter(request.getDailyTimeEnd())) break;
+
+            voteTimeSlots.add(VoteTimeSlot.create(voteDate, slotStartAt, slotEndAt));
+            slotStartAt = slotEndAt;
+        }
+
+        return voteTimeSlots;
+    }
+
     // 투표 날짜 목록을 조회한다.
     public List<VoteDate> getVoteDates(
             Vote vote
@@ -123,7 +147,14 @@ public class VoteTimeService {
         return voteTimeSlots;
     }
 
-    // 특정 날짜의 시간 슬롯 목록을 생성한다.
+    // 투표 시간과 관련된 객체들을 삭제한다.
+    @Transactional
+    public void deleteByVoteId(Long voteId) {
+        voteTimeSlotRepository.deleteByVoteId(voteId);
+        voteDateRepository.deleteByVoteId(voteId);
+    }
+
+    //
     private void validateSelectedDateTimeRange(
             LocalDateTime selectedStartAt,
             LocalDateTime selectedEndAt
@@ -170,26 +201,4 @@ public class VoteTimeService {
         }
     }
 
-    private List<VoteTimeSlot> createVoteTimeSlots(
-            VoteDate voteDate,
-            EventVoteCreateRequest request
-    ) {
-        if (Boolean.TRUE.equals(request.getIsAllDay())) {
-            return List.of(VoteTimeSlot.create(voteDate, LocalTime.MIN, LocalTime.MAX));
-        }
-
-        List<VoteTimeSlot> voteTimeSlots = new ArrayList<>();
-        LocalTime slotStartAt = request.getDailyTimeStart();
-
-        while (slotStartAt.isBefore(request.getDailyTimeEnd())) {
-            LocalTime slotEndAt = slotStartAt.plusMinutes(voteDate.getVote().getSlotUnitMinute());
-
-            if (slotEndAt.isAfter(request.getDailyTimeEnd())) break;
-
-            voteTimeSlots.add(VoteTimeSlot.create(voteDate, slotStartAt, slotEndAt));
-            slotStartAt = slotEndAt;
-        }
-
-        return voteTimeSlots;
-    }
 }

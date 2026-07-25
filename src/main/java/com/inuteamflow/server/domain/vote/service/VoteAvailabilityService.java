@@ -39,6 +39,12 @@ public class VoteAvailabilityService {
         voteAvailabilityRepository.saveAll(voteAvailabilities);
     }
 
+    // 참석 가능 여부 기록을 삭제한다.
+    @Transactional
+    public void deleteByVoteId(Long voteId) {
+        voteAvailabilityRepository.deleteByVoteId(voteId);
+    }
+
     public Map<Long, Integer> countParticipantsByTimeSlot(
             Vote vote
     ) {

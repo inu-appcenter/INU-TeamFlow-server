@@ -20,4 +20,11 @@ public interface VoteDateRepository extends JpaRepository<VoteDate, Long> {
       AND vd.vote.isOpened = false
     """)
     void deleteByClosedVoteCreatedBy(@Param("createdBy") Long createdBy);
+
+    @Modifying
+    @Query("""
+    DELETE FROM VoteDate vd
+    WHERE vd.vote.voteId = :voteId
+    """)
+    void deleteByVoteId(@Param("voteId") Long voteId);
 }

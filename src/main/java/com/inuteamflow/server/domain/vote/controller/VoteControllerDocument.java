@@ -298,4 +298,40 @@ public interface VoteControllerDocument {
             @PathVariable("voteId") Long voteId,
             @Valid @RequestBody EventVoteTimeSelectRequest request
     );
+
+    @Operation(summary = "deleteVote", description = "투표 포함, 연관된 객체들 삭제")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "투표 삭제 완료"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 또는 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "삭제할 수 있는 권한이 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "투표 또는 팀 멤버를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<Void> deleteVote(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable("voteId") Long voteId
+    );
 }

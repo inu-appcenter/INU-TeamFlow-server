@@ -52,4 +52,11 @@ public interface VoteTimeSlotRepository extends JpaRepository<VoteTimeSlot, Long
       AND vts.voteDate.vote.isOpened = false
     """)
     void deleteByClosedVoteCreatedBy(@Param("createdBy") Long createdBy);
+
+    @Modifying
+    @Query("""
+    DELETE FROM VoteTimeSlot vts
+    WHERE vts.voteDate.vote.voteId = :voteId
+    """)
+    void deleteByVoteId(@Param("voteId") Long voteId);
 }

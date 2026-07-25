@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 /**
- * {@link UserService#deleteUser(User)}의 실제 트랜잭션 커밋 경계를 검증한다.
+ * {@link UserService}의 실제 트랜잭션 커밋 경계를 검증한다.
  * - 픽스처 생성, 회원 탈퇴, 결과 조회를 각각 독립된 트랜잭션으로 실행한다.
  * - 서비스 메서드 반환 시 삭제가 실제로 커밋되었는지 새로운 트랜잭션에서 확인한다.
  */
