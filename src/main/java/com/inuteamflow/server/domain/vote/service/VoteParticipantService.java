@@ -28,6 +28,17 @@ public class VoteParticipantService {
     private final VoteParticipantRepository voteParticipantRepository;
     private final TeamMemberRepository teamMemberRepository;
 
+    /**
+     * 투표 대상으로 지정된 팀 멤버를 투표 참여자로 생성한다.
+     *
+     * <p>중복된 팀 멤버 ID는 하나로 처리하며, {@code null}이거나 비어 있는 목록은
+     * 투표 참여자를 생성하지 않는다.</p>
+     *
+     * @param vote 참여자를 등록할 투표
+     * @param teamMemberIds 투표 대상으로 지정할 팀 멤버 ID 목록
+     * @return 투표 참여자로 등록된 팀 멤버 목록
+     * @throws RestApiException 해당 팀에 속하지 않는 팀 멤버 ID가 포함된 경우
+     */
     @Transactional
     public List<TeamMember> createVoteParticipants(
             Vote vote,
@@ -63,6 +74,14 @@ public class VoteParticipantService {
         return uniqueIds.stream().map(memberMap::get).toList();
     }
 
+    /**
+     * 투표와 팀 멤버에 해당하는 투표 참여자를 조회한다.
+     *
+     * @param vote 참여자를 조회할 투표
+     * @param teamMember 조회할 팀 멤버
+     * @return 조회된 투표 참여자
+     * @throws RestApiException 해당하는 투표 참여자를 찾을 수 없는 경우
+     */
     public VoteParticipant getVoteParticipant(
             Vote vote,
             TeamMember teamMember
@@ -71,6 +90,12 @@ public class VoteParticipantService {
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.VOTE_PARTICIPANT_NOT_FOUND));
     }
 
+    /**
+     * 투표 참여자를 참여 완료 여부에 따라 분류하여 조회한다.
+     *
+     * @param vote 참여 현황을 조회할 투표
+     * @return 참여 완료자와 미완료자로 분류된 투표 참여 현황
+     */
     public VoteParticipants getVoteParticipants(
             Vote vote
     ) {
@@ -89,6 +114,13 @@ public class VoteParticipantService {
         return new VoteParticipants(completedVoters, uncompletedVoters);
     }
 
+    /**
+     * 투표 참여자 중 지정한 사용자를 제외한 사용자 목록을 조회한다.
+     *
+     * @param vote 참여자를 조회할 투표
+     * @param excludeUserId 결과에서 제외할 사용자 ID
+     * @return 지정한 사용자를 제외한 투표 참여자 목록
+     */
     public List<User> getUsersByVoteExcluding(
             Vote vote,
             Long excludeUserId
@@ -99,13 +131,11 @@ public class VoteParticipantService {
                 .toList();
     }
 
-    public record VoteParticipants(
-            List<VoterInfoResponse> completedVoters,
-            List<VoterInfoResponse> uncompletedVoters
-    ) {
-    }
-
-    // 투표 참여자를 삭제한다.
+    /**
+     * 투표에 등록된 모든 참여자를 삭제한다.
+     *
+     * @param voteId 참여자를 삭제할 투표 ID
+     */
     @Transactional
     public void deleteByVoteId(
             Long voteId
@@ -114,10 +144,11 @@ public class VoteParticipantService {
     }
 
     /**
-     * 사용자가 해당 투표의 참여자인지 확인한다.
+     * 사용자가 투표 대상으로 지정되어 있는지 확인한다.
+     *
      * @param vote 투표
-     * @param user 요청자
-     * @return 투표 대상자이면 true, 아니면 false
+     * @param user 확인할 사용자
+     * @return 투표 대상자이면 {@code true}, 그렇지 않으면 {@code false}
      */
     public boolean isVoter(
             Vote vote,
@@ -128,11 +159,19 @@ public class VoteParticipantService {
 
     /**
      * 사용자가 투표 대상자로 지정된 투표 목록을 조회한다.
-     * @param user 요청자
+     *
+     * @param user 투표 목록을 조회할 사용자
+     * @return 사용자가 투표 대상자로 지정된 투표 목록
      */
     public List<Vote> getVotesByUser(
             User user
     ) {
         return voteParticipantRepository.findVotesByUser(user);
+    }
+
+    public record VoteParticipants(
+            List<VoterInfoResponse> completedVoters,
+            List<VoterInfoResponse> uncompletedVoters
+    ) {
     }
 }

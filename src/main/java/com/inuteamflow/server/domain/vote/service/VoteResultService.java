@@ -31,7 +31,19 @@ public class VoteResultService {
     private final EventParticipantRepository eventParticipantRepository;
     private final VoteResultRepository voteResultRepository;
 
-    // 투표 결과를 확정하고 일정과 투표 결과를 생성한다.
+    /**
+     * 투표 결과를 확정하여 팀 일정과 투표 결과를 생성한다.
+     *
+     * <p>투표 생성자를 일정 주최자로 등록하고 참석 가능한 팀 멤버를 일정 참여자로
+     * 등록한 후 투표를 종료한다.</p>
+     *
+     * @param vote 결과를 확정할 투표
+     * @param host 생성할 일정의 주최자
+     * @param participants 생성할 일정의 참여자
+     * @param request 확정된 일정의 종일 여부와 시작·종료 시간
+     * @return 생성된 일정의 상세 정보
+     * @throws RestApiException 투표 결과가 이미 존재하거나 확정 시간이 유효하지 않은 경우
+     */
     @Transactional
     public EventDetailResponse createVoteResult(
             Vote vote,
@@ -66,13 +78,23 @@ public class VoteResultService {
         );
     }
 
-    // 투표 결과를 삭제한다.
+    /**
+     * 투표에 연결된 투표 결과를 삭제한다.
+     *
+     * @param voteId 결과를 삭제할 투표 ID
+     */
     @Transactional
     public void deleteByVoteId(Long voteId) {
         voteResultRepository.deleteByVoteId(voteId);
     }
 
-    // 투표 결과 생성 가능 여부를 검증한다.
+    /**
+     * 투표 결과를 생성할 수 있는 상태인지 검증한다.
+     *
+     * @param vote 결과를 생성할 투표
+     * @param request 확정할 일정 시간 정보
+     * @throws RestApiException 투표 결과가 이미 존재하거나 확정 시간이 유효하지 않은 경우
+     */
     private void validateVoteResultCreatable(
             Vote vote,
             EventVoteTimeSelectRequest request
@@ -90,7 +112,18 @@ public class VoteResultService {
         }
     }
 
-    // 최종 선택 시간대에 공통적으로 참석 가능한 투표자를 일정 참여자로 편입한다.
+    /**
+     * 일정 주최자와 참석 가능한 팀 멤버를 일정 참여자로 생성한다.
+     *
+     * <p>주최자는 {@link EventRole#HOST}로 등록하고, 나머지 팀 멤버는
+     * {@link EventRole#PARTICIPANT}로 등록한다. 참여자 목록에 포함된 주최자는
+     * 중복 등록하지 않는다.</p>
+     *
+     * @param event 참여자를 등록할 일정
+     * @param host 일정 주최자
+     * @param participants 일정에 참여할 팀 멤버 목록
+     * @return 저장된 일정 참여자 목록
+     */
     private List<EventParticipant> createEventParticipants(
             Event event,
             TeamMember host,
