@@ -39,7 +39,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
         // CONNECT 이후의 모든 프레임(SEND 등)에서도, 세션에 저장된 Principal을
         // 이 스레드의 SecurityContext에 실어줘야 JPA Auditing(@CreatedBy) 등이 동작함
-        if (accessor.getUser() instanceof Authentication authentication) {
+        if (accessor != null && accessor.getUser() instanceof Authentication authentication) {
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
