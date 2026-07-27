@@ -27,6 +27,10 @@ public class VoteTimeService {
     private final VoteDateRepository voteDateRepository;
     private final VoteTimeSlotRepository voteTimeSlotRepository;
 
+    // =========================================================================
+    // ============================= 주요 서비스 기능 =============================
+    // =========================================================================
+
     /**
      * 투표의 후보 날짜를 생성한다.
      *
@@ -212,6 +216,10 @@ public class VoteTimeService {
         voteTimeSlotRepository.deleteByVoteId(voteId);
         voteDateRepository.deleteByVoteId(voteId);
     }
+
+    // =========================================================================
+    // ================================ 헬퍼 함수 ================================
+    // =========================================================================
 
     /**
      * 선택한 시작 및 종료 일시가 유효한 범위인지 검증한다.

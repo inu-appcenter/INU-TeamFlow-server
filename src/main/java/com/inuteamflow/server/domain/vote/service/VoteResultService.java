@@ -31,6 +31,10 @@ public class VoteResultService {
     private final EventParticipantRepository eventParticipantRepository;
     private final VoteResultRepository voteResultRepository;
 
+    // =========================================================================
+    // ============================= 주요 서비스 기능 =============================
+    // =========================================================================
+
     /**
      * 투표 결과를 확정하여 팀 일정과 투표 결과를 생성한다.
      *
@@ -87,6 +91,10 @@ public class VoteResultService {
     public void deleteByVoteId(Long voteId) {
         voteResultRepository.deleteByVoteId(voteId);
     }
+
+    // =========================================================================
+    // ================================ 헬퍼 함수 ================================
+    // =========================================================================
 
     /**
      * 투표 결과를 생성할 수 있는 상태인지 검증한다.

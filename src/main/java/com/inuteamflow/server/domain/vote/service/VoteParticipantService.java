@@ -28,6 +28,10 @@ public class VoteParticipantService {
     private final VoteParticipantRepository voteParticipantRepository;
     private final TeamMemberRepository teamMemberRepository;
 
+    // =========================================================================
+    // ============================= 주요 서비스 기능 =============================
+    // =========================================================================
+
     /**
      * 투표 대상으로 지정된 팀 멤버를 투표 참여자로 생성한다.
      *
