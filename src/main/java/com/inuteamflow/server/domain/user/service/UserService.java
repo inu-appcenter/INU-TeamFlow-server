@@ -71,7 +71,12 @@ public class UserService {
     private final NotificationRepository notificationRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
-
+    /**
+     * 로그인한 사용자의 정보를 조회한다.
+     *
+     * @param user 로그인한 사용자
+     * @return 프로필 이미지 URL이 포함된 사용자 정보
+     */
     public MyInfoResponse getMyInfo(
             User user
     ) {
@@ -79,6 +84,16 @@ public class UserService {
         return MyInfoResponse.create(user, imageUrl);
     }
 
+    /**
+     * 로그인한 사용자의 정보를 수정한다.
+     *
+     * <p>프로필 이미지가 변경되면 기본 이미지를 제외한 기존 이미지를 삭제한다.</p>
+     *
+     * @param user 로그인한 사용자
+     * @param request 수정할 사용자 정보
+     * @return 수정된 사용자 정보
+     * @throws RestApiException 사용자를 찾을 수 없는 경우
+     */
     @Transactional
     public MyInfoResponse updateMyInfo(
             User user,
@@ -110,6 +125,14 @@ public class UserService {
         return MyInfoResponse.create(requester, imageUrl);
     }
 
+    /**
+     * 로그인한 사용자를 탈퇴 처리한다.
+     *
+     * <p>사용자와 연관된 데이터를 삭제하고 기본 이미지를 제외한 소유 이미지를 제거한다.</p>
+     *
+     * @param user 탈퇴할 사용자
+     * @throws RestApiException 사용자가 팀장이거나 진행 중인 투표의 생성자인 경우
+     */
     @Transactional
     public void deleteUser(
             User user
@@ -200,7 +223,15 @@ public class UserService {
 
     // ---- 헬퍼 함수 ----
 
-    // name과 일치하는 사용자를 찾아서 응답 객체로 변환
+    /**
+     * 이름과 일치하는 사용자를 검색한다.
+     *
+     * <p>검색을 요청한 사용자는 결과에서 제외한다.</p>
+     *
+     * @param name 검색할 사용자 이름
+     * @param user 검색을 요청한 사용자
+     * @return 이름과 일치하는 사용자 목록
+     */
     public List<UserSearchResponse> getUsers(
             String name,
             User user

@@ -36,6 +36,13 @@ public class AuthService {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RefreshTokenRepository refreshTokenRepository;
 
+    /**
+     * 새로운 사용자를 가입시킨다.
+     *
+     * @param request 가입할 사용자 정보
+     * @return 가입된 사용자 정보
+     * @throws RestApiException 사용자 이름 또는 이메일이 이미 사용 중인 경우
+     */
     @Transactional
     public MyInfoResponse signUp(
             SignupRequest request
@@ -54,6 +61,12 @@ public class AuthService {
         return MyInfoResponse.create(userRepository.save(user), imageUrl);
     }
 
+    /**
+     * 사용자 자격 증명을 검증하고 토큰을 발급한다.
+     *
+     * @param request 로그인 자격 증명
+     * @return 발급된 액세스 토큰과 리프레시 토큰
+     */
     @Transactional
     public TokenResponse login(
             LoginRequest request
@@ -63,6 +76,14 @@ public class AuthService {
         return jwtTokenProvider.generateToken(authentication);
     }
 
+    /**
+     * 리프레시 토큰으로 토큰을 재발급한다.
+     *
+     * @param refreshToken 재발급에 사용할 리프레시 토큰
+     * @return 재발급된 액세스 토큰과 리프레시 토큰
+     * @throws RestApiException 리프레시 토큰을 찾을 수 없거나 저장된 토큰과 일치하지 않는 경우,
+     *                          또는 사용자를 찾을 수 없는 경우
+     */
     @Transactional
     public TokenResponse reissue(
             String refreshToken
@@ -79,6 +100,18 @@ public class AuthService {
         return jwtTokenProvider.generateTokenByUsername(user.getUsername());
     }
 
+    /**
+     * 로그인한 사용자의 재학 여부를 인증한다.
+     *
+     * <p>학교 포털 인증에 성공하고 학번이 중복되지 않은 경우 사용자에게 학번을 등록한다.</p>
+     *
+     * @param user 재학 여부를 인증할 사용자
+     * @param request 학교 포털 인증 정보
+     * @return 재학 인증이 반영된 사용자 정보
+     * @throws RestApiException 이미 재학 인증을 완료했거나 학교 인증 기능을 사용할 수 없는 경우,
+     *                          또는 포털 인증에 실패하거나 학번이 이미 사용 중인 경우,
+     *                          또는 사용자를 찾을 수 없는 경우
+     */
     @Transactional
     public MyInfoResponse verifySchool(
             User user,
