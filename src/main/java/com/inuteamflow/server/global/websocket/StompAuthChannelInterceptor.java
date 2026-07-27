@@ -11,6 +11,7 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -36,7 +37,19 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             accessor.setUser(authentication); // 이제 원본 message에 실제로 반영됨
         }
 
+        // CONNECT 이후의 모든 프레임(SEND 등)에서도, 세션에 저장된 Principal을
+        // 이 스레드의 SecurityContext에 실어줘야 JPA Auditing(@CreatedBy) 등이 동작함
+        if (accessor.getUser() instanceof Authentication authentication) {
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+
         return message;
+    }
+
+    @Override
+    public void afterSendCompletion(Message<?> message, MessageChannel channel, boolean sent, Exception ex) {
+        // 스레드 풀 재사용 시 SecurityContext가 다음 요청으로 새는 것 방지
+        SecurityContextHolder.clearContext();
     }
 
     private String resolveToken(String bearerToken) {
