@@ -16,6 +16,8 @@ import com.inuteamflow.server.domain.user.enums.Department;
 import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.domain.vote.dto.request.EventVoteCreateRequest;
+import com.inuteamflow.server.domain.vote.dto.request.EventVoteTimeSelectRequest;
+import com.inuteamflow.server.domain.vote.dto.response.EventVoteResponse;
 import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteAvailability;
 import com.inuteamflow.server.domain.vote.entity.VoteDate;
@@ -46,6 +48,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -83,6 +86,8 @@ class VoteServiceTest {
 
     private User creator;
     private User regularMember;
+    private User nonVoter;
+    private Long teamId;
     private Long voteId;
     private Long eventId;
 
@@ -90,6 +95,7 @@ class VoteServiceTest {
     void setUp() throws JsonProcessingException {
         creator = saveUser("vote-creator");
         regularMember = saveUser("vote-regular-member");
+        nonVoter = saveUser("vote-non-voter");
         actingAs(creator);
 
         EventVoteCreateRequest request = objectMapper.readValue("""
@@ -115,6 +121,9 @@ class VoteServiceTest {
             );
             TeamMember regularTeamMember = teamMemberRepository.save(
                     TeamMember.create(team, regularMember, TeamRole.MEMBER)
+            );
+            teamMemberRepository.save(
+                    TeamMember.create(team, nonVoter, TeamRole.MEMBER)
             );
 
             Vote vote = voteRepository.save(Vote.create(team, request));
@@ -170,6 +179,7 @@ class VoteServiceTest {
             ));
             vote.close();
 
+            teamId = team.getTeamId();
             voteId = vote.getVoteId();
             eventId = event.getEventId();
         });
@@ -254,6 +264,81 @@ class VoteServiceTest {
         assertThat(voteTimeSlotRepository.findAll()).hasSize(2);
         assertThat(voteDateRepository.findAll()).hasSize(1);
         assertThat(eventRepository.existsById(eventId)).isTrue();
+    }
+
+    @Test
+    @DisplayName("투표 생성자가 대상자로 지정된 투표를 조회하면 isVoter와 isCreator가 모두 true이다.")
+    void getVote_byCreatorAndVoter_returnsCorrectFlags() {
+        EventVoteResponse response = voteService.getVote(creator, voteId);
+
+        assertThat(response.getIsVoter()).isTrue();
+        assertThat(response.getIsCreator()).isTrue();
+    }
+
+    @Test
+    @DisplayName("투표 대상자와 생성자가 아닌 사용자가 조회하면 isVoter와 isCreator가 모두 false이다.")
+    void getVote_byNonVoterAndNonCreator_returnsCorrectFlags() {
+        EventVoteResponse response = voteService.getVote(nonVoter, voteId);
+
+        assertThat(response.getIsVoter()).isFalse();
+        assertThat(response.getIsCreator()).isFalse();
+    }
+
+    @Test
+    @DisplayName("내 투표 목록에는 요청자가 투표 대상자로 지정된 투표만 포함된다.")
+    void getMyVotes_returnsOnlyVotesWhereUserIsVoter() throws JsonProcessingException {
+        Long nonTargetVoteId = createOpenVote("target-excluded-vote");
+
+        List<EventVoteResponse> responses = voteService.getMyVotes(regularMember);
+
+        assertThat(responses)
+                .extracting(EventVoteResponse::getVoteId)
+                .containsExactly(voteId);
+        assertThat(responses)
+                .extracting(EventVoteResponse::getVoteId)
+                .doesNotContain(nonTargetVoteId);
+        assertThat(responses)
+                .allSatisfy(response -> assertThat(response.getIsVoter()).isTrue());
+    }
+
+    @Test
+    @DisplayName("투표 생성자가 아닌 사용자는 투표 결과 일정을 생성할 수 없다.")
+    void createVoteResult_byNonCreator_throwsForbidden() throws JsonProcessingException {
+        Long openVoteId = createOpenVote("result-forbidden-vote");
+        EventVoteTimeSelectRequest request = objectMapper.readValue("""
+                {
+                  "title": "확정 일정",
+                  "isAllDay": false,
+                  "selectedStartAt": "2026-07-28T10:00:00",
+                  "selectedEndAt": "2026-07-28T10:30:00"
+                }
+                """, EventVoteTimeSelectRequest.class);
+
+        assertThatThrownBy(() -> voteService.createVoteResult(regularMember, openVoteId, request))
+                .isInstanceOf(RestApiException.class)
+                .extracting(exception -> ((RestApiException) exception).getErrorCode())
+                .isEqualTo(CustomErrorCode.VOTE_NOT_CREATOR);
+    }
+
+    private Long createOpenVote(
+            String title
+    ) throws JsonProcessingException {
+        EventVoteCreateRequest request = objectMapper.readValue("""
+                {
+                  "title": "%s",
+                  "description": "테스트용 열린 투표",
+                  "participants": [],
+                  "isAllDay": false,
+                  "dates": ["2026-07-28"],
+                  "dailyTimeStart": "10:00:00",
+                  "dailyTimeEnd": "11:00:00"
+                }
+                """.formatted(title), EventVoteCreateRequest.class);
+
+        return transactionTemplate.execute(status -> {
+            Team team = teamRepository.findById(teamId).orElseThrow();
+            return voteRepository.save(Vote.create(team, request)).getVoteId();
+        });
     }
 
     private User saveUser(String username) {

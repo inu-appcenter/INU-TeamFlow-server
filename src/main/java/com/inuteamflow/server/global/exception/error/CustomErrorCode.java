@@ -69,6 +69,7 @@ public enum CustomErrorCode implements ErrorCode {
     // 투표 관련 에러
     VOTE_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "투표를 찾을 수 없습니다."),
     VOTE_NOT_OPENED(HttpStatus.BAD_REQUEST, 400, "열려 있는 투표가 아닙니다."),
+    VOTE_NOT_CREATOR(HttpStatus.FORBIDDEN, 403, "투표의 생성자가 아닙니다."),
     VOTE_IS_OPEN(HttpStatus.FORBIDDEN, 403, "진행 중인 투표가 존재합니다."),
     VOTE_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "투표를 삭제할 권한이 없습니다."),
     VOTE_PARTICIPANT_INVALID(HttpStatus.BAD_REQUEST, 400, "유효하지 않은 투표 참여자입니다."),
