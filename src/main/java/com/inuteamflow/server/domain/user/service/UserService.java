@@ -16,7 +16,6 @@ import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadReposit
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
-import com.inuteamflow.server.domain.user.dto.response.UserSearchResponse;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.enums.UserConstants;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
@@ -223,28 +222,5 @@ public class UserService {
         if (StringUtils.hasText(userProfile) && !userProfile.equals(UserConstants.DEFAULT_PROFILE_KEY)) {
             s3Service.deleteImage(userProfile);
         }
-    }
-
-    // =========================================================================
-    // ================================ 헬퍼 함수 ================================
-    // =========================================================================
-
-    /**
-     * 이름과 일치하는 사용자를 검색한다.
-     *
-     * <p>검색을 요청한 사용자는 결과에서 제외한다.</p>
-     *
-     * @param name 검색할 사용자 이름
-     * @param user 검색을 요청한 사용자
-     * @return 이름과 일치하는 사용자 목록
-     */
-    public List<UserSearchResponse> getUsers(
-            String name,
-            User user
-    ) {
-        return userRepository.searchByName(name, user.getUserId())
-                .stream()
-                .map(UserSearchResponse::create)
-                .toList();
     }
 }

@@ -2,12 +2,9 @@ package com.inuteamflow.server.domain.user.controller;
 
 import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
-import com.inuteamflow.server.domain.user.dto.response.UserSearchResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.global.exception.error.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,9 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.List;
 
 @Tag(name = "User Controller", description = "유저 컨트롤러")
 public interface UserControllerDocument {
@@ -121,46 +115,5 @@ public interface UserControllerDocument {
     })
     ResponseEntity<Void> deleteUser(
             @AuthenticationPrincipal UserDetailsImpl userDetails
-    );
-
-    @Operation(summary = "getUsers", description = "이름으로 학교 인증된 사용자 검색 (요청자 제외)")
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "사용자 검색 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            array = @ArraySchema(schema = @Schema(implementation = UserSearchResponse.class))
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "필수 파라미터 누락 (name)",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "인증 실패 또는 만료된 토큰",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "정지된 사용자",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
-    })
-    ResponseEntity<List<UserSearchResponse>> getUsers(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Parameter(description = "검색할 사용자 이름", required = true, example = "손동민")
-            @RequestParam("name") String name
     );
 }

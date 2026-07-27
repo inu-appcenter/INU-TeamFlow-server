@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.invitation.controller;
 
 import com.inuteamflow.server.domain.invitation.dto.request.TeamInvitationCreateRequest;
 import com.inuteamflow.server.domain.invitation.dto.request.TeamInvitationStatusUpdateRequest;
+import com.inuteamflow.server.domain.invitation.dto.response.InvitationCandidateResponse;
 import com.inuteamflow.server.domain.invitation.dto.response.TeamInvitationResponse;
 import com.inuteamflow.server.domain.invitation.enums.InvitationDirection;
 import com.inuteamflow.server.domain.invitation.service.TeamInvitationService;
@@ -18,6 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -46,6 +49,17 @@ public class TeamInvitationController implements TeamInvitationControllerDocumen
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
                 .body(teamInvitationService.invite(user, teamId, request));
+    }
+
+    @GetMapping("/teams/{teamId}/invitations/candidates")
+    public ResponseEntity<List<InvitationCandidateResponse>> getCandidates(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long teamId,
+            @RequestParam("name") String name
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(teamInvitationService.getCandidates(userDetails.getUser(), teamId, name));
     }
 
     @PutMapping("/teams/invitations/{invitationId}/status")

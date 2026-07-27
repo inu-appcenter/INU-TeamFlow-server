@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -22,6 +23,8 @@ public interface TeamInvitationRepository extends JpaRepository<TeamInvitation, 
 
     // 특정 팀+수신자 조합으로 초대 조회
     Optional<TeamInvitation> findByTeam_TeamIdAndReceiver(Long teamTeamId, User receiver);
+
+    List<TeamInvitation> findByTeamAndReceiverIn(Team team, List<User> receivers);
 
     void deleteAllByTeam(Team team);
 
