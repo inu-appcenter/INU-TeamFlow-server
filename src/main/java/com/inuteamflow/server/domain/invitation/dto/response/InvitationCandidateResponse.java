@@ -1,5 +1,6 @@
-package com.inuteamflow.server.domain.user.dto.response;
+package com.inuteamflow.server.domain.invitation.dto.response;
 
+import com.inuteamflow.server.domain.invitation.enums.InvitationCandidateStatus;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.enums.Department;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,8 +10,8 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Schema(description = "사용자 검색 응답 DTO")
-public class UserSearchResponse {
+@Schema(description = "초대 가능한 사용자 응답 DTO")
+public class InvitationCandidateResponse {
 
     @Schema(description = "유저 ID", example = "1")
     private Long userId;
@@ -24,15 +25,19 @@ public class UserSearchResponse {
     @Schema(description = "학과", example = "COMPUTER_SCIENCE")
     private Department department;
 
-    public static UserSearchResponse create(
-            User user
+    @Schema(description = "초대 상태", example = "PENDING")
+    private InvitationCandidateStatus invitationStatus;
+
+    public static InvitationCandidateResponse from(
+            User user,
+            InvitationCandidateStatus invitationStatus
     ) {
-        return new UserSearchResponse(
+        return new InvitationCandidateResponse(
                 user.getUserId(),
                 user.getName(),
                 user.getStudentNumber(),
-                user.getDepartment()
+                user.getDepartment(),
+                invitationStatus
         );
     }
-
 }

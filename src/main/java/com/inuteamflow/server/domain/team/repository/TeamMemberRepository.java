@@ -18,6 +18,7 @@ public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
     List<TeamMember> findByUser(User user);
     List<TeamMember> findByTeam(Team team);
     Optional<TeamMember> findByTeamAndUser(Team team, User user);
+    List<TeamMember> findByTeamAndUserIn(Team team, List<User> users);
     void deleteAllByTeam(Team team);
 
     @Query("""
