@@ -16,6 +16,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final UserRepository userRepository;
 
+    /**
+     * 사용자 이름으로 인증 사용자 정보를 조회한다.
+     *
+     * @param username 조회할 사용자 이름
+     * @return 인증에 사용할 사용자 정보
+     */
     @Override
     public UserDetailsImpl loadUserByUsername(String username) {
         User user = userRepository.findByUsername(username)

@@ -47,6 +47,21 @@ public class TeamNoticeService {
 	private final S3Service s3Service;
 	private final NotificationService notificationService;
 
+	// =========================================================================
+	// ============================= 주요 서비스 기능 =============================
+	// =========================================================================
+
+	/**
+	 * 팀에 등록된 공지 목록을 조회한다.
+	 *
+	 * <p>각 공지에는 요청자의 읽음 여부와 작성자의 이름 및 팀 역할이 포함된다.</p>
+	 *
+	 * @param teamId 공지를 조회할 팀 ID
+	 * @param user 공지 목록을 조회하는 사용자
+	 * @param pageable 페이지 요청 정보
+	 * @return 팀 공지 요약 정보 페이지
+	 * @throws RestApiException 팀을 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우
+	 */
 	public Page<TeamNoticeSummaryResponse> getTeamNotices(Long teamId, User user, Pageable pageable) {
 		Team team = getTeamById(teamId);
 		getTeamMember(team, user);
@@ -68,6 +83,16 @@ public class TeamNoticeService {
 		});
 	}
 
+	/**
+	 * 사용자가 속한 모든 팀의 공지 목록을 조회한다.
+	 *
+	 * <p>소속 팀이 없는 경우 빈 페이지를 반환하며, 각 공지에는 요청자의 읽음 여부와
+	 * 작성자의 이름 및 팀 역할이 포함된다.</p>
+	 *
+	 * @param user 공지 목록을 조회하는 사용자
+	 * @param pageable 페이지 요청 정보
+	 * @return 사용자가 속한 팀의 공지 요약 정보 페이지
+	 */
 	public Page<TeamNoticeSummaryResponse> getMyTeamNotices(User user, Pageable pageable) {
 		// 로그인 한 유저가 속한 팀을 List로 조회
 		// findByUserWithTeam: team LAZY 로딩 방지
@@ -101,6 +126,15 @@ public class TeamNoticeService {
 		});
 	}
 
+	/**
+	 * 사용자가 작성한 공지 목록을 조회한다.
+	 *
+	 * <p>각 공지에는 요청자의 읽음 여부와 해당 팀에서의 역할이 포함된다.</p>
+	 *
+	 * @param user 공지를 작성한 사용자
+	 * @param pageable 페이지 요청 정보
+	 * @return 사용자가 작성한 공지 요약 정보 페이지
+	 */
 	public Page<TeamNoticeSummaryResponse> getMyNotices(User user, Pageable pageable) {
 		Page<TeamNotice> noticePage = teamNoticeRepository.findByCreatedBy(user.getUserId(), pageable);
 		List<TeamNotice> notices = noticePage.getContent();
@@ -120,6 +154,15 @@ public class TeamNoticeService {
 		});
 	}
 
+	/**
+	 * 팀 공지의 상세 정보를 조회하고 읽음 처리한다.
+	 *
+	 * @param teamId 공지가 속한 팀 ID
+	 * @param noticeId 조회할 공지 ID
+	 * @param user 공지를 조회하는 사용자
+	 * @return 공지 내용과 작성자 및 이미지 정보
+	 * @throws RestApiException 팀, 팀 멤버, 공지 또는 공지 작성자를 찾을 수 없는 경우
+	 */
 	@Transactional
 	public TeamNoticeDetailResponse getTeamNotice(Long teamId, Long noticeId, User user) {
 		Team team = getTeamById(teamId);
@@ -141,6 +184,17 @@ public class TeamNoticeService {
 		return TeamNoticeDetailResponse.create(notice, authorMember, authorProfileUrl, images, s3Service::getImageUrl, isEditable);
 	}
 
+	/**
+	 * 팀에 공지를 생성한다.
+	 *
+	 * <p>첨부 이미지를 함께 저장하고 작성자를 제외한 팀 멤버에게 알림을 전송한다.</p>
+	 *
+	 * @param teamId 공지를 생성할 팀 ID
+	 * @param user 공지를 작성하는 사용자
+	 * @param request 공지 내용과 첨부 이미지 정보
+	 * @return 생성된 공지 상세 정보
+	 * @throws RestApiException 팀을 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우
+	 */
 	@Transactional
 	public TeamNoticeDetailResponse createTeamNotice(Long teamId, User user, TeamNoticeCreateRequest request) {
 		Team team = getTeamById(teamId);
@@ -168,6 +222,19 @@ public class TeamNoticeService {
 		return TeamNoticeDetailResponse.create(notice, member, authorProfileUrl, images, s3Service::getImageUrl, true);
 	}
 
+	/**
+	 * 팀 공지의 내용과 첨부 이미지를 수정한다.
+	 *
+	 * <p>기존 첨부 이미지를 모두 삭제한 후 요청된 이미지로 다시 저장한다.</p>
+	 *
+	 * @param teamId 공지가 속한 팀 ID
+	 * @param noticeId 수정할 공지 ID
+	 * @param user 공지를 수정하는 사용자
+	 * @param request 수정할 공지 내용과 첨부 이미지 정보
+	 * @return 수정된 공지 상세 정보
+	 * @throws RestApiException 팀, 팀 멤버, 공지 또는 공지 작성자를 찾을 수 없는 경우,
+	 *                          또는 공지 수정 권한이 없는 경우
+	 */
 	@Transactional
 	public TeamNoticeDetailResponse updateTeamNotice(Long teamId, Long noticeId, User user, TeamNoticeUpdateRequest request) {
 		Team team = getTeamById(teamId);
@@ -190,6 +257,17 @@ public class TeamNoticeService {
 		return TeamNoticeDetailResponse.create(notice, authorMember, authorProfileUrl, images, s3Service::getImageUrl, isEditable);
 	}
 
+	/**
+	 * 팀 공지와 관련 데이터를 삭제한다.
+	 *
+	 * <p>공지의 읽음 기록과 첨부 이미지 정보를 삭제하고 저장소의 이미지도 제거한다.</p>
+	 *
+	 * @param teamId 공지가 속한 팀 ID
+	 * @param noticeId 삭제할 공지 ID
+	 * @param user 공지를 삭제하는 사용자
+	 * @throws RestApiException 팀, 팀 멤버 또는 공지를 찾을 수 없는 경우,
+	 *                          또는 공지 삭제 권한이 없는 경우
+	 */
 	@Transactional
 	public void deleteTeamNotice(Long teamId, Long noticeId, User user) {
 		Team team = getTeamById(teamId);
@@ -205,12 +283,17 @@ public class TeamNoticeService {
 		images.forEach(img -> s3Service.deleteImage(img.getImageKey()));
 	}
 
-	/**
-	 * =========================================================================
-	 * ================================ 헬퍼 함수 ================================
-	 * =========================================================================
-	 */
+	 // =========================================================================
+	 // ================================ 헬퍼 함수 ================================
+	 // =========================================================================
 
+	/**
+	 * 공지에 첨부할 이미지를 순서대로 저장한다.
+	 *
+	 * @param notice 이미지가 속한 공지
+	 * @param imageKeys 저장할 이미지 키 목록
+	 * @return 저장된 공지 이미지 목록
+	 */
 	private List<TeamNoticeImage> saveImages(TeamNotice notice, List<String> imageKeys) {
 		if (imageKeys == null || imageKeys.isEmpty()) {
 			return List.of();
@@ -223,33 +306,78 @@ public class TeamNoticeService {
 		return teamNoticeImageRepository.saveAll(images);
 	}
 
+	/**
+	 * 팀 멤버가 공지를 수정하거나 삭제할 수 있는지 확인한다.
+	 *
+	 * @param notice 권한을 확인할 공지
+	 * @param member 권한을 확인할 팀 멤버
+	 * @return 공지 작성자이거나 팀장 또는 매니저이면 {@code true}, 그렇지 않으면 {@code false}
+	 */
 	private boolean isEditable(TeamNotice notice, TeamMember member) {
 		return notice.getCreatedBy().equals(member.getUser().getUserId())
 				|| member.getTeamRole() == TeamRole.LEADER
 				|| member.getTeamRole() == TeamRole.MANAGER;
 	}
 
+	/**
+	 * 팀 멤버의 공지 수정 및 삭제 권한을 검증한다.
+	 *
+	 * @param notice 권한을 검증할 공지
+	 * @param member 권한을 검증할 팀 멤버
+	 * @throws RestApiException 공지 수정 또는 삭제 권한이 없는 경우
+	 */
 	private void validateEditable(TeamNotice notice, TeamMember member) {
 		if (!isEditable(notice, member)) {
 			throw new RestApiException(CustomErrorCode.TEAM_NOTICE_FORBIDDEN);
 		}
 	}
 
+	/**
+	 * 팀에서 공지 작성자를 조회한다.
+	 *
+	 * @param team 공지가 속한 팀
+	 * @param userId 공지 작성자 ID
+	 * @return 공지 작성자의 팀 멤버 정보
+	 * @throws RestApiException 공지 작성자를 팀 멤버에서 찾을 수 없는 경우
+	 */
 	private TeamMember findAuthorMember(Team team, Long userId) {
 		return teamMemberRepository.findByTeamAndUserUserId(team, userId)
 				.orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 	}
 
+	/**
+	 * ID로 팀을 조회한다.
+	 *
+	 * @param teamId 조회할 팀 ID
+	 * @return 조회된 팀
+	 * @throws RestApiException 팀을 찾을 수 없는 경우
+	 */
 	private Team getTeamById(Long teamId) {
 		return teamRepository.findById(teamId)
 				.orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 	}
 
+	/**
+	 * 팀에 속한 사용자의 멤버 정보를 조회한다.
+	 *
+	 * @param team 멤버가 속한 팀
+	 * @param user 조회할 사용자
+	 * @return 사용자의 팀 멤버 정보
+	 * @throws RestApiException 사용자가 해당 팀의 멤버가 아닌 경우
+	 */
 	private TeamMember getTeamMember(Team team, User user) {
 		return teamMemberRepository.findByTeamAndUser(team, user)
 				.orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 	}
 
+	/**
+	 * 팀에 속한 공지를 조회한다.
+	 *
+	 * @param noticeId 조회할 공지 ID
+	 * @param team 공지가 속한 팀
+	 * @return 조회된 팀 공지
+	 * @throws RestApiException 해당 팀에서 공지를 찾을 수 없는 경우
+	 */
 	private TeamNotice getNoticeByIdAndTeam(Long noticeId, Team team) {
 		return teamNoticeRepository.findByTeamNoticeIdAndTeam(noticeId, team)
 				.orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOTICE_NOT_FOUND));

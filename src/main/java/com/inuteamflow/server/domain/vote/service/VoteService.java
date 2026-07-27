@@ -45,7 +45,20 @@ public class VoteService {
     private final TeamMemberRepository teamMemberRepository;
     private final VoteRepository voteRepository;
 
-    // 팀의 투표 목록을 조회한다.
+    // =========================================================================
+    // ============================= 주요 서비스 기능 =============================
+    // =========================================================================
+
+    /**
+     * 팀에 생성된 모든 투표를 조회한다.
+     *
+     * <p>각 투표에는 요청자의 투표 대상자 여부와 투표 생성자 여부가 함께 포함된다.</p>
+     *
+     * @param user 투표 목록을 조회하는 사용자
+     * @param teamId 조회할 팀 ID
+     * @return 팀에 생성된 투표 목록
+     * @throws RestApiException 팀을 찾을 수 없는 경우
+     */
     public List<EventVoteResponse> getVotes(
             User user,
             Long teamId
@@ -66,7 +79,19 @@ public class VoteService {
         return responses;
     }
 
-    // 투표를 생성하고 참여자와 시간 슬롯을 함께 생성한다.
+    /**
+     * 팀에 일정 투표를 생성한다.
+     *
+     * <p>투표 참여자, 투표 날짜와 시간 슬롯을 함께 생성하고,
+     * 투표 생성자를 제외한 참여자에게 알림을 전송한다.</p>
+     *
+     * @param user 투표를 생성하는 사용자
+     * @param teamId 투표를 생성할 팀 ID
+     * @param request 투표 내용, 참여자 및 후보 시간 정보
+     * @return 생성된 투표 정보
+     * @throws RestApiException 팀을 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우,
+     *                          또는 참여자나 후보 시간 정보가 유효하지 않은 경우
+     */
     @Transactional
     public EventVoteResponse createVote(
             User user,
@@ -105,7 +130,16 @@ public class VoteService {
         );
     }
 
-    // 투표 상세 정보를 조회한다.
+    /**
+     * 투표의 상세 정보를 조회한다.
+     *
+     * <p>요청자의 투표 대상자 여부와 투표 생성자 여부가 함께 포함된다.</p>
+     *
+     * @param user 투표를 조회하는 사용자
+     * @param voteId 조회할 투표 ID
+     * @return 투표 상세 정보
+     * @throws RestApiException 투표를 찾을 수 없는 경우
+     */
     public EventVoteResponse getVote(
             User user,
             Long voteId
@@ -121,9 +155,13 @@ public class VoteService {
     }
 
     /**
-     * 사용자가 투표 대상자인 투표 목록을 조회한다.
-     * @param user 요청자
-     * @return 투표 응답 DTO 리스트
+     * 요청자가 투표 대상자로 지정된 투표 목록을 조회한다.
+     *
+     * <p>반환되는 모든 투표의 {@code isVoter} 값은 {@code true}이며,
+     * 요청자가 투표 생성자인지 여부가 {@code isCreator}에 포함된다.</p>
+     *
+     * @param user 투표 목록을 조회할 사용자
+     * @return 요청자가 투표 대상자로 지정된 투표 목록
      */
     public List<EventVoteResponse> getMyVotes(
             User user
@@ -137,7 +175,13 @@ public class VoteService {
                 .toList();
     }
 
-    // 투표의 시간 슬롯 목록과 선택 인원 수를 조회한다.
+    /**
+     * 투표의 후보 시간 슬롯과 슬롯별 선택 인원 수를 조회한다.
+     *
+     * @param voteId 조회할 투표 ID
+     * @return 후보 시간 슬롯과 각 슬롯을 선택한 인원 수
+     * @throws RestApiException 투표를 찾을 수 없는 경우
+     */
     public List<EventVoteTimeSlotResponse> getTimeSlot(
             Long voteId
     ) {
@@ -156,7 +200,19 @@ public class VoteService {
         return responses;
     }
 
-    // 사용자가 가능한 시간 슬롯을 선택한다.
+    /**
+     * 투표 참여자가 참석 가능한 시간 슬롯을 선택한다.
+     *
+     * <p>기존 선택 내역을 요청한 시간 슬롯으로 갱신하고 투표 참여를 완료 처리한다.</p>
+     *
+     * @param user 시간 슬롯을 선택하는 사용자
+     * @param voteId 참여할 투표 ID
+     * @param request 선택할 시간 슬롯 ID 목록
+     * @return 선택된 시간 슬롯과 각 슬롯을 선택한 인원 수
+     * @throws RestApiException 투표를 찾을 수 없거나 투표가 열려 있지 않은 경우,
+     *                          사용자가 팀 또는 투표 참여자가 아닌 경우,
+     *                          또는 선택한 시간 슬롯이 유효하지 않은 경우
+     */
     @Transactional
     public List<EventVoteTimeSlotResponse> selectTimeSlot(
             User user,
@@ -186,7 +242,20 @@ public class VoteService {
         return responses;
     }
 
-    // 투표 결과를 확정하고 일정으로 생성한다.
+    /**
+     * 투표 결과를 확정하고 선택된 시간으로 팀 일정을 생성한다.
+     *
+     * <p>확정된 시간에 참석 가능한 투표 참여자를 일정 참여자로 등록하고,
+     * 투표 생성자를 제외한 참여자에게 일정 확정 알림을 전송한다.</p>
+     *
+     * @param user 투표 결과를 확정하는 사용자
+     * @param voteId 확정할 투표 ID
+     * @param request 확정할 일정의 시작 및 종료 시간
+     * @return 생성된 일정의 상세 정보
+     * @throws RestApiException 투표를 찾을 수 없거나 투표가 열려 있지 않은 경우,
+     *                          사용자가 투표 생성자 또는 팀 멤버가 아닌 경우,
+     *                          이미 결과가 확정되었거나 확정 시간이 유효하지 않은 경우
+     */
     @Transactional
     public EventDetailResponse createVoteResult(
             User user,
@@ -219,6 +288,16 @@ public class VoteService {
         return voteResultService.createVoteResult(vote, host, availableTeamMembers, request);
     }
 
+    /**
+     * 투표와 투표에 종속된 데이터를 삭제한다.
+     *
+     * <p>투표 생성자, 팀장 또는 팀 매니저만 삭제할 수 있다.</p>
+     *
+     * @param user 투표 삭제를 요청한 사용자
+     * @param voteId 삭제할 투표 ID
+     * @throws RestApiException 투표를 찾을 수 없거나 사용자가 팀 멤버가 아닌 경우,
+     *                          또는 투표 삭제 권한이 없는 경우
+     */
     @Transactional
     public void deleteVote(
             User user,
@@ -231,9 +310,17 @@ public class VoteService {
         deleteVoteCascade(voteId);
     }
 
-    // ====== 헬퍼 함수 ======
+    // =========================================================================
+    // ================================ 헬퍼 함수 ================================
+    // =========================================================================
 
-    // 팀을 조회한다.
+    /**
+     * ID에 해당하는 팀을 조회한다.
+     *
+     * @param teamId 조회할 팀 ID
+     * @return 조회된 팀
+     * @throws RestApiException 팀을 찾을 수 없는 경우
+     */
     private Team getTeamById(
             Long teamId
     ) {
@@ -241,7 +328,14 @@ public class VoteService {
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
     }
 
-    // 팀 멤버 여부를 검증한다.
+    /**
+     * 사용자가 팀에 소속되어 있는지 검증한다.
+     *
+     * @param team 소속 여부를 확인할 팀
+     * @param user 소속 여부를 확인할 사용자
+     * @return 사용자에 해당하는 팀 멤버
+     * @throws RestApiException 사용자가 해당 팀의 멤버가 아닌 경우
+     */
     private TeamMember validateTeamMember(
             Team team,
             User user
@@ -250,7 +344,13 @@ public class VoteService {
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
     }
 
-    // 투표를 조회한다.
+    /**
+     * ID에 해당하는 투표를 조회한다.
+     *
+     * @param voteId 조회할 투표 ID
+     * @return 조회된 투표
+     * @throws RestApiException 투표를 찾을 수 없는 경우
+     */
     private Vote getVoteById(
             Long voteId
     ) {
@@ -259,11 +359,12 @@ public class VoteService {
     }
 
     /**
-     * 투표 응답 DTO를 생성한다.
+     * 투표와 참여 현황을 조합하여 투표 응답을 생성한다.
+     *
      * @param vote 투표
-     * @param isVoter 투표 대상자 여부
-     * @param isCreator 투표 생성자 여부
-     * @return 투표 정보와 요청자의 대상자·생성자 여부를 포함한 응답 DTO
+     * @param isVoter 요청자의 투표 대상자 여부
+     * @param isCreator 요청자의 투표 생성자 여부
+     * @return 투표 정보, 후보 날짜 및 참여 현황을 포함한 응답
      */
     private EventVoteResponse createEventVoteResponse(
             Vote vote,
@@ -287,7 +388,12 @@ public class VoteService {
         );
     }
 
-    // 투표가 열려 있는지 검증한다.
+    /**
+     * 투표가 참여 가능한 상태인지 검증한다.
+     *
+     * @param vote 상태를 확인할 투표
+     * @throws RestApiException 투표가 열려 있지 않은 경우
+     */
     private void validateVoteIsOpened(
             Vote vote
     ) {
@@ -297,9 +403,11 @@ public class VoteService {
     }
 
     /**
-     * 요청자가 투표의 생성자인지 검증한다.
-     * @param vote 투표
-     * @param user 요청자
+     * 사용자가 투표 생성자인지 검증한다.
+     *
+     * @param vote 생성자를 확인할 투표
+     * @param user 생성자 여부를 확인할 사용자
+     * @throws RestApiException 사용자가 투표 생성자가 아닌 경우
      */
     private void validateVoteCreator(
             Vote vote,
@@ -310,7 +418,15 @@ public class VoteService {
         }
     }
 
-    // 투표를 삭제할 권한을 검증한다.
+    /**
+     * 팀 멤버에게 투표 삭제 권한이 있는지 검증한다.
+     *
+     * <p>투표 생성자, 팀장 또는 팀 매니저에게 삭제 권한이 있다.</p>
+     *
+     * @param vote 삭제할 투표
+     * @param requester 삭제를 요청한 팀 멤버
+     * @throws RestApiException 요청자에게 투표 삭제 권한이 없는 경우
+     */
     private void validateVoteDeletable(
             Vote vote,
             TeamMember requester
@@ -323,13 +439,19 @@ public class VoteService {
         }
     }
 
-    // 투표와 연관된 객체들을 순차적으로 삭제한다.
-    // 다른 도메인에서도 사용할 수 있도록 public 으로 설정한다.
+    /**
+     * 투표와 연관된 모든 데이터를 순차적으로 삭제한다.
+     *
+     * <p>다른 도메인에서 투표를 정리할 때 사용하는 내부 협력 메서드로,
+     * 사용자 요청에서 호출할 때는 호출자가 사전에 권한을 검증해야 한다.
+     * 각 객체의 삭제는 전용 하위 서비스에 위임한다. </p>
+     *
+     * @param voteId 삭제할 투표 ID
+     */
     @Transactional
     public void deleteVoteCascade(
             Long voteId
     ) {
-        // 각 객체의 삭제는 전용 하위 서비스에 위임한다.
         voteAvailabilityService.deleteByVoteId(voteId);
         voteResultService.deleteByVoteId(voteId);
         voteParticipantService.deleteByVoteId(voteId);
