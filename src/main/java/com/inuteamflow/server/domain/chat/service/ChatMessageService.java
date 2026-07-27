@@ -52,6 +52,7 @@ public class ChatMessageService {
             case IMAGE -> ChatMessage.createImage(chatRoom, request.getImageKey());
             case SYSTEM -> throw new RestApiException(CustomErrorCode.CHAT_MESSAGE_TYPE_INVALID); // 클라이언트가 직접 못 보냄
         };
+        message.assignAuditor(sender.getUserId()); // SecurityContextHolder 의존 없이 직접 채움
         chatMessageRepository.save(message);
 
         broadcast(roomId, ChatMessageResponse.of(message, sender, s3Service::getImageUrl, 0));
@@ -64,6 +65,7 @@ public class ChatMessageService {
     @Transactional
     public void sendSystemMessage(ChatRoom chatRoom, String content, User triggeredBy) {
         ChatMessage message = ChatMessage.createSystem(chatRoom, content);
+        message.assignAuditor(triggeredBy.getUserId());
         chatMessageRepository.save(message);
 
         broadcast(chatRoom.getChatRoomId(), ChatMessageResponse.of(message, triggeredBy, s3Service::getImageUrl, 0));
