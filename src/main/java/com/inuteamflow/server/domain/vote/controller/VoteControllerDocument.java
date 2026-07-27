@@ -62,7 +62,8 @@ public interface VoteControllerDocument {
                     )
             )
     })
-    ResponseEntity<List<EventVoteResponse>> getVoteList(
+    ResponseEntity<List<EventVoteResponse>> getVotes(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable("teamId") Long teamId
     );
 
@@ -151,6 +152,7 @@ public interface VoteControllerDocument {
             )
     })
     ResponseEntity<EventVoteResponse> getVote(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable("voteId") Long voteId
     );
 
@@ -333,5 +335,28 @@ public interface VoteControllerDocument {
     ResponseEntity<Void> deleteVote(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable("voteId") Long voteId
+    );
+
+    @Operation(summary = "getMyVotes", description = "내가 투표 대상자로 지정된 투표 목록 조회")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "내 투표 목록 조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            array = @ArraySchema(schema = @Schema(implementation = EventVoteResponse.class))
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패 또는 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<List<EventVoteResponse>> getMyVotes(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     );
 }

@@ -46,4 +46,19 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
     WHERE vp.vote.voteId = :voteId
     """)
     void deleteByVoteId(@Param("voteId") Long voteId);
+
+    @Query("""
+    SELECT CASE WHEN COUNT(vp) > 0 THEN true ELSE false END
+    FROM VoteParticipant vp
+    WHERE vp.vote.voteId = :voteId
+      AND vp.teamMember.user.userId = :userId
+    """)
+    boolean existsByVoteIdAndUserId(@Param("voteId") Long voteId, @Param("userId") Long userId);
+
+    @Query("""
+    SELECT vp.vote
+    FROM VoteParticipant vp
+    WHERE vp.teamMember.user = :user
+    """)
+    List<Vote> findVotesByUser(@Param("user") User user);
 }

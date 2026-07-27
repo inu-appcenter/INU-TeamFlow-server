@@ -89,7 +89,10 @@ public class VoteParticipantService {
         return new VoteParticipants(completedVoters, uncompletedVoters);
     }
 
-    public List<User> getUsersByVoteExcluding(Vote vote, Long excludeUserId) {
+    public List<User> getUsersByVoteExcluding(
+            Vote vote,
+            Long excludeUserId
+    ) {
         return voteParticipantRepository.findByVote(vote).stream()
                 .map(vp -> vp.getTeamMember().getUser())
                 .filter(u -> !u.getUserId().equals(excludeUserId))
@@ -104,7 +107,32 @@ public class VoteParticipantService {
 
     // 투표 참여자를 삭제한다.
     @Transactional
-    public void deleteByVoteId(Long voteId) {
+    public void deleteByVoteId(
+            Long voteId
+    ) {
         voteParticipantRepository.deleteByVoteId(voteId);
+    }
+
+    /**
+     * 사용자가 해당 투표의 참여자인지 확인한다.
+     * @param vote 투표
+     * @param user 요청자
+     * @return 투표 대상자이면 true, 아니면 false
+     */
+    public boolean isVoter(
+            Vote vote,
+            User user
+    ) {
+        return voteParticipantRepository.existsByVoteIdAndUserId(vote.getVoteId(), user.getUserId());
+    }
+
+    /**
+     * 사용자가 투표 대상자로 지정된 투표 목록을 조회한다.
+     * @param user 요청자
+     */
+    public List<Vote> getVotesByUser(
+            User user
+    ) {
+        return voteParticipantRepository.findVotesByUser(user);
     }
 }

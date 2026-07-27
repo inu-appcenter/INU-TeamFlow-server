@@ -38,6 +38,12 @@ public class EventVoteResponse {
     @Schema(description = "종일 여부", example = "false")
     private Boolean isAllDay;
 
+    @Schema(description = "투표 대상자 여부", example = "true")
+    private Boolean isVoter;
+
+    @Schema(description = "투표 생성자 여부", example = "false")
+    private Boolean isCreator;
+
     @Schema(description = "지정된 투표 날짜", example = "[\"2026-05-20\", \"2026-05-21\", \"2026-05-25\"]")
     private List<LocalDate> dates;
 
@@ -55,6 +61,8 @@ public class EventVoteResponse {
 
     public static EventVoteResponse create(
             Vote vote,
+            boolean isVoter,
+            boolean isCreator,
             List<LocalDate> dates,
             List<VoterInfoResponse> completedVoterList,
             List<VoterInfoResponse> uncompletedVoterList
@@ -67,6 +75,8 @@ public class EventVoteResponse {
                 vote.getCreatedAt().toLocalDate(),
                 vote.getIsOpened(),
                 vote.getIsAllDay(),
+                isVoter,
+                isCreator,
                 dates,
                 vote.getDailyTimeStart(),
                 vote.getDailyTimeEnd(),

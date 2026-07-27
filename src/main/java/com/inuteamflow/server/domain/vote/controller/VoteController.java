@@ -25,12 +25,13 @@ public class VoteController implements VoteControllerDocument {
     private final VoteService voteService;
 
     @GetMapping("/teams/{teamId}/votes")
-    public ResponseEntity<List<EventVoteResponse>> getVoteList(
+    public ResponseEntity<List<EventVoteResponse>> getVotes(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable("teamId") Long teamId
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(voteService.getVoteList(teamId));
+                .body(voteService.getVotes(userDetails.getUser(), teamId));
     }
 
     @PostMapping("/teams/{teamId}/votes")
@@ -46,11 +47,12 @@ public class VoteController implements VoteControllerDocument {
 
     @GetMapping("/votes/{voteId}")
     public ResponseEntity<EventVoteResponse> getVote(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable("voteId") Long voteId
     ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(voteService.getVote(voteId));
+                .body(voteService.getVote(userDetails.getUser(), voteId));
     }
 
     @GetMapping("/votes/{voteId}/slots")
@@ -93,6 +95,15 @@ public class VoteController implements VoteControllerDocument {
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
+    }
+
+    @GetMapping("/votes/me")
+    public ResponseEntity<List<EventVoteResponse>> getMyVotes(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(voteService.getMyVotes(userDetails.getUser()));
     }
 
 }

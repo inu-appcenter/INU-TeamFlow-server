@@ -46,14 +46,21 @@ public class VoteService {
     private final VoteRepository voteRepository;
 
     // 팀의 투표 목록을 조회한다.
-    public List<EventVoteResponse> getVoteList(
+    public List<EventVoteResponse> getVotes(
+            User user,
             Long teamId
     ) {
         Team team = getTeamById(teamId);
         List<EventVoteResponse> responses = new ArrayList<>();
 
         for (Vote vote : voteRepository.findByTeam(team)) {
-            responses.add(createEventVoteResponse(vote));
+            boolean isVoter = voteParticipantService.isVoter(vote, user);
+
+            responses.add(createEventVoteResponse(
+                    vote,
+                    isVoter,
+                    vote.getCreatedBy().equals(user.getUserId())
+            ));
         }
 
         return responses;
@@ -89,16 +96,45 @@ public class VoteService {
                 NotificationType.TEAM_SCHEDULE,
                 "/team/" + team.getTeamId() + "/vote/" + vote.getVoteId()
         );
+        boolean isVoter = voteParticipantService.isVoter(vote, user);
 
-        return createEventVoteResponse(vote);
+        return createEventVoteResponse(
+                vote,
+                isVoter,
+                vote.getCreatedBy().equals(user.getUserId())
+        );
     }
 
     // 투표 상세 정보를 조회한다.
     public EventVoteResponse getVote(
+            User user,
             Long voteId
     ) {
         Vote vote = getVoteById(voteId);
-        return createEventVoteResponse(vote);
+        boolean isVoter = voteParticipantService.isVoter(vote, user);
+
+        return createEventVoteResponse(
+                vote,
+                isVoter,
+                vote.getCreatedBy().equals(user.getUserId())
+        );
+    }
+
+    /**
+     * 사용자가 투표 대상자인 투표 목록을 조회한다.
+     * @param user 요청자
+     * @return 투표 응답 DTO 리스트
+     */
+    public List<EventVoteResponse> getMyVotes(
+            User user
+    ) {
+        return voteParticipantService.getVotesByUser(user).stream()
+                .map(vote -> createEventVoteResponse(
+                        vote,
+                        true,
+                        vote.getCreatedBy().equals(user.getUserId())
+                ))
+                .toList();
     }
 
     // 투표의 시간 슬롯 목록과 선택 인원 수를 조회한다.
@@ -159,6 +195,7 @@ public class VoteService {
     ) {
         Vote vote = getVoteById(voteId);
         validateVoteIsOpened(vote);
+        validateVoteCreator(vote, user);
         TeamMember host = validateTeamMember(vote.getTeam(), user);
 
         List<VoteTimeSlot> selectedVoteTimeSlots = voteTimeService.getContinuousVoteTimeSlots(
@@ -221,9 +258,17 @@ public class VoteService {
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.VOTE_NOT_FOUND));
     }
 
-    // 투표 응답 DTO를 생성한다.
+    /**
+     * 투표 응답 DTO를 생성한다.
+     * @param vote 투표
+     * @param isVoter 투표 대상자 여부
+     * @param isCreator 투표 생성자 여부
+     * @return 투표 정보와 요청자의 대상자·생성자 여부를 포함한 응답 DTO
+     */
     private EventVoteResponse createEventVoteResponse(
-            Vote vote
+            Vote vote,
+            boolean isVoter,
+            boolean isCreator
     ) {
         VoteParticipantService.VoteParticipants voteParticipants =
                 voteParticipantService.getVoteParticipants(vote);
@@ -234,6 +279,8 @@ public class VoteService {
 
         return EventVoteResponse.create(
                 vote,
+                isVoter,
+                isCreator,
                 dates,
                 voteParticipants.completedVoters(),
                 voteParticipants.uncompletedVoters()
@@ -246,6 +293,20 @@ public class VoteService {
     ) {
         if (!Boolean.TRUE.equals(vote.getIsOpened())) {
             throw new RestApiException(CustomErrorCode.VOTE_NOT_OPENED);
+        }
+    }
+
+    /**
+     * 요청자가 투표의 생성자인지 검증한다.
+     * @param vote 투표
+     * @param user 요청자
+     */
+    private void validateVoteCreator(
+            Vote vote,
+            User user
+    ) {
+        if (!vote.getCreatedBy().equals(user.getUserId())) {
+            throw new RestApiException(CustomErrorCode.VOTE_NOT_CREATOR);
         }
     }
 
