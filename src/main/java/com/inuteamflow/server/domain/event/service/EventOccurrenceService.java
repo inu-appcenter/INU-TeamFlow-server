@@ -41,7 +41,20 @@ public class EventOccurrenceService {
     private final EventParticipantRepository eventParticipantRepository;
     private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
 
-    // year/month 요청값을 실제 조회 범위인 [이번 달 1일 00:00, 다음 달 1일 00:00]로 변환한다.
+    // =========================================================================
+    // ============================= 주요 서비스 기능 =============================
+    // =========================================================================
+
+    /**
+     * 연도와 월을 월간 조회 범위로 변환한다.
+     *
+     * <p>조회 범위는 해당 월의 1일 00:00을 포함하고 다음 달의 1일 00:00은 포함하지 않는다.</p>
+     *
+     * @param year 조회할 연도
+     * @param month 조회할 월
+     * @return 월의 시작 시각부터 다음 달 시작 시각까지의 조회 범위
+     * @throws RestApiException 연도나 월이 없거나 월이 유효하지 않은 경우
+     */
     public DateRange createMonthlyDateRange(
             Integer year,
             Integer month
@@ -57,8 +70,19 @@ public class EventOccurrenceService {
         );
     }
 
-    // 반복 일정 후보들의 rule/exception을 한 번에 조회한 뒤, 각 반복 일정을 실제 occurrence 목록으로 펼친다.
-    // user가 non-null이면 RecurrenceExceptionParticipant 기준으로 참석자 필터링을 적용한다.
+    /**
+     * 여러 반복 일정을 조회 범위의 회차 목록으로 확장한다.
+     *
+     * <p>참여 여부를 별도로 제한하지 않고 모든 정상 회차와 수정 예외 회차를 반환한다.</p>
+     *
+     * <p>수정되어 조회 범위 안으로 이동한 예외 회차도 포함하며 요청자의 참여 여부로 필터링할 수 있다.</p>
+     *
+     * @param recurringEvents 확장할 반복 일정 목록
+     * @param dateRange 회차를 조회할 날짜 범위
+     * @param requester 일정을 조회하는 사용자
+     * @param filterByParticipation 참여 회차만 포함할지 여부
+     * @return 조회 범위에 포함되는 반복 회차 목록
+     */
     public List<EventListResponse> expandRecurringEvents(
             List<Event> recurringEvents,
             EventOccurrenceService.DateRange dateRange,
@@ -139,6 +163,14 @@ public class EventOccurrenceService {
         return responses;
     }
 
+    /**
+     * 여러 반복 일정을 조회 범위의 회차 목록으로 확장한다.
+     *
+     * @param recurringEvents 확장할 반복 일정 목록
+     * @param dateRange 회차를 조회할 날짜 범위
+     * @param requester 일정을 조회하는 사용자
+     * @return 조회 범위에 포함되는 반복 회차 목록
+     */
     public List<EventListResponse> expandRecurringEvents(
             List<Event> recurringEvents,
             EventOccurrenceService.DateRange dateRange,
@@ -147,7 +179,21 @@ public class EventOccurrenceService {
         return expandRecurringEvents(recurringEvents, dateRange, requester, false);
     }
 
-    // 반복 일정 하나를 조회 범위 안의 occurrence 들로 변환한다. DB row를 만들지 않고 메모리에서만 계산한다.
+    /**
+     * 반복 일정 하나를 조회 범위의 회차 목록으로 확장한다.
+     *
+     * <p>데이터베이스에 회차를 생성하지 않고 반복 규칙의 종료 시각과 횟수, 취소·수정 예외를 반영하여 계산한다.</p>
+     *
+     * @param event 확장할 반복 일정
+     * @param rule 일정의 반복 규칙
+     * @param exceptionByKey 일정과 원래 회차 시각별 반복 예외
+     * @param dateRange 회차를 조회할 날짜 범위
+     * @param participantsByEventId 일정 ID별 참여자 목록
+     * @param participantsByExceptionId 반복 예외 ID별 참여자 목록
+     * @param requester 일정을 조회하는 사용자
+     * @param filterByParticipation 참여 회차만 포함할지 여부
+     * @return 조회 범위에 포함되는 반복 회차 목록
+     */
     public List<EventListResponse> expandRecurringEvent(
             Event event,
             RecurrenceRule rule,
@@ -164,8 +210,6 @@ public class EventOccurrenceService {
 
         List<EventListResponse> responses = new ArrayList<>();
 
-        // 반복 계산 시작 시각:
-        // seriesStartAt이 있으면 사용하고, 없으면 event.startAt 기준으로 시작
         LocalDateTime occurrenceAt = firstOccurrenceAt(event, rule);
 
         // 원본 이벤트의 duration(start~end 차이)을 유지하기 위해 초 단위로 계산
@@ -176,18 +220,14 @@ public class EventOccurrenceService {
         while (occurrenceAt.isBefore(dateRange.endAt())) {
             generatedCount++;
 
-            // untilAt 또는 occurrenceCount 조건을 초과하면 종료
             if (isAfterRecurrenceEnd(rule, occurrenceAt, generatedCount)) {
                 break;
             }
 
-            // 현재 회차에 대응되는 recurrence_exception 조회
-            // Key: (eventId + originalOccurrenceAt)
             RecurrenceException recurrenceException = exceptionByKey.get(
                     new OccurrenceKey(event.getEventId(), occurrenceAt)
             );
             if (recurrenceException != null) {
-                // 예외 회차가 존재하면: - CANCELLED → 제외, - MODIFIED → 수정된 값 기준으로 응답 생성
                 addExceptionOccurrence(
                         event,
                         rule,
@@ -199,7 +239,6 @@ public class EventOccurrenceService {
                         filterByParticipation
                 );
             } else {
-                // 예외가 없으면 일반 반복 occurrence 생성
                 addNormalOccurrence(
                         event,
                         rule,
@@ -218,7 +257,16 @@ public class EventOccurrenceService {
         return responses;
     }
 
-    // 단건 일정 응답과 반복 occurrence 응답을 합친 뒤, 캘린더 표시용으로 시작 시간 기준 정렬한다.
+    /**
+     * 단일 일정과 반복 회차를 병합하여 정렬한다.
+     *
+     * <p>단일 일정에는 일정 참여자 정보를 결합하고 전체 결과를 시작 시각 오름차순으로 정렬한다.</p>
+     *
+     * @param singleEvents 병합할 단일 일정 목록
+     * @param recurringOccurrences 병합할 반복 회차 목록
+     * @param requester 일정을 조회하는 사용자
+     * @return 시작 시간 오름차순으로 정렬된 일정 목록
+     */
     public List<EventListResponse> mergeAndSort(
             List<Event> singleEvents,
             List<EventListResponse> recurringOccurrences,
@@ -246,7 +294,16 @@ public class EventOccurrenceService {
         return responses;
     }
 
-    // 예외가 없는 일반 반복 회차를 응답에 추가한다. 조회 범위와 겹치지 않으면 제외한다.
+    /**
+     * 지정 시각에 반복 회차가 존재하는지 확인한다.
+     *
+     * <p>첫 회차부터 순차적으로 계산하며 반복 종료 시각 또는 최대 발생 횟수를 넘으면 탐색을 종료한다.</p>
+     *
+     * @param event 확인할 반복 일정
+     * @param rule 일정의 반복 규칙
+     * @param occurrenceAt 확인할 회차 시작 시각
+     * @return 반복 회차가 존재하면 {@code true}, 그렇지 않으면 {@code false}
+     */
     public boolean existsOccurrence(
             Event event,
             RecurrenceRule rule,
@@ -275,6 +332,24 @@ public class EventOccurrenceService {
         return false;
     }
 
+    // =========================================================================
+    // ================================ 헬퍼 함수 ================================
+    // =========================================================================
+
+    /**
+     * 일반 반복 회차가 조회 범위와 겹치면 응답에 추가한다.
+     *
+     * <p>원본 일정의 지속 시간을 회차 시작 시각에 적용하고 일정 참여자 정보를 응답에 포함한다.</p>
+     *
+     * @param event 회차의 원본 일정
+     * @param rule 일정의 반복 규칙
+     * @param occurrenceAt 회차의 시작 시각
+     * @param durationSeconds 일정의 지속 시간
+     * @param dateRange 회차를 조회할 날짜 범위
+     * @param responses 회차를 추가할 응답 목록
+     * @param participantsByEventId 일정 ID별 참여자 목록
+     * @param requester 일정을 조회하는 사용자
+     */
     private void addNormalOccurrence(
             Event event,
             RecurrenceRule rule,
@@ -304,8 +379,21 @@ public class EventOccurrenceService {
         }
     }
 
-    // 반복 예외를 반영한다. CANCELLED는 제외하고, MODIFIED는 수정된 시간 기준으로 조회 범위와 겹칠 때 추가한다.
-    // participatingExceptionIds가 non-null이면 해당 유저가 참석자인 예외 회차만 포함한다.
+    /**
+     * 반복 예외 회차가 조회 조건을 충족하면 응답에 추가한다.
+     *
+     * <p>{@link RecurrenceExceptionType#CANCELLED} 회차는 제외하고,
+     * {@link RecurrenceExceptionType#MODIFIED} 회차는 수정된 시간과 참여자 정보를 사용한다.</p>
+     *
+     * @param event 예외 회차의 원본 일정
+     * @param rule 일정의 반복 규칙
+     * @param recurrenceException 반영할 반복 예외
+     * @param dateRange 회차를 조회할 날짜 범위
+     * @param responses 회차를 추가할 응답 목록
+     * @param participantsByExceptionId 반복 예외 ID별 참여자 목록
+     * @param requester 일정을 조회하는 사용자
+     * @param filterByParticipation 참여 회차만 포함할지 여부
+     */
     private void addExceptionOccurrence(
             Event event,
             RecurrenceRule rule,
@@ -345,6 +433,12 @@ public class EventOccurrenceService {
         }
     }
 
+    /**
+     * 일정별 참여자 정보를 생성한다.
+     *
+     * @param events 참여자를 조회할 일정 목록
+     * @return 일정 ID별 참여자 목록
+     */
     private Map<Long, List<Participant>> createParticipantsByEventId(
             List<Event> events
     ) {
@@ -359,6 +453,12 @@ public class EventOccurrenceService {
                 ));
     }
 
+    /**
+     * 반복 예외별 참여자 정보를 생성한다.
+     *
+     * @param recurrenceExceptions 참여자를 조회할 반복 예외 목록
+     * @return 반복 예외 ID별 참여자 목록
+     */
     private Map<Long, List<Participant>> createParticipantsByExceptionId(
             List<RecurrenceException> recurrenceExceptions
     ) {
@@ -375,7 +475,15 @@ public class EventOccurrenceService {
                 ));
     }
 
-    // 반복 규칙이 조회 시작일 이후에도 영향을 줄 가능성이 있는지 확인한다.
+    /**
+     * 반복 규칙이 조회 범위에 영향을 줄 수 있는지 확인한다.
+     *
+     * <p>종료 시각이 없거나 종료 시각이 조회 시작 시각보다 앞서지 않은 규칙만 확장 대상으로 판단한다.</p>
+     *
+     * @param rule 확인할 반복 규칙
+     * @param dateRange 조회할 날짜 범위
+     * @return 조회 범위에 영향을 줄 수 있으면 {@code true}, 그렇지 않으면 {@code false}
+     */
     private boolean canAffectDateRange(
             RecurrenceRule rule,
             DateRange dateRange
@@ -383,7 +491,16 @@ public class EventOccurrenceService {
         return rule.getUntilAt() == null || !rule.getUntilAt().isBefore(dateRange.startAt());
     }
 
-    // untilAt 또는 occurrenceCount 기준으로 더 이상 회차를 만들면 안 되는지 확인한다.
+    /**
+     * 반복 종료 조건을 초과했는지 확인한다.
+     *
+     * <p>최대 발생 횟수와 종료 시각 중 먼저 충족되는 조건을 반복 종료 기준으로 사용한다.</p>
+     *
+     * @param rule 확인할 반복 규칙
+     * @param occurrenceAt 현재 회차 시작 시각
+     * @param generatedCount 현재까지 생성한 회차 수
+     * @return 반복 종료 조건을 초과했으면 {@code true}, 그렇지 않으면 {@code false}
+     */
     private boolean isAfterRecurrenceEnd(
             RecurrenceRule rule,
             LocalDateTime occurrenceAt,
@@ -396,7 +513,15 @@ public class EventOccurrenceService {
         return rule.getUntilAt() != null && occurrenceAt.isAfter(rule.getUntilAt());
     }
 
-    // 현재 occurrence 기준으로 다음 회차 시작 시간을 계산한다.
+    /**
+     * 현재 회차에서 다음 회차의 시작 시각을 계산한다.
+     *
+     * <p>일간·주간·월간·연간 빈도별 간격을 적용하며 주간과 월간 반복은 별도 보정 규칙을 사용한다.</p>
+     *
+     * @param occurrenceAt 현재 회차 시작 시각
+     * @param rule 일정의 반복 규칙
+     * @return 다음 회차 시작 시각
+     */
     private LocalDateTime nextOccurrenceAt(
             LocalDateTime occurrenceAt,
             RecurrenceRule rule
@@ -412,8 +537,15 @@ public class EventOccurrenceService {
         };
     }
 
-    // 월 반복에서 31일처럼 다음 달에 없는 날짜는 해당 달의 마지막 날짜로 보정한다.
-    // 주간 반복은 seriesStartAt 이후 첫 byDay 부터 시작한다.
+    /**
+     * 반복 일정의 첫 회차 시작 시각을 계산한다.
+     *
+     * <p>시리즈 시작 시각이 있으면 우선 사용하고 주간 반복은 설정된 요일 중 첫 회차를 선택한다.</p>
+     *
+     * @param event 첫 회차를 계산할 일정
+     * @param rule 일정의 반복 규칙
+     * @return 첫 회차 시작 시각
+     */
     private LocalDateTime firstOccurrenceAt(
             Event event,
             RecurrenceRule rule
@@ -429,6 +561,16 @@ public class EventOccurrenceService {
         return firstWeeklyOccurrenceAt(seriesStartAt, rule);
     }
 
+    /**
+     * 주간 반복의 다음 회차 시작 시각을 계산한다.
+     *
+     * <p>같은 주의 다음 반복 요일을 우선 선택하고 없으면 반복 간격을 적용한 주의 첫 반복 요일로 이동한다.</p>
+     *
+     * @param occurrenceAt 현재 회차 시작 시각
+     * @param interval 반복 주기
+     * @param rule 일정의 반복 규칙
+     * @return 다음 주간 반복 회차 시작 시각
+     */
     private LocalDateTime nextWeeklyOccurrenceAt(
             LocalDateTime occurrenceAt,
             int interval,
@@ -450,6 +592,13 @@ public class EventOccurrenceService {
                 ));
     }
 
+    /**
+     * 주간 반복의 첫 회차 시작 시각을 계산한다.
+     *
+     * @param seriesStartAt 반복 일정의 기준 시작 시각
+     * @param rule 일정의 반복 규칙
+     * @return 첫 주간 반복 회차 시작 시각
+     */
     private LocalDateTime firstWeeklyOccurrenceAt(
             LocalDateTime seriesStartAt,
             RecurrenceRule rule
@@ -460,6 +609,12 @@ public class EventOccurrenceService {
                 .orElse(seriesStartAt);
     }
 
+    /**
+     * 반복 요일을 중복 없이 오름차순으로 정렬한다.
+     *
+     * @param rule 일정의 반복 규칙
+     * @return 오름차순으로 정렬된 반복 요일 목록
+     */
     private List<DayOfWeek> sortedByDays(
             RecurrenceRule rule
     ) {
@@ -469,6 +624,13 @@ public class EventOccurrenceService {
                 .toList();
     }
 
+    /**
+     * 지정 요일과 같거나 이후인 가장 가까운 시각으로 이동한다.
+     *
+     * @param dateTime 이동 기준 시각
+     * @param dayOfWeek 이동할 요일
+     * @return 지정 요일로 이동한 시각
+     */
     private LocalDateTime moveToDayOfWeek(
             LocalDateTime dateTime,
             DayOfWeek dayOfWeek
@@ -476,7 +638,16 @@ public class EventOccurrenceService {
         return dateTime.with(TemporalAdjusters.nextOrSame(dayOfWeek));
     }
 
-    // 월 반복에서 다음 달에 없는 날짜는 해당 달의 마지막 날짜로 보정한다.
+    /**
+     * 월간 반복의 다음 회차 시작 시각을 계산한다.
+     *
+     * <p>반복 일자가 대상 월에 없으면 해당 월의 마지막 날짜로 보정한다.</p>
+     *
+     * @param occurrenceAt 현재 회차 시작 시각
+     * @param interval 반복 주기
+     * @param rule 일정의 반복 규칙
+     * @return 다음 월간 반복 회차 시작 시각
+     */
     private LocalDateTime nextMonthlyOccurrenceAt(
             LocalDateTime occurrenceAt,
             int interval,
@@ -491,7 +662,14 @@ public class EventOccurrenceService {
         return next.withDayOfMonth(dayOfMonth);
     }
 
-    // [startAt, endAt) 일정 구간이 조회 범위와 겹치는지 판단한다.
+    /**
+     * 일정 구간과 조회 범위가 겹치는지 확인한다.
+     *
+     * @param startAt 일정 구간 시작 시각
+     * @param endAt 일정 구간 종료 시각
+     * @param dateRange 조회할 날짜 범위
+     * @return 두 구간이 겹치면 {@code true}, 그렇지 않으면 {@code false}
+     */
     private boolean isOverlapped(
             LocalDateTime startAt,
             LocalDateTime endAt,
