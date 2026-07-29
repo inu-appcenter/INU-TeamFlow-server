@@ -40,20 +40,48 @@ public class InfoPostService {
     private final S3Service s3Service;
     private final RecruitmentRepository recruitmentRepository;
 
-    // 정보글 목록 조회
+    // =========================================================================
+    // ============================= 주요 서비스 기능 =============================
+    // =========================================================================
+
+    /**
+     * 조건에 맞는 정보글 목록을 조회한다.
+     *
+     * <p>{@code category}가 지정되면 해당 카테고리만, {@code category} 없이 {@code type}만 지정되면
+     * 해당 유형에 속한 카테고리 전체를 대상으로 검색하며, 둘 다 없으면 전체 카테고리를 대상으로 한다.</p>
+     *
+     * @param category 조회할 정보글 카테고리, 전체 카테고리를 대상으로 할 경우 {@code null}
+     * @param type 조회할 정보글 유형, {@code category}가 지정되었거나 전체 유형을 대상으로 할 경우 {@code null}
+     * @param keyword 제목/내용 검색 키워드
+     * @param pageable 페이지 정보
+     * @return 대표 이미지와 모집글 수를 포함한 정보글 목록
+     */
     public Page<InfoPostSummaryResponse> getInfoPosts(InfoPostCategory category, InfoPostType type, String keyword, Pageable pageable) {
         List<InfoPostCategory> categories = resolveCategories(category, type);
         Page<InfoPost> infoPostPage = infoPostRepository.search(categories, keyword, pageable);
         return toSummaryPage(infoPostPage);
     }
 
-    // 내가 작성한 정보글 목록 조회
+    /**
+     * 사용자가 작성한 정보글 목록을 조회한다.
+     *
+     * @param user 작성자 사용자
+     * @param pageable 페이지 정보
+     * @return 대표 이미지와 모집글 수를 포함한 정보글 목록
+     */
     public Page<InfoPostSummaryResponse> getMyInfoPosts(User user, Pageable pageable) {
         Page<InfoPost> infoPostPage = infoPostRepository.findAllByCreatedBy(user.getUserId(), pageable);
         return toSummaryPage(infoPostPage);
     }
 
-    // 정보글 상세 조회
+    /**
+     * 정보글 상세 정보를 조회한다.
+     *
+     * @param infoPostId 조회할 정보글 ID
+     * @param user 조회를 요청한 사용자
+     * @return 작성자 정보, 이미지 목록, 작성자 여부, 연관 모집글 수를 포함한 정보글 상세 정보
+     * @throws RestApiException 정보글을 찾을 수 없는 경우
+     */
     public InfoPostDetailResponse getInfoPost(Long infoPostId, User user) {
         InfoPost infoPost = getInfoPostById(infoPostId);
         List<InfoPostImage> images = infoPostImageRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
@@ -65,7 +93,16 @@ public class InfoPostService {
         return InfoPostDetailResponse.of(infoPost, author, authorProfileUrl, images, s3Service::getImageUrl, isAuthor, recruitmentCount);
     }
 
-    // 정보글 작성
+    /**
+     * 정보글을 작성한다.
+     *
+     * <p>학교 인증된 사용자만 작성할 수 있다.</p>
+     *
+     * @param request 작성할 정보글 정보
+     * @param user 작성자 사용자
+     * @return 작성된 정보글 상세 정보
+     * @throws RestApiException 사용자가 학교 인증되지 않은 경우
+     */
     @Transactional
     public InfoPostDetailResponse createInfoPost(InfoPostCreateRequest request, User user) {
 
@@ -82,7 +119,18 @@ public class InfoPostService {
         return InfoPostDetailResponse.of(infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, getRecruitmentCount(infoPost));
     }
 
-    // 정보글 수정
+    /**
+     * 정보글을 수정한다.
+     *
+     * <p>작성자만 수정할 수 있으며, 기존 이미지를 모두 지우고 요청된 이미지로 다시 저장한다.
+     * 기존 이미지의 S3 파일은 DB에서 삭제된 이후 함께 제거한다.</p>
+     *
+     * @param infoPostId 수정할 정보글 ID
+     * @param request 수정할 정보글 정보
+     * @param user 수정을 요청한 사용자
+     * @return 수정된 정보글 상세 정보
+     * @throws RestApiException 정보글을 찾을 수 없거나 사용자가 작성자가 아닌 경우
+     */
     @Transactional
     public InfoPostDetailResponse updateInfoPost(Long infoPostId, InfoPostUpdateRequest request, User user) {
         InfoPost infoPost = getInfoPostById(infoPostId);
@@ -101,7 +149,15 @@ public class InfoPostService {
         return InfoPostDetailResponse.of(infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, recruitmentCount);
     }
 
-    // 정보글 삭제
+    /**
+     * 정보글을 삭제한다.
+     *
+     * <p>작성자만 삭제할 수 있으며, 정보글에 속한 이미지도 DB와 S3에서 함께 삭제한다.</p>
+     *
+     * @param infoPostId 삭제할 정보글 ID
+     * @param user 삭제를 요청한 사용자
+     * @throws RestApiException 정보글을 찾을 수 없거나 사용자가 작성자가 아닌 경우
+     */
     @Transactional
     public void deleteInfoPost(Long infoPostId, User user) {
         InfoPost infoPost = getInfoPostById(infoPostId);
@@ -113,15 +169,31 @@ public class InfoPostService {
         infoPostRepository.delete(infoPost);
     }
 
-    // 이 정보글을 참조하는 모집글 목록 조회
+    /**
+     * 해당 정보글을 참조하는 모집글 목록을 조회한다.
+     *
+     * @param infoPostId 조회 기준이 되는 정보글 ID
+     * @param pageable 페이지 정보
+     * @return 해당 정보글을 참조하는 모집글 목록
+     * @throws RestApiException 정보글을 찾을 수 없는 경우
+     */
     public Page<RecruitmentSummaryResponse> getRecruitmentsByInfoPost(Long infoPostId, Pageable pageable) {
         InfoPost infoPost = getInfoPostById(infoPostId);
         return recruitmentRepository.findAllByInfoPost(infoPost, pageable)
                 .map(RecruitmentSummaryResponse::from);
     }
 
+    // =========================================================================
+    // ================================ 헬퍼 함수 ================================
+    // =========================================================================
+
     /**
-     * ==== 헬퍼 함수 ====
+     * 정보글 페이지를 대표 이미지와 모집글 수를 포함한 요약 응답 페이지로 변환한다.
+     *
+     * <p>정보글별 대표 이미지({@code sortOrder}가 0인 이미지)를 한 번에 조회하여 N+1 문제를 방지한다.</p>
+     *
+     * @param infoPostPage 변환할 정보글 페이지
+     * @return 대표 이미지와 모집글 수를 포함한 정보글 요약 페이지
      */
     private Page<InfoPostSummaryResponse> toSummaryPage(Page<InfoPost> infoPostPage) {
         List<InfoPost> infoPosts = infoPostPage.getContent();
@@ -139,6 +211,16 @@ public class InfoPostService {
         });
     }
 
+    /**
+     * 이미지 키 목록으로 정보글 이미지를 생성해 저장한다.
+     *
+     * <p>{@code imageKeys}가 {@code null}이거나 비어 있으면 저장하지 않으며, 목록의 첫 번째 이미지가
+     * {@code sortOrder} 0인 대표 이미지가 된다.</p>
+     *
+     * @param infoPost 이미지를 연결할 정보글
+     * @param imageKeys 저장할 이미지 키 목록
+     * @return 저장된 정보글 이미지 목록
+     */
     private List<InfoPostImage> saveImages(InfoPost infoPost, List<String> imageKeys) {
         if (imageKeys == null || imageKeys.isEmpty()) {
             return List.of();
@@ -151,6 +233,14 @@ public class InfoPostService {
         return infoPostImageRepository.saveAll(images);
     }
 
+    /**
+     * 정보글에 연결된 모집글 수를 조회한다.
+     *
+     * <p>모집글과 연결될 수 없는 자유형 정보글은 {@code null}을 반환한다.</p>
+     *
+     * @param infoPost 모집글 수를 조회할 정보글
+     * @return 연결된 모집글 수, 자유형 정보글이면 {@code null}
+     */
     private Integer getRecruitmentCount(InfoPost infoPost) {
         if (!infoPost.isLinkable()) {
             return null; // 자유형은 null
@@ -158,22 +248,53 @@ public class InfoPostService {
         return (int) recruitmentRepository.countByInfoPost(infoPost);
     }
 
+    /**
+     * 사용자가 정보글의 작성자인지 검증한다.
+     *
+     * @param infoPost 검증할 정보글
+     * @param user 검증할 사용자
+     * @throws RestApiException 사용자가 정보글의 작성자가 아닌 경우
+     */
     private void validateAuthor(InfoPost infoPost, User user) {
         if (!infoPost.isAuthor(user.getUserId())) {
             throw new RestApiException(CustomErrorCode.INFO_POST_FORBIDDEN);
         }
     }
 
+    /**
+     * ID로 정보글을 조회한다.
+     *
+     * @param infoPostId 조회할 정보글 ID
+     * @return 조회된 정보글
+     * @throws RestApiException 정보글을 찾을 수 없는 경우
+     */
     private InfoPost getInfoPostById(Long infoPostId) {
         return infoPostRepository.findById(infoPostId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.INFO_POST_NOT_FOUND));
     }
 
+    /**
+     * ID로 사용자를 조회한다.
+     *
+     * @param userId 조회할 사용자 ID
+     * @return 조회된 사용자
+     * @throws RestApiException 사용자를 찾을 수 없는 경우
+     */
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
     }
 
+    /**
+     * 카테고리 또는 유형 조건으로 검색 대상 카테고리 목록을 결정한다.
+     *
+     * <p>{@code category}가 지정되면 해당 카테고리 하나만, 없이 {@code type}만 지정되면 해당 유형에 속한
+     * 카테고리 전체를, 둘 다 없으면 전체 카테고리 대상임을 뜻하는 {@code null}을 반환한다.</p>
+     *
+     * @param category 검색할 정보글 카테고리, 지정하지 않은 경우 {@code null}
+     * @param type 검색할 정보글 유형, 지정하지 않은 경우 {@code null}
+     * @return 검색 대상 카테고리 목록, 전체 카테고리를 대상으로 할 경우 {@code null}
+     */
     private List<InfoPostCategory> resolveCategories(InfoPostCategory category, InfoPostType type) {
         if (category != null) {
             return List.of(category);
