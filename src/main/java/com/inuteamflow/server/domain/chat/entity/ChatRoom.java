@@ -26,15 +26,19 @@ public class ChatRoom extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "team_id")
-    private Team team; // Team 타입일 때만 값 존재
+    private Team team; // TEAM/GROUP 타입일 때만 값 존재
 
     @Column(name = "image_key")
     private String imageKey;
 
+    @Column(name = "room_name")
+    private String roomName; // GROUP 타입 커스텀 방 이름 (없으면 참여자 이름으로 자동 표시)
+
     @Builder
-    private ChatRoom(ChatRoomType chatRoomType, Team team) {
+    private ChatRoom(ChatRoomType chatRoomType, Team team, String roomName) {
         this.chatRoomType = chatRoomType;
         this.team = team;
+        this.roomName = roomName;
     }
 
     public static ChatRoom createTeamRoom(Team team) {
@@ -47,6 +51,14 @@ public class ChatRoom extends BaseEntity {
     public static ChatRoom createDirectRoom() {
         return ChatRoom.builder()
                 .chatRoomType(ChatRoomType.DIRECT)
+                .build();
+    }
+
+    public static ChatRoom createGroupRoom(Team team, String roomName) {
+        return ChatRoom.builder()
+                .chatRoomType(ChatRoomType.GROUP)
+                .team(team)
+                .roomName(roomName)
                 .build();
     }
 

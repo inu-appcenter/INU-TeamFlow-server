@@ -20,13 +20,16 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     // 방 접근 권한 체크용 (이 유저가 이 방 멤버인지)
     boolean existsByChatRoomAndUser(ChatRoom chatRoom, User user);
 
+    // 그룹 채팅방 퇴장 후 남은 멤버가 있는지 확인용
+    boolean existsByChatRoom(ChatRoom chatRoom);
+
     // 팀인지 1:1 인지 분기해서 조회
     @Query("SELECT crm FROM ChatRoomMember crm JOIN FETCH crm.chatRoom WHERE crm.user = :user AND crm.chatRoom.chatRoomType = :type")
     List<ChatRoomMember> findByUserAndChatRoomTypeWithChatRoom(@Param("user") User user, @Param("type") ChatRoomType type);
 
     // 팀 삭제 시 채팅방도 삭제
     @Modifying
-    @Query("DELETE FROM ChatMessage cm WHERE cm.chatRoom = :chatRoom")
+    @Query("DELETE FROM ChatRoomMember crm WHERE crm.chatRoom = :chatRoom")
     void deleteByChatRoom(@Param("chatRoom") ChatRoom chatRoom);
 
     // DIRECT 방 목록의 "나를 제외한 상대방"을 배치로 한 번에 조회 (N+1 방지)

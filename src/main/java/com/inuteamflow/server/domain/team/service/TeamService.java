@@ -313,7 +313,7 @@ public class TeamService {
         teamMemberRepository.deleteAllByTeam(team);
 
         // 팀 채팅방 삭제
-        chatRoomService.deleteTeamChatRoom(team);
+        chatRoomService.deleteAllChatRoomsForTeam(team);
 
         if (StringUtils.hasText(team.getImageKey())) {
             s3Service.deleteImage(team.getImageKey());

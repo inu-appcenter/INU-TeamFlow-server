@@ -1,11 +1,10 @@
 package com.inuteamflow.server.domain.chat.service;
 
 import com.inuteamflow.server.domain.chat.dto.request.ChatReadRequest;
+import com.inuteamflow.server.domain.chat.dto.request.ChatRoomInviteRequest;
 import com.inuteamflow.server.domain.chat.dto.request.DirectChatRoomCreateRequest;
-import com.inuteamflow.server.domain.chat.dto.response.ChatMessageAnchorResponse;
-import com.inuteamflow.server.domain.chat.dto.response.ChatMessageResponse;
-import com.inuteamflow.server.domain.chat.dto.response.ChatReadEventResponse;
-import com.inuteamflow.server.domain.chat.dto.response.ChatRoomSummaryResponse;
+import com.inuteamflow.server.domain.chat.dto.request.GroupChatRoomCreateRequest;
+import com.inuteamflow.server.domain.chat.dto.response.*;
 import com.inuteamflow.server.domain.chat.entity.ChatMessage;
 import com.inuteamflow.server.domain.chat.entity.ChatRoom;
 import com.inuteamflow.server.domain.chat.entity.ChatRoomMember;
@@ -17,6 +16,7 @@ import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
+import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
@@ -30,11 +30,9 @@ import org.springframework.data.domain.SliceImpl;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,6 +52,8 @@ public class ChatRoomService {
     private final UserRepository userRepository;
     private final S3Service s3Service;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMessageService chatMessageService;
+    private final TeamRepository teamRepository;
 
     // =========================================================================
     // ============================= 주요 서비스 기능 =============================
@@ -281,7 +281,7 @@ public class ChatRoomService {
     @Transactional
     public void addTeamChatRoomMember(Team team, User user) {
         // 채팅방이 없는 경우(레거시 팀 등)는 조용히 스킵
-        chatRoomRepository.findByTeam(team).ifPresent(chatRoom -> {
+        chatRoomRepository.findByTeamAndChatRoomType(team, ChatRoomType.TEAM).ifPresent(chatRoom -> {
             if (!chatRoomMemberRepository.existsByChatRoomAndUser(chatRoom, user)) {
                 chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, user));
             }
@@ -289,19 +289,27 @@ public class ChatRoomService {
     }
 
     /**
-     * 팀 탈퇴 또는 방출 시 팀 채팅방에서도 사용자를 제거한다.
+     * 팀 탈퇴 또는 방출 시 그 팀의 모든 채팅방(팀 채팅방 + 그룹 채팅방)에서 사용자를 제거한다.
      *
-     * <p>팀 채팅방이 없거나 사용자가 채팅방 멤버가 아니면 아무 작업도 하지 않는다.</p>
+     * <p>그룹 채팅방은 제거 후 남은 멤버가 없으면 채팅방과 메시지를 함께 삭제한다. 각 채팅방에서
+     * 사용자가 멤버가 아니면 해당 채팅방은 건너뛴다.</p>
      *
      * @param team 멤버를 제거할 팀
      * @param user 채팅방에서 제거할 사용자
      */
     @Transactional
     public void removeTeamChatRoomMember(Team team, User user) {
-        chatRoomRepository.findByTeam(team).ifPresent(chatRoom ->
-                chatRoomMemberRepository.findByChatRoomAndUser(chatRoom, user)
-                        .ifPresent(chatRoomMemberRepository::delete)
-        );
+        for (ChatRoom chatRoom : chatRoomRepository.findAllByTeam(team)) {
+            chatRoomMemberRepository.findByChatRoomAndUser(chatRoom, user).ifPresent(member -> {
+                chatRoomMemberRepository.delete(member);
+
+                if (chatRoom.getChatRoomType() == ChatRoomType.GROUP
+                        && !chatRoomMemberRepository.existsByChatRoom(chatRoom)) {
+                    chatMessageRepository.deleteByChatRoom(chatRoom);
+                    chatRoomRepository.delete(chatRoom);
+                }
+            });
+        }
     }
 
     /**
@@ -312,13 +320,151 @@ public class ChatRoomService {
      * @param team 채팅방을 삭제할 팀
      */
     @Transactional
-    public void deleteTeamChatRoom(Team team) {
-        chatRoomRepository.findByTeam(team).ifPresent(chatRoom -> {
+    public void deleteAllChatRoomsForTeam(Team team) {
+        for (ChatRoom chatRoom : chatRoomRepository.findAllByTeam(team)) {
             chatRoomMemberRepository.deleteByChatRoom(chatRoom);
             chatMessageRepository.deleteByChatRoom(chatRoom);
             chatRoomRepository.delete(chatRoom);
-        });
+        }
     }
+
+    /**
+     * 팀 멤버를 선택해 그룹 채팅방을 생성한다.
+     *
+     * <p>선택한 유저는 모두 해당 팀의 멤버여야 하며, 생성자 본인은 목록에 없어도 자동으로 포함된다.</p>
+     *
+     * @param creator 채팅방을 생성하는 사용자
+     * @param request 생성할 팀 ID, 방 이름, 초대할 팀 멤버 ID 목록
+     * @return 생성된 그룹 채팅방 요약 정보
+     * @throws RestApiException 팀을 찾을 수 없거나, 생성자가 팀 멤버가 아니거나, 선택한 유저 중 팀 멤버가 아닌 사람이 있는 경우
+     */
+    @Transactional
+    public ChatRoomSummaryResponse createGroupChatRoom(User creator, GroupChatRoomCreateRequest request) {
+        Team team = teamRepository.findById(request.getTeamId())
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+
+        teamMemberRepository.findByTeamAndUser(team, creator)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+
+        List<Long> memberIds = request.getMemberIds().stream().distinct().toList();
+        List<User> selectedUsers = userRepository.findAllById(memberIds);
+        validateTeamMembers(team, selectedUsers, memberIds);
+
+        ChatRoom chatRoom = ChatRoom.createGroupRoom(team, request.getRoomName());
+        chatRoomRepository.save(chatRoom);
+
+        List<ChatRoomMember> allMembers = new ArrayList<>();
+        ChatRoomMember creatorMembership = chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, creator));
+        allMembers.add(creatorMembership);
+        for (User user : selectedUsers) {
+            if (!user.getUserId().equals(creator.getUserId())) {
+                allMembers.add(chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, user)));
+            }
+        }
+
+        return toSummary(creatorMembership, null, Map.of(), allMembers);
+    }
+
+    /**
+     * 그룹 채팅방에 팀 멤버를 추가로 초대한다.
+     *
+     * <p>그룹 채팅방에서만 가능하며, 현재 채팅방 멤버라면 누구나 초대할 수 있다. 이미 채팅방에 있는 유저는
+     * 조용히 건너뛰고, 새로 추가된 인원이 있으면 시스템 메시지로 채팅방에 안내한다.</p>
+     *
+     * @param user 초대를 요청한 사용자
+     * @param roomId 초대할 채팅방 ID
+     * @param request 초대할 팀 멤버 ID 목록
+     * @throws RestApiException 채팅방을 찾을 수 없거나, 그룹 채팅방이 아니거나, 요청자가 채팅방 멤버가 아니거나,
+     *                       선택한 유저 중 팀 멤버가 아닌 사람이 있는 경우
+     */
+    @Transactional
+    public void inviteToGroupChatRoom(User user, Long roomId, ChatRoomInviteRequest request) {
+        ChatRoom chatRoom = getChatRoomById(roomId);
+        requireGroupRoom(chatRoom);
+        getMemberOrThrow(chatRoom, user);
+
+        List<Long> memberIds = request.getMemberIds().stream().distinct().toList();
+        List<User> selectedUsers = userRepository.findAllById(memberIds);
+        validateTeamMembers(chatRoom.getTeam(), selectedUsers, memberIds);
+
+        Set<Long> existingMemberIds = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
+                .map(crm -> crm.getUser().getUserId())
+                .collect(Collectors.toSet());
+
+        List<User> newMembers = selectedUsers.stream()
+                .filter(u -> !existingMemberIds.contains(u.getUserId()))
+                .toList();
+
+        for (User newMember : newMembers) {
+            chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, newMember));
+        }
+
+        if (!newMembers.isEmpty()) {
+            String names = newMembers.stream()
+                    .map(u -> u.getName() + "님")
+                    .collect(Collectors.joining(", "));
+            chatMessageService.sendSystemMessage(chatRoom, names + "이 초대되었습니다.", user);
+        }
+    }
+
+    /**
+     * 그룹 채팅방에서 탈퇴한다.
+     *
+     * <p>그룹 채팅방에서만 가능하다. 탈퇴 후 남은 멤버가 없으면 채팅방과 메시지를 함께 삭제하고,
+     * 남아있으면 탈퇴 사실을 시스템 메시지로 안내한다.</p>
+     *
+     * @param user 탈퇴할 사용자
+     * @param roomId 탈퇴할 채팅방 ID
+     * @throws RestApiException 채팅방을 찾을 수 없거나, 그룹 채팅방이 아니거나, 사용자가 채팅방 멤버가 아닌 경우
+     */
+    @Transactional
+    public void leaveGroupChatRoom(User user, Long roomId) {
+        ChatRoom chatRoom = getChatRoomById(roomId);
+        requireGroupRoom(chatRoom);
+        ChatRoomMember member = getMemberOrThrow(chatRoom, user);
+
+        chatRoomMemberRepository.delete(member);
+
+        if (!chatRoomMemberRepository.existsByChatRoom(chatRoom)) {
+            chatMessageRepository.deleteByChatRoom(chatRoom);
+            chatRoomRepository.delete(chatRoom);
+            return;
+        }
+
+        chatMessageService.sendSystemMessage(chatRoom, user.getName() + "님이 나갔습니다.", user);
+    }
+
+    /**
+     * 채팅방의 현재 멤버 목록을 조회한다.
+     *
+     * <p>TEAM/GROUP 채팅방은 각 멤버의 팀 내 권한을 함께 조회하고, DIRECT 채팅방은 팀이 없으므로
+     * 권한 필드를 {@code null}로 둔다.</p>
+     *
+     * @param user 조회를 요청한 사용자
+     * @param roomId 조회할 채팅방 ID
+     * @return 학과, 팀 내 권한(1:1이면 {@code null}), 프로필 이미지 URL을 포함한 채팅방 멤버 목록
+     * @throws RestApiException 채팅방을 찾을 수 없거나 사용자가 채팅방 멤버가 아닌 경우
+     */
+    public List<ChatRoomMemberResponse> getChatRoomMembers(User user, Long roomId) {
+        ChatRoom chatRoom = getChatRoomById(roomId);
+        getMemberOrThrow(chatRoom, user);
+
+        List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
+
+        Map<Long, TeamRole> teamRoleByUserId = chatRoom.getChatRoomType() != ChatRoomType.DIRECT
+                ? teamMemberRepository.findByTeamAndUserIn(chatRoom.getTeam(), members.stream().map(ChatRoomMember::getUser).toList()).stream()
+                .collect(Collectors.toMap(tm -> tm.getUser().getUserId(), TeamMember::getTeamRole))
+                : Map.of();
+
+        return members.stream()
+                .map(crm -> ChatRoomMemberResponse.create(
+                        crm.getUser(),
+                        teamRoleByUserId.get(crm.getUser().getUserId()),
+                        s3Service.getImageUrl(crm.getUser().getImageKey())
+                ))
+                .toList();
+    }
+
 
     // =========================================================================
     // ================================ 헬퍼 함수 ================================
@@ -336,6 +482,10 @@ public class ChatRoomService {
      * @return 채팅방 목록 화면에 표시할 요약 정보
      */
     private ChatRoomSummaryResponse toSummary(ChatRoomMember member, ChatMessage lastMessage, Map<Long, User> partnerByRoomId) {
+        return toSummary(member, lastMessage, partnerByRoomId, null);
+    }
+
+    private ChatRoomSummaryResponse toSummary(ChatRoomMember member, ChatMessage lastMessage, Map<Long, User> partnerByRoomId, List<ChatRoomMember> preloadedGroupMembers) {
         ChatRoom chatRoom = member.getChatRoom();
 
         long unreadCount = chatMessageRepository.countByChatRoomAndChatMessageIdGreaterThan(
@@ -348,10 +498,18 @@ public class ChatRoomService {
         List<String> memberProfileUrls = null;
         Long teamId = null;
 
-        if (chatRoom.getChatRoomType() == ChatRoomType.TEAM) {
+        if (chatRoom.getChatRoomType() != ChatRoomType.DIRECT) {
             Team team = chatRoom.getTeam();
             teamId = team.getTeamId();
-            roomName = team.getName();
+
+            if (chatRoom.getChatRoomType() == ChatRoomType.TEAM) {
+                roomName = team.getName();
+            } else {
+                List<ChatRoomMember> groupMembers = preloadedGroupMembers != null
+                        ? preloadedGroupMembers
+                        : chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
+                roomName = resolveGroupRoomName(chatRoom, groupMembers, member.getUser());
+            }
 
             if (chatRoom.getImageKey() != null) {
                 // 리더가 커스텀 이미지 설정한 경우
@@ -359,12 +517,16 @@ public class ChatRoomService {
             } else {
                 // 기본: 멤버 프로필 콜라주용 URL 목록 제공 (프론트에서 조합)
                 imageUrl = null;
-                memberProfileUrls = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
+                List<ChatRoomMember> membersForCollage = preloadedGroupMembers != null
+                        ? preloadedGroupMembers
+                        : chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
+                memberProfileUrls = membersForCollage.stream()
                         .map(ChatRoomMember::getUser)
                         .limit(COLLAGE_MAX_MEMBERS)
                         .map(u -> s3Service.getImageUrl(u.getImageKey()))
                         .toList();
             }
+
         } else {
             User partner = partnerByRoomId.get(chatRoom.getChatRoomId());
             roomName = partner != null ? partner.getName() : "알 수 없음";
@@ -486,5 +648,67 @@ public class ChatRoomService {
     private ChatRoomMember getMemberOrThrow(ChatRoom chatRoom, User user) {
         return chatRoomMemberRepository.findByChatRoomAndUser(chatRoom, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.CHAT_ROOM_FORBIDDEN));
+    }
+
+    /**
+     * 그룹 채팅방의 표시 이름을 결정한다.
+     *
+     * <p>커스텀 방 이름이 설정되어 있으면 그대로 사용하고, 없으면 본인을 제외한 참여자 이름 최대 3명과
+     * 나머지 인원 수로 구성한 기본 이름을 사용한다.</p>
+     *
+     * @param chatRoom 이름을 결정할 채팅방
+     * @param members 채팅방의 전체 멤버 목록
+     * @param viewer 이름을 조회하는 사용자
+     * @return 채팅방에 표시할 이름
+     */
+    private String resolveGroupRoomName(ChatRoom chatRoom, List<ChatRoomMember> members, User viewer) {
+        if (StringUtils.hasText(chatRoom.getRoomName())) {
+            return chatRoom.getRoomName();
+        }
+
+        List<String> otherNames = members.stream()
+                .map(ChatRoomMember::getUser)
+                .filter(u -> !u.getUserId().equals(viewer.getUserId()))
+                .map(User::getName)
+                .toList();
+
+        if (otherNames.isEmpty()) {
+            return viewer.getName();
+        }
+
+        int previewCount = Math.min(3, otherNames.size());
+        String preview = String.join(", ", otherNames.subList(0, previewCount));
+        int remaining = otherNames.size() - previewCount;
+
+        return remaining > 0 ? preview + " 외 " + remaining + "명" : preview;
+    }
+
+    /**
+     * 채팅방이 그룹 채팅방인지 확인한다.
+     *
+     * @param chatRoom 확인할 채팅방
+     * @throws RestApiException 채팅방이 그룹 채팅방이 아닌 경우
+     */
+    private void requireGroupRoom(ChatRoom chatRoom) {
+        if (chatRoom.getChatRoomType() != ChatRoomType.GROUP) {
+            throw new RestApiException(CustomErrorCode.CHAT_ROOM_INVALID_TARGET);
+        }
+    }
+
+    /**
+     * 선택한 유저 전체가 해당 팀의 멤버인지 검증한다.
+     *
+     * @param team 검증 기준이 되는 팀
+     * @param users 조회된 유저 목록
+     * @param requestedIds 요청에 담긴 유저 ID 목록
+     * @throws RestApiException 조회된 유저 수가 요청 ID 수와 다르거나, 팀 멤버가 아닌 유저가 포함된 경우
+     */
+    private void validateTeamMembers(Team team, List<User> users, List<Long> requestedIds) {
+        if (users.size() != requestedIds.size()) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+        }
+        if (teamMemberRepository.findByTeamAndUserIn(team, users).size() != users.size()) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+        }
     }
 }

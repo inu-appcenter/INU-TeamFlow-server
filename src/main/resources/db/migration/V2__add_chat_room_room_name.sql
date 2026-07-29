@@ -1,0 +1,1 @@
+ALTER TABLE chat_room ADD COLUMN room_name VARCHAR(255);

@@ -1,10 +1,9 @@
 package com.inuteamflow.server.domain.chat.controller;
 
-import com.inuteamflow.server.domain.chat.dto.request.ChatReadRequest;
-import com.inuteamflow.server.domain.chat.dto.request.ChatRoomImageUpdateRequest;
-import com.inuteamflow.server.domain.chat.dto.request.DirectChatRoomCreateRequest;
+import com.inuteamflow.server.domain.chat.dto.request.*;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageAnchorResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageResponse;
+import com.inuteamflow.server.domain.chat.dto.response.ChatRoomMemberResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatRoomSummaryResponse;
 import com.inuteamflow.server.domain.chat.enums.ChatRoomType;
 import com.inuteamflow.server.domain.chat.service.ChatRoomService;
@@ -88,6 +87,47 @@ public class ChatRoomController implements ChatRoomControllerDocument{
     ) {
         chatRoomService.updateTeamChatRoomImage(userDetails.getUser(), roomId, request.getImageKey());
         return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    // 팀 안에서 멤버 선택해 그룹 채팅방 생성
+    @PostMapping("/group")
+    public ResponseEntity<ChatRoomSummaryResponse> createGroupChatRoom(
+            @Valid @RequestBody GroupChatRoomCreateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(chatRoomService.createGroupChatRoom(userDetails.getUser(), request));
+    }
+
+    // 채팅방 현재 멤버 목록 조회
+    @GetMapping("/{roomId}/members")
+    public ResponseEntity<List<ChatRoomMemberResponse>> getChatRoomMembers(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(chatRoomService.getChatRoomMembers(userDetails.getUser(), roomId));
+    }
+
+    // 채팅방에 멤버 초대
+    @PostMapping("/{roomId}/invite")
+    public ResponseEntity<Void> inviteToGroupChatRoom(
+            @PathVariable Long roomId,
+            @Valid @RequestBody ChatRoomInviteRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        chatRoomService.inviteToGroupChatRoom(userDetails.getUser(), roomId, request);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    // 채팅방 퇴장
+    @DeleteMapping("/{roomId}/members/me")
+    public ResponseEntity<Void> leaveGroupChatRoom(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        chatRoomService.leaveGroupChatRoom(userDetails.getUser(), roomId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
 }

@@ -3,8 +3,10 @@ package com.inuteamflow.server.domain.chat.controller;
 import com.inuteamflow.server.domain.chat.dto.request.ChatReadRequest;
 import com.inuteamflow.server.domain.chat.dto.request.ChatRoomImageUpdateRequest;
 import com.inuteamflow.server.domain.chat.dto.request.DirectChatRoomCreateRequest;
+import com.inuteamflow.server.domain.chat.dto.request.GroupChatRoomCreateRequest;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageAnchorResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageResponse;
+import com.inuteamflow.server.domain.chat.dto.response.ChatRoomMemberResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatRoomSummaryResponse;
 import com.inuteamflow.server.domain.chat.enums.ChatRoomType;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
@@ -255,6 +257,122 @@ public interface ChatRoomControllerDocument {
     ResponseEntity<Void> updateChatRoomImage(
             @PathVariable Long roomId,
             @Valid @RequestBody ChatRoomImageUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    );
+
+    @Operation(summary = "createGroupChatRoom", description = "팀 멤버를 선택해 그룹 채팅방 생성")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "그룹 채팅방 생성 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ChatRoomSummaryResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "유효하지 않거나 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "팀을 찾을 수 없거나, 생성자 또는 선택한 유저가 팀 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<ChatRoomSummaryResponse> createGroupChatRoom(
+            @Valid @RequestBody GroupChatRoomCreateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    );
+
+    @Operation(summary = "getChatRoomMembers", description = "채팅방 현재 멤버 목록 조회")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "채팅방 멤버 목록 조회 성공",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            array = @ArraySchema(schema = @Schema(implementation = ChatRoomMemberResponse.class))
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "유효하지 않거나 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "채팅방 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "채팅방을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<List<ChatRoomMemberResponse>> getChatRoomMembers(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    );
+
+    @Operation(summary = "inviteToGroupChatRoom", description = "그룹 채팅방에 팀 멤버 추가 초대 (수락 절차 없이 바로 입장)")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "초대 성공"
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "그룹 채팅방이 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "유효하지 않거나 만료된 토큰",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "채팅방 멤버가 아님",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "채팅방을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    ResponseEntity<Void> leaveGroupChatRoom(
+            @PathVariable Long roomId,
             @AuthenticationPrincipal UserDetailsImpl userDetails
     );
 }
