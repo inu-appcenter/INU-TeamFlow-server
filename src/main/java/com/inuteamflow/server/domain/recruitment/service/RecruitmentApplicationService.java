@@ -44,7 +44,24 @@ public class RecruitmentApplicationService {
     private final ChatRoomService chatRoomService;
     private final NotificationService notificationService;
 
-    // 모집글에 신청하기
+    // =========================================================================
+    // ============================= 주요 서비스 기능 =============================
+    // =========================================================================
+
+    /**
+     * 모집글에 지원한다.
+     *
+     * <p>학교 인증된 사용자만 지원할 수 있으며, 모집이 마감되었거나 모집 기한이 지났으면 지원할 수 없다.
+     * 모집자 본인은 지원할 수 없고, 이미 지원한 모집글에는 중복 지원할 수 없다. 지원서 저장 후 모집자에게
+     * 알림을 보낸다.</p>
+     *
+     * @param recruitmentId 지원할 모집글 ID
+     * @param request 지원 정보(자기소개)
+     * @param user 지원하는 사용자
+     * @return 지원자 이름을 포함한 지원서 요약 정보
+     * @throws RestApiException 사용자가 학교 인증되지 않았거나, 모집글을 찾을 수 없거나, 모집이 마감되었거나,
+     *                       모집 기한이 지났거나, 사용자가 모집자 본인이거나, 이미 지원한 경우
+     */
     @Transactional
     public ApplicationSummaryResponse apply (Long recruitmentId, ApplicationCreateRequest request, User user) {
 
@@ -86,7 +103,17 @@ public class RecruitmentApplicationService {
         return ApplicationSummaryResponse.of(application, user.getName());
     }
 
-    // 모집글에 올라온 신청서 목록 조회
+    /**
+     * 모집글에 올라온 지원서 목록을 조회한다.
+     *
+     * <p>모집자 본인만 조회할 수 있으며, 페이지 내 지원자 이름을 한 번에 조회하여 N+1 문제를 방지한다.</p>
+     *
+     * @param recruitmentId 지원서를 조회할 모집글 ID
+     * @param user 조회를 요청한 사용자
+     * @param pageable 페이지 정보
+     * @return 지원자 이름을 포함한 지원서 요약 목록
+     * @throws RestApiException 모집글을 찾을 수 없거나 사용자가 모집자가 아닌 경우
+     */
     public Page<ApplicationSummaryResponse> getApplicationsByRecruitment(Long recruitmentId, User user, Pageable pageable) {
         Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
@@ -114,13 +141,29 @@ public class RecruitmentApplicationService {
         });
     }
 
-    // 내가 신청한 신청서 목록 조회
+    /**
+     * 사용자가 신청한 지원서 목록을 조회한다.
+     *
+     * @param user 조회할 지원자 사용자
+     * @param pageable 페이지 정보
+     * @return 사용자가 신청한 지원서 요약 목록
+     */
     public Page<MyApplicationSummaryResponse> getMyApplications(User user, Pageable pageable) {
         return recruitmentApplicationRepository.findAllByCreatedBy(user.getUserId(), pageable)
                 .map(MyApplicationSummaryResponse::from);
     }
 
-    // 신청서 상세 조회
+    /**
+     * 지원서 상세 정보를 조회한다.
+     *
+     * <p>지원자 본인 또는 모집자만 조회할 수 있으며, 지원자를 찾을 수 없는 경우 지원자 관련 정보는
+     * {@code null}로 채워진다.</p>
+     *
+     * @param applicationId 조회할 지원서 ID
+     * @param user 조회를 요청한 사용자
+     * @return 지원자 정보와 모집자 여부를 포함한 지원서 상세 정보
+     * @throws RestApiException 지원서를 찾을 수 없거나, 사용자가 지원자 본인도 모집자도 아닌 경우
+     */
     public ApplicationDetailResponse getApplication(Long applicationId, User user) {
         RecruitmentApplication recruitmentApplication = recruitmentApplicationRepository
                 .findById(applicationId)
@@ -146,7 +189,16 @@ public class RecruitmentApplicationService {
         );
     }
 
-    // 신청서 취소 (신청자 본인만 가능)
+    /**
+     * 지원서를 취소한다.
+     *
+     * <p>지원자 본인만 취소할 수 있다.</p>
+     *
+     * @param applicationId 취소할 지원서 ID
+     * @param user 취소를 요청한 사용자
+     * @return 취소 처리된 지원서 상태 정보
+     * @throws RestApiException 지원서를 찾을 수 없거나 사용자가 지원자 본인이 아닌 경우
+     */
     @Transactional
     public ApplicationStatusResponse cancelApplication(Long applicationId, User user) {
         RecruitmentApplication recruitmentApplication = recruitmentApplicationRepository
@@ -161,7 +213,19 @@ public class RecruitmentApplicationService {
         return ApplicationStatusResponse.from(recruitmentApplication);
     }
 
-    // 신청서 수락/거절 (모집자만 가능)
+    /**
+     * 지원서를 수락하거나 거절한다.
+     *
+     * <p>모집자 본인만 처리할 수 있다. 수락 시 모집글의 현재 인원 수를 늘리고, 아직 팀원이 아니면 팀 멤버로
+     * 등록한 뒤 팀 채팅방에 추가한다. 처리 결과는 지원자에게 알림으로 보낸다.</p>
+     *
+     * @param applicationId 처리할 지원서 ID
+     * @param request 적용할 지원 상태({@link Status#ACCEPTED} 또는 {@link Status#DECLINED})
+     * @param user 처리를 요청한 사용자
+     * @return 처리된 지원서 상태 정보
+     * @throws RestApiException 지원서를 찾을 수 없거나, 요청 상태가 수락/거절이 아니거나, 사용자가 모집자가
+     *                       아니거나, 지원자를 찾을 수 없는 경우
+     */
     @Transactional
     public ApplicationStatusResponse updateDecisionStatus(Long applicationId,
                                                           ApplicationStatusUpdateRequest request,

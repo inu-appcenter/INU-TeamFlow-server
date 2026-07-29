@@ -43,7 +43,21 @@ public class TeamInvitationService {
     private final ChatRoomService chatRoomService;
     private final NotificationService notificationService;
 
-    // 내가 받은/보낸 팀 초대 목록
+    // =========================================================================
+    // ============================= 주요 서비스 기능 =============================
+    // =========================================================================
+
+    /**
+     * 사용자가 받은 또는 보낸 팀 초대 목록을 조회한다.
+     *
+     * <p>{@link InvitationDirection#RECEIVED}이면 사용자가 수신자인 초대를, 그 외에는 사용자가 발신자인
+     * 초대를 조회한다.</p>
+     *
+     * @param user 초대 목록을 조회할 사용자
+     * @param direction 조회할 초대 방향
+     * @param pageable 페이지 정보
+     * @return 발신자 이름을 포함한 팀 초대 목록
+     */
     public Page<TeamInvitationResponse> getInvitations(User user, InvitationDirection direction, Pageable pageable) {
         if (direction == InvitationDirection.RECEIVED) {
             return teamInvitationRepository.findByReceiver(user, pageable)
@@ -60,7 +74,21 @@ public class TeamInvitationService {
         }
     }
 
-    // 팀 초대하기
+    /**
+     * 학번으로 사용자를 찾아 팀에 초대한다.
+     *
+     * <p>팀 리더만 초대할 수 있으며, 본인을 초대하거나 학교 인증되지 않은 사용자를 초대하거나 이미 팀원인
+     * 사용자를 초대할 수 없다. 대기 중인 초대가 없는 상태로 이전에 초대했던 기록이 있으면 그 초대를 재사용하고,
+     * 대기 중인 초대가 이미 있으면 중복 초대로 거부한다. 초대 생성 후 수신자에게 알림을 보낸다.</p>
+     *
+     * @param sender 초대를 보내는 사용자
+     * @param teamId 초대할 팀 ID
+     * @param request 초대 대상의 학번을 담은 요청
+     * @return 생성되었거나 재사용된 팀 초대 정보
+     * @throws RestApiException 팀을 찾을 수 없거나, 발신자가 팀 멤버가 아니거나, 발신자가 리더가 아니거나,
+     *                       대상 사용자를 찾을 수 없거나, 본인을 초대하려 하거나, 대상이 학교 인증되지 않았거나,
+     *                       대상이 이미 팀원이거나, 이미 대기 중인 초대가 있는 경우
+     */
     @Transactional
     public TeamInvitationResponse invite(User sender, Long teamId, TeamInvitationCreateRequest request) {
         Team team = teamRepository.findById(teamId)
@@ -166,7 +194,19 @@ public class TeamInvitationService {
                 .toList();
     }
 
-    // 팀 초대 수락/거절
+    /**
+     * 받은 팀 초대를 수락하거나 거절한다.
+     *
+     * <p>초대 수신자 본인만 처리할 수 있고, 대기 중인 초대만 처리할 수 있다. 수락 시 팀 멤버로 등록하고
+     * 팀 채팅방에 추가하며, 수락/거절 결과를 초대 발신자에게 알림으로 보낸다.</p>
+     *
+     * @param receiver 초대를 처리하는 사용자
+     * @param invitationId 처리할 초대 ID
+     * @param request 적용할 초대 상태({@link Status#ACCEPTED} 또는 {@link Status#DECLINED})
+     * @return 처리된 팀 초대 정보
+     * @throws RestApiException 초대를 찾을 수 없거나, 발신자를 찾을 수 없거나, 처리 요청자가 초대 수신자가
+     *                       아니거나, 초대가 대기 중 상태가 아니거나, 요청 상태가 수락/거절이 아닌 경우
+     */
     @Transactional
     public TeamInvitationResponse updateStatus(User receiver, Long invitationId, TeamInvitationStatusUpdateRequest request) {
         TeamInvitation invitation = teamInvitationRepository.findById(invitationId)
@@ -218,7 +258,16 @@ public class TeamInvitationService {
     }
 
 
-    // 팀 초대 취소
+    /**
+     * 보낸 팀 초대를 취소한다.
+     *
+     * @param sender 초대를 취소하는 사용자
+     * @param teamId 초대가 속한 팀 ID
+     * @param invitationId 취소할 초대 ID
+     * @return 취소된 팀 초대 정보
+     * @throws RestApiException 팀을 찾을 수 없거나, 사용자가 팀 멤버가 아니거나, 사용자가 리더가 아니거나,
+     *                       초대를 찾을 수 없는 경우
+     */
     @Transactional
     public TeamInvitationResponse cancelInvitation(User sender, Long teamId, Long invitationId) {
         Team team = teamRepository.findById(teamId)
@@ -239,6 +288,10 @@ public class TeamInvitationService {
 
         return TeamInvitationResponse.from(invitation, sender.getName());
     }
+
+    // =========================================================================
+    // ================================ 헬퍼 함수 ================================
+    // =========================================================================
 
     /**
      * 후보 사용자의 현재 팀 소속 여부와 초대 대기 여부로 초대 상태를 결정한다.
