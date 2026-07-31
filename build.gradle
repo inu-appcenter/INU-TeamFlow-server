@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.diffplug.spotless' version '8.9.0'
+    id 'net.ltgt.errorprone' version '5.1.0'
 }
 
 group = 'com.inuteamflow'
@@ -20,6 +21,8 @@ repositories {
 }
 
 dependencies {
+    errorprone 'com.google.errorprone:error_prone_core:2.42.0'
+
     implementation platform('software.amazon.awssdk:bom:2.27.21')
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -66,7 +69,15 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone.disable('MissingOverride')
+}
+
 spotless {
+
+    // dev 브랜치와 비교했을 때 변경된 파일에 한에서 spotless 검사를 진행
+    ratchetFrom 'origin/dev'
+
     java {
         target 'src/*/java/**/*.java'
 
