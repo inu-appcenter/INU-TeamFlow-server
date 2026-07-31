@@ -14,13 +14,12 @@ import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -43,8 +42,7 @@ public class RecruitmentService {
      * @return 모집글 요약 목록
      */
     public Page<RecruitmentSummaryResponse> getRecruitments(Pageable pageable) {
-        return recruitmentRepository.findAll(pageable)
-                .map(RecruitmentSummaryResponse::from);
+        return recruitmentRepository.findAll(pageable).map(RecruitmentSummaryResponse::from);
     }
 
     /**
@@ -55,8 +53,7 @@ public class RecruitmentService {
      * @return 사용자가 작성한 모집글 요약 목록
      */
     public Page<RecruitmentSummaryResponse> getMyRecruitments(User user, Pageable pageable) {
-        return recruitmentRepository.findAllByRecruiter(user, pageable)
-                .map(RecruitmentSummaryResponse::from);
+        return recruitmentRepository.findAllByRecruiter(user, pageable).map(RecruitmentSummaryResponse::from);
     }
 
     /**
@@ -68,11 +65,13 @@ public class RecruitmentService {
      * @throws RestApiException 모집글을 찾을 수 없는 경우
      */
     public RecruitmentDetailResponse getRecruitment(Long recruitmentId, User user) {
-        Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
+        Recruitment recruitment = recruitmentRepository
+                .findById(recruitmentId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
 
         boolean isRecruiter = recruitment.getRecruiter().getUserId().equals(user.getUserId());
-        boolean hasApplied = recruitmentApplicationRepository.existsByRecruitmentAndCreatedBy(recruitment, user.getUserId());
+        boolean hasApplied =
+                recruitmentApplicationRepository.existsByRecruitmentAndCreatedBy(recruitment, user.getUserId());
 
         return RecruitmentDetailResponse.of(recruitment, isRecruiter, hasApplied);
     }
@@ -89,12 +88,14 @@ public class RecruitmentService {
      */
     @Transactional
     public RecruitmentDetailResponse createRecruitment(RecruitmentCreateRequest request, User user) {
-        Team team = teamRepository.findById(request.getTeamId())
+        Team team = teamRepository
+                .findById(request.getTeamId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
         InfoPost infoPost = null;
         if (request.getInfoPostId() != null) {
-            infoPost = infoPostRepository.findById(request.getInfoPostId())
+            infoPost = infoPostRepository
+                    .findById(request.getInfoPostId())
                     .orElseThrow(() -> new RestApiException(CustomErrorCode.INFO_POST_NOT_FOUND));
         }
 
@@ -126,8 +127,10 @@ public class RecruitmentService {
      * @throws RestApiException 모집글을 찾을 수 없거나 사용자가 모집자가 아닌 경우
      */
     @Transactional
-    public RecruitmentDetailResponse updateRecruitment(Long recruitmentId, RecruitmentUpdateRequest request, User user) {
-        Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
+    public RecruitmentDetailResponse updateRecruitment(
+            Long recruitmentId, RecruitmentUpdateRequest request, User user) {
+        Recruitment recruitment = recruitmentRepository
+                .findById(recruitmentId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
 
         if (!recruitment.getRecruiter().getUserId().equals(user.getUserId())) {
@@ -135,11 +138,7 @@ public class RecruitmentService {
         }
 
         recruitment.update(
-                request.getTitle(),
-                request.getDescription(),
-                request.getTargetMemberCount(),
-                request.getEndAt()
-        );
+                request.getTitle(), request.getDescription(), request.getTargetMemberCount(), request.getEndAt());
 
         return RecruitmentDetailResponse.of(recruitment, true, false);
     }
@@ -155,7 +154,8 @@ public class RecruitmentService {
      */
     @Transactional
     public void deleteRecruitment(Long recruitmentId, User user) {
-        Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
+        Recruitment recruitment = recruitmentRepository
+                .findById(recruitmentId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
 
         if (!recruitment.getRecruiter().getUserId().equals(user.getUserId())) {
@@ -165,5 +165,4 @@ public class RecruitmentService {
         recruitmentApplicationRepository.deleteAllByRecruitmentIn(List.of(recruitment));
         recruitmentRepository.delete(recruitment);
     }
-
 }

@@ -4,12 +4,11 @@ import com.inuteamflow.server.domain.chat.entity.ChatMessage;
 import com.inuteamflow.server.domain.chat.enums.ChatMessageType;
 import com.inuteamflow.server.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.util.function.Function;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
-import java.util.function.Function;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -46,7 +45,8 @@ public class ChatMessageResponse {
     @Schema(description = "이 메시지를 읽은 인원 수 (발신자 본인 제외, 누가 읽었는지는 노출 안 함)", example = "2")
     private int readCount;
 
-    public static ChatMessageResponse of(ChatMessage message, User sender, Function<String, String> imageUrlResolver, int readCount) {
+    public static ChatMessageResponse of(
+            ChatMessage message, User sender, Function<String, String> imageUrlResolver, int readCount) {
         boolean isImage = message.getMessageType() == ChatMessageType.IMAGE;
 
         return new ChatMessageResponse(
@@ -59,7 +59,6 @@ public class ChatMessageResponse {
                 message.getContent(),
                 isImage ? imageUrlResolver.apply(message.getImageKey()) : null,
                 message.getCreatedAt(),
-                readCount
-        );
+                readCount);
     }
 }

@@ -5,6 +5,11 @@ import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,24 +21,14 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class S3Service {
 
     private static final Duration PRESIGNED_URL_EXPIRE_TIME = Duration.ofMinutes(10);
-    private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES = Set.of(
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/gif"
-    );
+    private static final Set<String> ALLOWED_IMAGE_CONTENT_TYPES =
+            Set.of("image/jpeg", "image/png", "image/webp", "image/gif");
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -47,9 +42,7 @@ public class S3Service {
     @Value("${aws.cloudfront.domain}")
     private String cloudFrontDomain;
 
-    public PresignedUrlResponse getProfilePresignedUrl(
-            PresignedUrlRequest request
-    ) {
+    public PresignedUrlResponse getProfilePresignedUrl(PresignedUrlRequest request) {
         validateImageContentType(request.getContentType());
 
         String imageKey = createProfileImageKey(request.getFileName());
@@ -94,9 +87,8 @@ public class S3Service {
             return null;
         }
 
-        String normalizedDomain = cloudFrontDomain.startsWith("http")
-                ? cloudFrontDomain
-                : "https://" + cloudFrontDomain;
+        String normalizedDomain =
+                cloudFrontDomain.startsWith("http") ? cloudFrontDomain : "https://" + cloudFrontDomain;
         return normalizedDomain + "/" + imageKey;
     }
 
@@ -113,10 +105,8 @@ public class S3Service {
             return;
         }
 
-        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                .bucket(bucket)
-                .key(imageKey)
-                .build();
+        DeleteObjectRequest deleteObjectRequest =
+                DeleteObjectRequest.builder().bucket(bucket).key(imageKey).build();
 
         s3Client.deleteObject(deleteObjectRequest);
     }
@@ -139,9 +129,7 @@ public class S3Service {
                 .putObjectRequest(putObjectRequest)
                 .build();
 
-        return s3Presigner.presignPutObject(presignRequest)
-                .url()
-                .toString();
+        return s3Presigner.presignPutObject(presignRequest).url().toString();
     }
 
     private String createProfileImageKey(String fileName) {

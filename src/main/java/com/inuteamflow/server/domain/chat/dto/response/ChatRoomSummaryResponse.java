@@ -2,12 +2,11 @@ package com.inuteamflow.server.domain.chat.dto.response;
 
 import com.inuteamflow.server.domain.chat.enums.ChatRoomType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -50,10 +49,16 @@ public class ChatRoomSummaryResponse {
             List<String> memberProfileUrls,
             String lastMessage,
             LocalDateTime lastMessageAt,
-            int unreadCount
-    ) {
+            int unreadCount) {
         return new ChatRoomSummaryResponse(
-                chatRoomId, teamId, chatRoomType, roomName, imageUrl, memberProfileUrls, lastMessage, lastMessageAt, unreadCount
-        );
+                chatRoomId,
+                teamId,
+                chatRoomType,
+                roomName,
+                imageUrl,
+                memberProfileUrls,
+                lastMessage,
+                lastMessageAt,
+                unreadCount);
     }
 }

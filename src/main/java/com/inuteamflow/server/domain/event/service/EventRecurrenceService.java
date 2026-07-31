@@ -9,11 +9,10 @@ import com.inuteamflow.server.domain.event.repository.*;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -40,19 +39,12 @@ public class EventRecurrenceService {
      * @return 생성된 반복 규칙 또는 반복 설정이 없으면 {@code null}
      */
     @Transactional
-    public RecurrenceRule createRecurrenceRule(
-            Event event,
-            EventCreateCommand command
-    ) {
+    public RecurrenceRule createRecurrenceRule(Event event, EventCreateCommand command) {
         if (command.getRecurrence() == null) {
             return null;
         }
 
-        return recurrenceRuleRepository.save(RecurrenceRule.create(
-                event,
-                command.getRecurrence(),
-                event.getStartAt()
-        ));
+        return recurrenceRuleRepository.save(RecurrenceRule.create(event, command.getRecurrence(), event.getStartAt()));
     }
 
     /**
@@ -65,19 +57,12 @@ public class EventRecurrenceService {
      * @return 생성된 반복 규칙 또는 반복 설정이 없으면 {@code null}
      */
     @Transactional
-    public RecurrenceRule createRecurrenceRule(
-            Event event,
-            EventUpdateCommand command
-    ) {
+    public RecurrenceRule createRecurrenceRule(Event event, EventUpdateCommand command) {
         if (command.getRecurrence() == null) {
             return null;
         }
 
-        return recurrenceRuleRepository.save(RecurrenceRule.create(
-                event,
-                command.getRecurrence(),
-                event.getStartAt()
-        ));
+        return recurrenceRuleRepository.save(RecurrenceRule.create(event, command.getRecurrence(), event.getStartAt()));
     }
 
     /**
@@ -94,11 +79,7 @@ public class EventRecurrenceService {
      * @throws RestApiException 반복 규칙이나 대상 회차가 누락되었거나 유효하지 않은 경우
      */
     @Transactional
-    public EventUpdateResult updateEvent(
-            Event event,
-            Team team,
-            EventUpdateCommand command
-    ) {
+    public EventUpdateResult updateEvent(Event event, Team team, EventUpdateCommand command) {
         event.increaseSequence();
 
         if (Boolean.TRUE.equals(event.getIsSingle())) {
@@ -122,22 +103,13 @@ public class EventRecurrenceService {
         return switch (editScope) {
             case ALL_SERIES -> {
                 RecurrenceRule recurrenceRule = updateAllSeries(event, command);
-                yield new EventUpdateResult(
-                        event,
-                        recurrenceRule,
-                        null,
-                        RecurrenceEditScope.ALL_SERIES
-                );
+                yield new EventUpdateResult(event, recurrenceRule, null, RecurrenceEditScope.ALL_SERIES);
             }
             case THIS_INSTANCE -> {
                 RecurrenceRule recurrenceRule = getRecurrenceRule(event);
                 RecurrenceException recurrenceException = updateThisInstance(event, command);
                 yield new EventUpdateResult(
-                        event,
-                        recurrenceRule,
-                        recurrenceException,
-                        RecurrenceEditScope.THIS_INSTANCE
-                );
+                        event, recurrenceRule, recurrenceException, RecurrenceEditScope.THIS_INSTANCE);
             }
             case THIS_AND_FOLLOWING -> {
                 FollowingSeries followingSeries = updateThisAndFollowing(event, team, command);
@@ -145,8 +117,7 @@ public class EventRecurrenceService {
                         followingSeries.event(),
                         followingSeries.recurrenceRule(),
                         null,
-                        RecurrenceEditScope.THIS_AND_FOLLOWING
-                );
+                        RecurrenceEditScope.THIS_AND_FOLLOWING);
             }
         };
     }
@@ -160,29 +131,16 @@ public class EventRecurrenceService {
      * @param command 일정 수정 명령
      * @return 수정된 일정과 반복 정보
      */
-    private EventUpdateResult updateSingleEvent(
-            Event event,
-            EventUpdateCommand command
-    ) {
+    private EventUpdateResult updateSingleEvent(Event event, EventUpdateCommand command) {
         event.update(command);
         if (command.getRecurrence() == null) {
-            return new EventUpdateResult(
-                    event,
-                    null,
-                    null,
-                    RecurrenceEditScope.ALL_SERIES
-            );
+            return new EventUpdateResult(event, null, null, RecurrenceEditScope.ALL_SERIES);
         }
 
         event.changeToRecurring();
         RecurrenceRule recurrenceRule = createRecurrenceRule(event, command);
 
-        return new EventUpdateResult(
-                event,
-                recurrenceRule,
-                null,
-                RecurrenceEditScope.ALL_SERIES
-        );
+        return new EventUpdateResult(event, recurrenceRule, null, RecurrenceEditScope.ALL_SERIES);
     }
 
     /**
@@ -195,10 +153,7 @@ public class EventRecurrenceService {
      * @return 수정된 반복 규칙
      * @throws RestApiException 반복 규칙을 찾을 수 없는 경우
      */
-    private RecurrenceRule updateAllSeries(
-            Event event,
-            EventUpdateCommand command
-    ) {
+    private RecurrenceRule updateAllSeries(Event event, EventUpdateCommand command) {
         RecurrenceRule recurrenceRule = getRecurrenceRule(event);
 
         event.update(command);
@@ -219,18 +174,14 @@ public class EventRecurrenceService {
      * @return 생성되거나 수정된 반복 예외
      * @throws RestApiException 반복 규칙이나 대상 회차를 찾을 수 없는 경우
      */
-    private RecurrenceException updateThisInstance(
-            Event event,
-            EventUpdateCommand command
-    ) {
+    private RecurrenceException updateThisInstance(Event event, EventUpdateCommand command) {
         RecurrenceRule recurrenceRule = getRecurrenceRule(event);
         validateOccurrence(event, recurrenceRule, command.getOccurrenceAt());
 
         RecurrenceException recurrenceException = recurrenceExceptionRepository
                 .findByEventAndOriginalOccurrenceAt(event, command.getOccurrenceAt())
-                .orElseGet(() -> recurrenceExceptionRepository.save(
-                        RecurrenceException.createModified(event, command)
-                ));
+                .orElseGet(
+                        () -> recurrenceExceptionRepository.save(RecurrenceException.createModified(event, command)));
         recurrenceException.update(command);
 
         return recurrenceException;
@@ -247,33 +198,22 @@ public class EventRecurrenceService {
      * @return 새로 생성된 이후 일정과 반복 규칙
      * @throws RestApiException 반복 규칙이나 대상 회차를 찾을 수 없는 경우
      */
-    private FollowingSeries updateThisAndFollowing(
-            Event event,
-            Team team,
-            EventUpdateCommand command
-    ) {
+    private FollowingSeries updateThisAndFollowing(Event event, Team team, EventUpdateCommand command) {
         RecurrenceRule recurrenceRule = getRecurrenceRule(event);
         validateOccurrence(event, recurrenceRule, command.getOccurrenceAt());
 
         recurrenceRule.finishBefore(command.getOccurrenceAt());
         recurrenceExceptionParticipantRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
-                event,
-                command.getOccurrenceAt()
-        );
+                event, command.getOccurrenceAt());
         recurrenceExceptionRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
-                event,
-                command.getOccurrenceAt()
-        );
+                event, command.getOccurrenceAt());
 
         Event followingEvent = team == null
                 ? eventRepository.save(Event.createRecurring(command))
                 : eventRepository.save(Event.createRecurring(team, command));
 
-        RecurrenceRule followingRule = recurrenceRuleRepository.save(RecurrenceRule.create(
-                followingEvent,
-                command.getRecurrence(),
-                followingEvent.getStartAt()
-        ));
+        RecurrenceRule followingRule = recurrenceRuleRepository.save(
+                RecurrenceRule.create(followingEvent, command.getRecurrence(), followingEvent.getStartAt()));
 
         return new FollowingSeries(followingEvent, followingRule);
     }
@@ -292,18 +232,13 @@ public class EventRecurrenceService {
      * @throws RestApiException 대상 회차가 누락되었거나 반복 규칙 또는 회차를 찾을 수 없는 경우
      */
     @Transactional
-    public boolean deleteEvent(
-            Event event,
-            RecurrenceEditScope recurrenceEditScope,
-            LocalDateTime occurrenceAt
-    ) {
+    public boolean deleteEvent(Event event, RecurrenceEditScope recurrenceEditScope, LocalDateTime occurrenceAt) {
         if (Boolean.TRUE.equals(event.getIsSingle())) {
             return true;
         }
 
-        RecurrenceEditScope editScope = recurrenceEditScope == null
-                ? RecurrenceEditScope.ALL_SERIES
-                : recurrenceEditScope;
+        RecurrenceEditScope editScope =
+                recurrenceEditScope == null ? RecurrenceEditScope.ALL_SERIES : recurrenceEditScope;
 
         if ((editScope == RecurrenceEditScope.THIS_INSTANCE || editScope == RecurrenceEditScope.THIS_AND_FOLLOWING)
                 && occurrenceAt == null) {
@@ -329,9 +264,7 @@ public class EventRecurrenceService {
      *
      * @param event 반복 데이터를 삭제할 일정
      */
-    private void deleteAllSeries(
-            Event event
-    ) {
+    private void deleteAllSeries(Event event) {
         recurrenceExceptionParticipantRepository.deleteByEvent(event);
         recurrenceExceptionRepository.deleteByEvent(event);
         recurrenceRuleRepository.deleteByEvent(event);
@@ -346,19 +279,15 @@ public class EventRecurrenceService {
      * @param occurrenceAt 취소할 회차의 원래 시작 시각
      * @throws RestApiException 반복 규칙이나 대상 회차를 찾을 수 없는 경우
      */
-    private void deleteThisInstance(
-            Event event,
-            LocalDateTime occurrenceAt
-    ) {
+    private void deleteThisInstance(Event event, LocalDateTime occurrenceAt) {
         RecurrenceRule recurrenceRule = getRecurrenceRule(event);
         validateOccurrence(event, recurrenceRule, occurrenceAt);
 
         recurrenceExceptionParticipantRepository.deleteByEventAndOccurrenceAt(event, occurrenceAt);
         RecurrenceException recurrenceException = recurrenceExceptionRepository
                 .findByEventAndOriginalOccurrenceAt(event, occurrenceAt)
-                .orElseGet(() -> recurrenceExceptionRepository.save(
-                        RecurrenceException.createCancelled(event, occurrenceAt)
-                ));
+                .orElseGet(() ->
+                        recurrenceExceptionRepository.save(RecurrenceException.createCancelled(event, occurrenceAt)));
         recurrenceException.cancel();
     }
 
@@ -371,22 +300,14 @@ public class EventRecurrenceService {
      * @param occurrenceAt 종료를 시작할 회차의 원래 시작 시각
      * @throws RestApiException 반복 규칙이나 대상 회차를 찾을 수 없는 경우
      */
-    private void deleteThisAndFollowing(
-            Event event,
-            LocalDateTime occurrenceAt
-    ) {
+    private void deleteThisAndFollowing(Event event, LocalDateTime occurrenceAt) {
         RecurrenceRule recurrenceRule = getRecurrenceRule(event);
         validateOccurrence(event, recurrenceRule, occurrenceAt);
 
         recurrenceRule.finishBefore(occurrenceAt);
         recurrenceExceptionParticipantRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
-                event,
-                occurrenceAt
-        );
-        recurrenceExceptionRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(
-                event,
-                occurrenceAt
-        );
+                event, occurrenceAt);
+        recurrenceExceptionRepository.deleteByEventAndOriginalOccurrenceAtGreaterThanEqual(event, occurrenceAt);
     }
 
     // =========================================================================
@@ -400,10 +321,9 @@ public class EventRecurrenceService {
      * @return 일정의 반복 규칙
      * @throws RestApiException 반복 규칙을 찾을 수 없는 경우
      */
-    private RecurrenceRule getRecurrenceRule(
-            Event event
-    ) {
-        return recurrenceRuleRepository.findByEvent(event)
+    private RecurrenceRule getRecurrenceRule(Event event) {
+        return recurrenceRuleRepository
+                .findByEvent(event)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_RECURRENCE_RULE_NOT_FOUND));
     }
 
@@ -413,9 +333,7 @@ public class EventRecurrenceService {
      * @param command 검증할 일정 수정 명령
      * @throws RestApiException 반복 설정이 없는 경우
      */
-    private void validateRecurrenceRequired(
-            EventUpdateCommand command
-    ) {
+    private void validateRecurrenceRequired(EventUpdateCommand command) {
         if (command.getRecurrence() == null) {
             throw new RestApiException(CustomErrorCode.EVENT_RECURRENCE_REQUIRED);
         }
@@ -429,27 +347,17 @@ public class EventRecurrenceService {
      * @param occurrenceAt 검증할 회차 시작 시각
      * @throws RestApiException 지정 시각에 반복 회차가 없는 경우
      */
-    private void validateOccurrence(
-            Event event,
-            RecurrenceRule recurrenceRule,
-            LocalDateTime occurrenceAt
-    ) {
+    private void validateOccurrence(Event event, RecurrenceRule recurrenceRule, LocalDateTime occurrenceAt) {
         if (!eventOccurrenceService.existsOccurrence(event, recurrenceRule, occurrenceAt)) {
             throw new RestApiException(CustomErrorCode.EVENT_RECURRENCE_OCCURRENCE_NOT_FOUND);
         }
     }
 
-    private record FollowingSeries(
-            Event event,
-            RecurrenceRule recurrenceRule
-    ) {
-    }
+    private record FollowingSeries(Event event, RecurrenceRule recurrenceRule) {}
 
     public record EventUpdateResult(
             Event event,
             RecurrenceRule recurrenceRule,
             RecurrenceException recurrenceException,
-            RecurrenceEditScope editScope
-    ) {
-    }
+            RecurrenceEditScope editScope) {}
 }

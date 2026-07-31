@@ -7,12 +7,11 @@ import com.inuteamflow.server.domain.event.entity.RecurrenceException;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.EventColor;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -67,11 +66,7 @@ public class EventListResponse {
     @Schema(description = "반복 일정 규칙")
     private Recurrence recurrence;
 
-    public static EventListResponse createSingle(
-            Event event,
-            boolean isParticipant,
-            List<Participant> participants
-    ) {
+    public static EventListResponse createSingle(Event event, boolean isParticipant, List<Participant> participants) {
         return new EventListResponse(
                 event.getEventId(),
                 event.getTeamId(),
@@ -89,7 +84,7 @@ public class EventListResponse {
                 isParticipant,
                 participants,
                 null // 단건 일정임, RecurrenceRule 없음
-        );
+                );
     }
 
     public static EventListResponse createOccurrence(
@@ -99,8 +94,7 @@ public class EventListResponse {
             LocalDateTime startAt,
             LocalDateTime endAt,
             boolean isParticipant,
-            List<Participant> participants
-    ) {
+            List<Participant> participants) {
         return new EventListResponse(
                 event.getEventId(),
                 event.getTeamId(),
@@ -117,8 +111,7 @@ public class EventListResponse {
                 false,
                 isParticipant,
                 participants,
-                Recurrence.create(recurrenceRule)
-        );
+                Recurrence.create(recurrenceRule));
     }
 
     public static EventListResponse createModifiedOccurrence(
@@ -126,8 +119,7 @@ public class EventListResponse {
             RecurrenceRule recurrenceRule,
             RecurrenceException recurrenceException,
             boolean isParticipant,
-            List<Participant> participants
-    ) {
+            List<Participant> participants) {
         return new EventListResponse(
                 event.getEventId(),
                 event.getTeamId(),
@@ -144,7 +136,6 @@ public class EventListResponse {
                 true,
                 isParticipant,
                 participants,
-                Recurrence.create(recurrenceRule)
-        );
+                Recurrence.create(recurrenceRule));
     }
 }

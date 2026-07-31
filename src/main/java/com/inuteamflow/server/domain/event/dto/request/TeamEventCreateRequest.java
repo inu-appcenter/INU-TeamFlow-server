@@ -1,20 +1,19 @@
 package com.inuteamflow.server.domain.event.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.inuteamflow.server.domain.event.dto.Recurrence;
 import com.inuteamflow.server.domain.event.dto.EventCreateCommand;
+import com.inuteamflow.server.domain.event.dto.Recurrence;
 import com.inuteamflow.server.domain.event.enums.EventColor;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -43,7 +42,6 @@ public class TeamEventCreateRequest implements EventCreateCommand {
     @NotNull
     @Schema(description = "일정 색상", example = "LAVENDER")
     private EventColor color;
-
 
     @Schema(description = "참여자 멤버 ID 목록", example = "[1, 2, 3]")
     private List<@NotNull Long> participants;

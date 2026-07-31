@@ -28,5 +28,4 @@ public abstract class BaseEntity extends BaseTimeEntity {
         this.createdBy = userId;
         this.updatedBy = userId;
     }
-
 }

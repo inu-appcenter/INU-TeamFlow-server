@@ -5,9 +5,8 @@ import com.inuteamflow.server.domain.event.dto.Recurrence;
 import com.inuteamflow.server.domain.event.enums.EventColor;
 import com.inuteamflow.server.domain.vote.dto.request.EventVoteTimeSelectRequest;
 import com.inuteamflow.server.domain.vote.entity.Vote;
-import lombok.RequiredArgsConstructor;
-
 import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class VoteResultEventCreateCommand implements EventCreateCommand {

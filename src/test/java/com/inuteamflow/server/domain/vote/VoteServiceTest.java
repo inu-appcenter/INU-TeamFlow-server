@@ -1,5 +1,10 @@
 package com.inuteamflow.server.domain.vote;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inuteamflow.server.domain.event.entity.Event;
@@ -35,6 +40,8 @@ import com.inuteamflow.server.domain.vote.service.VoteService;
 import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,14 +53,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
-
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.doThrow;
 
 /**
  * {@link VoteService}의 투표 삭제 기능을 실제 Repository와 H2 데이터베이스로 검증한다.
@@ -67,19 +66,44 @@ import static org.mockito.Mockito.doThrow;
 @ActiveProfiles("test")
 class VoteServiceTest {
 
-    @Autowired private VoteService voteService;
-    @Autowired private UserRepository userRepository;
-    @Autowired private TeamRepository teamRepository;
-    @Autowired private TeamMemberRepository teamMemberRepository;
-    @Autowired private EventRepository eventRepository;
-    @Autowired private VoteRepository voteRepository;
-    @Autowired private VoteDateRepository voteDateRepository;
-    @Autowired private VoteTimeSlotRepository voteTimeSlotRepository;
-    @Autowired private VoteParticipantRepository voteParticipantRepository;
-    @Autowired private VoteAvailabilityRepository voteAvailabilityRepository;
-    @Autowired private VoteResultRepository voteResultRepository;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private TransactionTemplate transactionTemplate;
+    @Autowired
+    private VoteService voteService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
+
+    @Autowired
+    private TeamMemberRepository teamMemberRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
+
+    @Autowired
+    private VoteRepository voteRepository;
+
+    @Autowired
+    private VoteDateRepository voteDateRepository;
+
+    @Autowired
+    private VoteTimeSlotRepository voteTimeSlotRepository;
+
+    @Autowired
+    private VoteParticipantRepository voteParticipantRepository;
+
+    @Autowired
+    private VoteAvailabilityRepository voteAvailabilityRepository;
+
+    @Autowired
+    private VoteResultRepository voteResultRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @MockitoSpyBean
     private VoteParticipantService voteParticipantService;
@@ -116,46 +140,26 @@ class VoteServiceTest {
                     .description("VoteService 삭제 테스트")
                     .category(Category.PROJECT)
                     .build());
-            TeamMember creatorMember = teamMemberRepository.save(
-                    TeamMember.create(team, creator, TeamRole.MEMBER)
-            );
-            TeamMember regularTeamMember = teamMemberRepository.save(
-                    TeamMember.create(team, regularMember, TeamRole.MEMBER)
-            );
-            teamMemberRepository.save(
-                    TeamMember.create(team, nonVoter, TeamRole.MEMBER)
-            );
+            TeamMember creatorMember = teamMemberRepository.save(TeamMember.create(team, creator, TeamRole.MEMBER));
+            TeamMember regularTeamMember =
+                    teamMemberRepository.save(TeamMember.create(team, regularMember, TeamRole.MEMBER));
+            teamMemberRepository.save(TeamMember.create(team, nonVoter, TeamRole.MEMBER));
 
             Vote vote = voteRepository.save(Vote.create(team, request));
             VoteDate voteDate = voteDateRepository.save(
-                    VoteDate.create(vote, request.getDates().get(0))
-            );
-            VoteTimeSlot firstSlot = voteTimeSlotRepository.save(
-                    VoteTimeSlot.create(
-                            voteDate,
-                            request.getDailyTimeStart(),
-                            request.getDailyTimeStart().plusMinutes(30)
-                    )
-            );
-            VoteTimeSlot secondSlot = voteTimeSlotRepository.save(
-                    VoteTimeSlot.create(
-                            voteDate,
-                            request.getDailyTimeStart().plusMinutes(30),
-                            request.getDailyTimeEnd()
-                    )
-            );
-            VoteParticipant creatorParticipant = voteParticipantRepository.save(
-                    VoteParticipant.create(vote, creatorMember)
-            );
-            VoteParticipant regularParticipant = voteParticipantRepository.save(
-                    VoteParticipant.create(vote, regularTeamMember)
-            );
-            voteAvailabilityRepository.save(
-                    VoteAvailability.create(creatorParticipant, firstSlot)
-            );
-            voteAvailabilityRepository.save(
-                    VoteAvailability.create(regularParticipant, secondSlot)
-            );
+                    VoteDate.create(vote, request.getDates().get(0)));
+            VoteTimeSlot firstSlot = voteTimeSlotRepository.save(VoteTimeSlot.create(
+                    voteDate,
+                    request.getDailyTimeStart(),
+                    request.getDailyTimeStart().plusMinutes(30)));
+            VoteTimeSlot secondSlot = voteTimeSlotRepository.save(VoteTimeSlot.create(
+                    voteDate, request.getDailyTimeStart().plusMinutes(30), request.getDailyTimeEnd()));
+            VoteParticipant creatorParticipant =
+                    voteParticipantRepository.save(VoteParticipant.create(vote, creatorMember));
+            VoteParticipant regularParticipant =
+                    voteParticipantRepository.save(VoteParticipant.create(vote, regularTeamMember));
+            voteAvailabilityRepository.save(VoteAvailability.create(creatorParticipant, firstSlot));
+            voteAvailabilityRepository.save(VoteAvailability.create(regularParticipant, secondSlot));
 
             Event event = eventRepository.save(Event.builder()
                     .team(team)
@@ -170,13 +174,7 @@ class VoteServiceTest {
                     .isFinished(false)
                     .isSingle(true)
                     .build());
-            voteResultRepository.save(VoteResult.create(
-                    vote,
-                    event,
-                    false,
-                    event.getStartAt(),
-                    event.getEndAt()
-            ));
+            voteResultRepository.save(VoteResult.create(vote, event, false, event.getStartAt(), event.getEndAt()));
             vote.close();
 
             teamId = team.getTeamId();
@@ -187,9 +185,7 @@ class VoteServiceTest {
 
     @AfterEach
     void tearDown() {
-        doCallRealMethod()
-                .when(voteParticipantService)
-                .deleteByVoteId(voteId);
+        doCallRealMethod().when(voteParticipantService).deleteByVoteId(voteId);
 
         transactionTemplate.executeWithoutResult(status -> {
             voteAvailabilityRepository.deleteAllInBatch();
@@ -291,12 +287,8 @@ class VoteServiceTest {
 
         List<EventVoteResponse> responses = voteService.getMyVotes(regularMember);
 
-        assertThat(responses)
-                .extracting(EventVoteResponse::getVoteId)
-                .containsExactly(voteId);
-        assertThat(responses)
-                .extracting(EventVoteResponse::getVoteId)
-                .doesNotContain(nonTargetVoteId);
+        assertThat(responses).extracting(EventVoteResponse::getVoteId).containsExactly(voteId);
+        assertThat(responses).extracting(EventVoteResponse::getVoteId).doesNotContain(nonTargetVoteId);
         assertThat(responses)
                 .allSatisfy(response -> assertThat(response.getIsVoter()).isTrue());
     }
@@ -320,9 +312,7 @@ class VoteServiceTest {
                 .isEqualTo(CustomErrorCode.VOTE_NOT_CREATOR);
     }
 
-    private Long createOpenVote(
-            String title
-    ) throws JsonProcessingException {
+    private Long createOpenVote(String title) throws JsonProcessingException {
         EventVoteCreateRequest request = objectMapper.readValue("""
                 {
                   "title": "%s",
@@ -355,12 +345,8 @@ class VoteServiceTest {
 
     private void actingAs(User user) {
         UserDetailsImpl userDetails = new UserDetailsImpl(user);
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                )
-        );
+        SecurityContextHolder.getContext()
+                .setAuthentication(
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
     }
 }

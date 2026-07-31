@@ -6,13 +6,12 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -48,7 +47,8 @@ public class EventVoteCreateRequest {
 
     @JsonIgnore
     @Schema(hidden = true)
-    @AssertTrue(message = "isAllDay가 false일 때, dailyTimeStart과 dailyTimeEnd은 필수이고 dailyTimeStart < dailyTimeEnd 여야 합니다.")
+    @AssertTrue(
+            message = "isAllDay가 false일 때, dailyTimeStart과 dailyTimeEnd은 필수이고 dailyTimeStart < dailyTimeEnd 여야 합니다.")
     public boolean isValidTimeRange() {
         if (isAllDay == null || isAllDay) {
             return true;
@@ -60,5 +60,4 @@ public class EventVoteCreateRequest {
 
         return dailyTimeStart.isBefore(dailyTimeEnd);
     }
-
 }

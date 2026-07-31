@@ -4,15 +4,13 @@ import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.domain.user.entity.User;
-import com.inuteamflow.server.global.enums.Category;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.function.Function;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.util.List;
-import java.time.LocalDateTime;
-import java.util.function.Function;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -59,13 +57,8 @@ public class InfoPostDetailResponse {
             List<InfoPostImage> images,
             Function<String, String> urlResolver,
             Boolean isAuthor,
-            Integer recruitmentCount
-    ) {
-        Author authorInfo = new Author(
-                author.getUserId(),
-                author.getName(),
-                authorProfileUrl
-        );
+            Integer recruitmentCount) {
+        Author authorInfo = new Author(author.getUserId(), author.getName(), authorProfileUrl);
 
         List<Image> imageList = images.stream()
                 .map(img -> new Image(urlResolver.apply(img.getImageKey()), img.getSortOrder()))
@@ -82,20 +75,21 @@ public class InfoPostDetailResponse {
                 isAuthor,
                 recruitmentCount,
                 infoPost.getCreatedAt(),
-                infoPost.getUpdatedAt()
-        );
+                infoPost.getUpdatedAt());
     }
 
     @Schema(description = "작성자 정보")
     private record Author(
-            @Schema(description = "작성자 유저 ID", example = "8") Long authorId,
-            @Schema(description = "작성자 이름", example = "누구누구") String name,
-            @Schema(description = "작성자 프로필 이미지 URL") String profileUrl
-    ) {}
+            @Schema(description = "작성자 유저 ID", example = "8")
+            Long authorId,
+
+            @Schema(description = "작성자 이름", example = "누구누구")
+            String name,
+
+            @Schema(description = "작성자 프로필 이미지 URL") String profileUrl) {}
 
     @Schema(description = "정보글 이미지")
     private record Image(
             @Schema(description = "이미지 URL") String imageUrl,
-            @Schema(description = "정렬 순서", example = "0") Integer sortOrder
-    ) {}
+            @Schema(description = "정렬 순서", example = "0") Integer sortOrder) {}
 }

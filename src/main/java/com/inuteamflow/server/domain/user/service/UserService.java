@@ -29,13 +29,12 @@ import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import com.inuteamflow.server.global.s3.S3Service;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -80,9 +79,7 @@ public class UserService {
      * @param user 로그인한 사용자
      * @return 프로필 이미지 URL이 포함된 사용자 정보
      */
-    public MyInfoResponse getMyInfo(
-            User user
-    ) {
+    public MyInfoResponse getMyInfo(User user) {
         String imageUrl = s3Service.getImageUrl(user.getImageKey());
         return MyInfoResponse.create(user, imageUrl);
     }
@@ -98,21 +95,18 @@ public class UserService {
      * @throws RestApiException 사용자를 찾을 수 없는 경우
      */
     @Transactional
-    public MyInfoResponse updateMyInfo(
-            User user,
-            UserUpdateRequest request
-    ) {
+    public MyInfoResponse updateMyInfo(User user, UserUpdateRequest request) {
         // Repository 에서 로그인한 사용자를 조회 → 수정 사항을 DB에 저장하기 위함
-        User requester = userRepository.findById(user.getUserId())
+        User requester = userRepository
+                .findById(user.getUserId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
 
         // 오래된 이미지키를 변경하기 위해 삭제 전 저장
         String oldImageKey = requester.getImageKey();
 
         // 사용자 정보 수정
-        String encodedPassword = StringUtils.hasText(request.getPassword())
-                ? bCryptPasswordEncoder.encode(request.getPassword())
-                : null;
+        String encodedPassword =
+                StringUtils.hasText(request.getPassword()) ? bCryptPasswordEncoder.encode(request.getPassword()) : null;
         requester.update(request, encodedPassword);
 
         // 요청 DTO에 담긴 이미지키가 새로운거라면 기존의 S3의 파일을 삭제
@@ -137,9 +131,7 @@ public class UserService {
      * @throws RestApiException 사용자가 팀장이거나 진행 중인 투표의 생성자인 경우
      */
     @Transactional
-    public void deleteUser(
-            User user
-    ) {
+    public void deleteUser(User user) {
         // 이미지 키 수집
         // 정보글 이미지 → 팀 공지 이미지 → 사용자 프로필
         List<String> infoPostImages = infoPostImageRepository.findImageKeysByInfoPostCreatedBy(user.getUserId());

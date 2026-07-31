@@ -40,21 +40,16 @@ public class MyInfoResponse {
     @Schema(description = "CloudFront 이미지 url", example = "https://d3dbvb22maaxgy.cloudfront.net/users/1/profile.png")
     private String imageUrl;
 
-    public static MyInfoResponse create(
-            User user,
-            String imageUrl
-    ) {
+    public static MyInfoResponse create(User user, String imageUrl) {
         return new MyInfoResponse(
-              user.getUserId(),
-              user.getUsername(),
-              user.getEmail(),
-              user.getStudentNumber(),
-              user.getName(),
-              user.getRole(),
-              user.getDepartment(),
-              user.getIsSchoolVerified(),
-              imageUrl
-      );
+                user.getUserId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getStudentNumber(),
+                user.getName(),
+                user.getRole(),
+                user.getDepartment(),
+                user.getIsSchoolVerified(),
+                imageUrl);
     }
-
 }

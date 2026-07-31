@@ -12,5 +12,4 @@ public class ApplicationStatusUpdateRequest {
 
     @NotNull
     private Status applicationStatus;
-
 }

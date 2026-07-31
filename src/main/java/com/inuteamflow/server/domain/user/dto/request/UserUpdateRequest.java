@@ -35,5 +35,4 @@ public class UserUpdateRequest {
     public String getImageKey() {
         return imageKey != null ? imageKey : UserConstants.DEFAULT_PROFILE_KEY;
     }
-
 }

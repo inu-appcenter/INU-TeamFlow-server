@@ -15,12 +15,11 @@ import com.inuteamflow.server.domain.vote.entity.VoteResult;
 import com.inuteamflow.server.domain.vote.repository.VoteResultRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -50,27 +49,16 @@ public class VoteResultService {
      */
     @Transactional
     public EventDetailResponse createVoteResult(
-            Vote vote,
-            TeamMember host,
-            List<TeamMember> participants,
-            EventVoteTimeSelectRequest request
-    ) {
+            Vote vote, TeamMember host, List<TeamMember> participants, EventVoteTimeSelectRequest request) {
         validateVoteResultCreatable(vote, request);
 
-        Event event = eventRepository.save(Event.create(
-                vote.getTeam(),
-                new VoteResultEventCreateCommand(vote, request)
-        ));
+        Event event =
+                eventRepository.save(Event.create(vote.getTeam(), new VoteResultEventCreateCommand(vote, request)));
         List<Participant> eventParticipants = createEventParticipants(event, host, participants).stream()
                 .map(Participant::create)
                 .toList();
         voteResultRepository.save(VoteResult.create(
-                vote,
-                event,
-                request.getIsAllDay(),
-                request.getSelectedStartAt(),
-                request.getSelectedEndAt()
-        ));
+                vote, event, request.getIsAllDay(), request.getSelectedStartAt(), request.getSelectedEndAt()));
         vote.close();
 
         return EventDetailResponse.create(
@@ -78,8 +66,7 @@ public class VoteResultService {
                 null,
                 vote.getTeam().getName(),
                 Participant.isParticipant(eventParticipants, host.getUser()),
-                eventParticipants
-        );
+                eventParticipants);
     }
 
     /**
@@ -103,10 +90,7 @@ public class VoteResultService {
      * @param request 확정할 일정 시간 정보
      * @throws RestApiException 투표 결과가 이미 존재하거나 확정 시간이 유효하지 않은 경우
      */
-    private void validateVoteResultCreatable(
-            Vote vote,
-            EventVoteTimeSelectRequest request
-    ) {
+    private void validateVoteResultCreatable(Vote vote, EventVoteTimeSelectRequest request) {
         if (voteResultRepository.existsByVote(vote)) {
             throw new RestApiException(CustomErrorCode.VOTE_RESULT_ALREADY_EXISTS);
         }
@@ -133,10 +117,7 @@ public class VoteResultService {
      * @return 저장된 일정 참여자 목록
      */
     private List<EventParticipant> createEventParticipants(
-            Event event,
-            TeamMember host,
-            List<TeamMember> participants
-    ) {
+            Event event, TeamMember host, List<TeamMember> participants) {
         List<EventParticipant> eventParticipants = new ArrayList<>();
         eventParticipants.add(EventParticipant.create(event, host, EventRole.HOST));
 

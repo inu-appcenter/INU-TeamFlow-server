@@ -1,11 +1,10 @@
 package com.inuteamflow.server.domain.chat.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -21,7 +20,8 @@ public class ChatMessageAnchorResponse {
     @Schema(description = "읽은 것 최근 5개 + 안읽은 메시지 목록 (오래된순)")
     private List<ChatMessageResponse> messages;
 
-    public static ChatMessageAnchorResponse of(Long lastReadMessageId, boolean hasMoreBefore, List<ChatMessageResponse> messages) {
+    public static ChatMessageAnchorResponse of(
+            Long lastReadMessageId, boolean hasMoreBefore, List<ChatMessageResponse> messages) {
         return new ChatMessageAnchorResponse(lastReadMessageId, hasMoreBefore, messages);
     }
 }

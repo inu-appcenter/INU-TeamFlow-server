@@ -2,28 +2,21 @@ package com.inuteamflow.server.domain.event.repository;
 
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-
 public interface RecurrenceRuleRepository extends JpaRepository<RecurrenceRule, Long> {
 
-    List<RecurrenceRule> findByEventIn(
-            Collection<Event> events
-    );
+    List<RecurrenceRule> findByEventIn(Collection<Event> events);
 
-    Optional<RecurrenceRule> findByEvent(
-            Event event
-    );
+    Optional<RecurrenceRule> findByEvent(Event event);
 
-    void deleteByEvent(
-            Event event
-    );
+    void deleteByEvent(Event event);
 
     @Modifying
     @Query(value = """
@@ -35,9 +28,7 @@ public interface RecurrenceRuleRepository extends JpaRepository<RecurrenceRule, 
         WHERE e.created_by = :userId AND e.team_id IS NULL
     )
     """, nativeQuery = true)
-    void deleteByDaysByEventCreatedByAndTeamIsNull(
-            @Param("userId") Long userId
-    );
+    void deleteByDaysByEventCreatedByAndTeamIsNull(@Param("userId") Long userId);
 
     @Modifying
     @Query(value = """
@@ -49,7 +40,5 @@ public interface RecurrenceRuleRepository extends JpaRepository<RecurrenceRule, 
           AND e.team_id IS NULL
     )
     """, nativeQuery = true)
-    void deleteByEventCreatedByAndTeamIsNull(
-            @Param("userId") Long userId
-    );
+    void deleteByEventCreatedByAndTeamIsNull(@Param("userId") Long userId);
 }

@@ -21,7 +21,6 @@ public class VoterInfoResponse {
     public static VoterInfoResponse create(VoteParticipant voteParticipant) {
         return new VoterInfoResponse(
                 voteParticipant.getTeamMember().getUser().getName(),
-                voteParticipant.getTeamMember().getUser().getDepartment()
-        );
+                voteParticipant.getTeamMember().getUser().getDepartment());
     }
 }

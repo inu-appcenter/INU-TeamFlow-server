@@ -3,11 +3,10 @@ package com.inuteamflow.server.domain.vote.dto.request;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -18,5 +17,4 @@ public class EventVoteTimeSlotSelectRequest {
     @Size(min = 1)
     @Schema(description = "선택한 슬롯 ID 목록", example = "[1, 2, 3]")
     private List<@NotNull Long> slotIdList;
-
 }

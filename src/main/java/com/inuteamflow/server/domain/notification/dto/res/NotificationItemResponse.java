@@ -3,11 +3,10 @@ package com.inuteamflow.server.domain.notification.dto.res;
 import com.inuteamflow.server.domain.notification.entity.Notification;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -43,8 +42,6 @@ public class NotificationItemResponse {
                 notification.getType(),
                 notification.getRedirectUrl(),
                 notification.getIsRead(),
-                notification.getCreatedAt()
-        );
+                notification.getCreatedAt());
     }
-
 }

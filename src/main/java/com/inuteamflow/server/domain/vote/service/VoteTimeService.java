@@ -1,7 +1,6 @@
 package com.inuteamflow.server.domain.vote.service;
 
 import com.inuteamflow.server.domain.vote.dto.request.EventVoteCreateRequest;
-import com.inuteamflow.server.domain.vote.dto.response.EventVoteTimeSlotResponse;
 import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteDate;
 import com.inuteamflow.server.domain.vote.entity.VoteTimeSlot;
@@ -9,15 +8,14 @@ import com.inuteamflow.server.domain.vote.repository.VoteDateRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteTimeSlotRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,10 +39,7 @@ public class VoteTimeService {
      * @return 저장된 후보 날짜 목록
      */
     @Transactional
-    public List<VoteDate> createVoteDates(
-            Vote vote,
-            List<LocalDate> voteDates
-    ) {
+    public List<VoteDate> createVoteDates(Vote vote, List<LocalDate> voteDates) {
         List<VoteDate> voteDateEntities = voteDates.stream()
                 .distinct()
                 .sorted()
@@ -64,10 +59,7 @@ public class VoteTimeService {
      * @param request 종일 여부와 일일 시간 범위를 포함한 투표 생성 요청
      */
     @Transactional
-    public void createVoteTimeSlots(
-            List<VoteDate> voteDates,
-            EventVoteCreateRequest request
-    ) {
+    public void createVoteTimeSlots(List<VoteDate> voteDates, EventVoteCreateRequest request) {
         List<VoteTimeSlot> voteTimeSlots = new ArrayList<>();
 
         for (VoteDate voteDate : voteDates) {
@@ -86,10 +78,7 @@ public class VoteTimeService {
      * @param request 종일 여부와 일일 시간 범위를 포함한 투표 생성 요청
      * @return 생성된 시간 슬롯 목록
      */
-    private List<VoteTimeSlot> createVoteTimeSlots(
-            VoteDate voteDate,
-            EventVoteCreateRequest request
-    ) {
+    private List<VoteTimeSlot> createVoteTimeSlots(VoteDate voteDate, EventVoteCreateRequest request) {
         if (Boolean.TRUE.equals(request.getIsAllDay())) {
             return List.of(VoteTimeSlot.create(voteDate, LocalTime.MIN, LocalTime.MAX));
         }
@@ -115,9 +104,7 @@ public class VoteTimeService {
      * @param vote 후보 날짜를 조회할 투표
      * @return 날짜 오름차순으로 정렬된 후보 날짜 목록
      */
-    public List<VoteDate> getVoteDates(
-            Vote vote
-    ) {
+    public List<VoteDate> getVoteDates(Vote vote) {
         return voteDateRepository.findByVoteOrderByDateAsc(vote);
     }
 
@@ -127,9 +114,7 @@ public class VoteTimeService {
      * @param vote 시간 슬롯을 조회할 투표
      * @return 날짜와 시작 시간 순으로 정렬된 후보 시간 슬롯 목록
      */
-    public List<VoteTimeSlot> getVoteTimeSlots(
-            Vote vote
-    ) {
+    public List<VoteTimeSlot> getVoteTimeSlots(Vote vote) {
         List<VoteDate> voteDates = getVoteDates(vote);
 
         if (voteDates.isEmpty()) {
@@ -150,18 +135,13 @@ public class VoteTimeService {
      * @throws RestApiException ID 목록이 비어 있거나 해당 투표에 속하지 않는
      *                          시간 슬롯 ID가 포함된 경우
      */
-    public List<VoteTimeSlot> getValidVoteTimeSlots(
-            Vote vote,
-            List<Long> voteTimeSlotIds
-    ) {
+    public List<VoteTimeSlot> getValidVoteTimeSlots(Vote vote, List<Long> voteTimeSlotIds) {
         if (voteTimeSlotIds == null || voteTimeSlotIds.isEmpty()) {
             throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
         }
 
-        List<Long> uniqueIds = voteTimeSlotIds.stream()
-                .filter(id -> id != null)
-                .distinct()
-                .toList();
+        List<Long> uniqueIds =
+                voteTimeSlotIds.stream().filter(id -> id != null).distinct().toList();
 
         if (uniqueIds.isEmpty()) {
             throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
@@ -189,18 +169,11 @@ public class VoteTimeService {
      * @throws RestApiException 시작·종료 일시 또는 해당 범위의 시간 슬롯이 유효하지 않은 경우
      */
     public List<VoteTimeSlot> getContinuousVoteTimeSlots(
-            Vote vote,
-            LocalDateTime selectedStartAt,
-            LocalDateTime selectedEndAt
-    ) {
+            Vote vote, LocalDateTime selectedStartAt, LocalDateTime selectedEndAt) {
         validateSelectedDateTimeRange(selectedStartAt, selectedEndAt);
 
         List<VoteTimeSlot> voteTimeSlots = voteTimeSlotRepository.findByVoteAndDateAndTimeRange(
-                vote,
-                selectedStartAt.toLocalDate(),
-                selectedStartAt.toLocalTime(),
-                selectedEndAt.toLocalTime()
-        );
+                vote, selectedStartAt.toLocalDate(), selectedStartAt.toLocalTime(), selectedEndAt.toLocalTime());
         validateContinuousVoteTimeSlots(voteTimeSlots, selectedStartAt.toLocalTime(), selectedEndAt.toLocalTime());
 
         return voteTimeSlots;
@@ -230,10 +203,7 @@ public class VoteTimeService {
      * @param selectedEndAt 선택한 종료 일시
      * @throws RestApiException 일시가 누락되었거나 날짜 또는 시간 범위가 유효하지 않은 경우
      */
-    private void validateSelectedDateTimeRange(
-            LocalDateTime selectedStartAt,
-            LocalDateTime selectedEndAt
-    ) {
+    private void validateSelectedDateTimeRange(LocalDateTime selectedStartAt, LocalDateTime selectedEndAt) {
         if (selectedStartAt == null || selectedEndAt == null) {
             throw new RestApiException(CustomErrorCode.VOTE_DATE_INVALID);
         }
@@ -257,10 +227,7 @@ public class VoteTimeService {
      *                          또는 시간 슬롯 사이에 빈 구간이 있는 경우
      */
     private void validateContinuousVoteTimeSlots(
-            List<VoteTimeSlot> voteTimeSlots,
-            LocalTime selectedStartTime,
-            LocalTime selectedEndTime
-    ) {
+            List<VoteTimeSlot> voteTimeSlots, LocalTime selectedStartTime, LocalTime selectedEndTime) {
         if (voteTimeSlots.isEmpty()) {
             throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
         }
@@ -284,5 +251,4 @@ public class VoteTimeService {
             throw new RestApiException(CustomErrorCode.VOTE_TIME_SLOT_INVALID);
         }
     }
-
 }

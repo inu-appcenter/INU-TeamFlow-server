@@ -12,5 +12,4 @@ public class TeamMemberRoleRequest {
 
     @NotNull
     private TeamRole teamRole;
-
 }

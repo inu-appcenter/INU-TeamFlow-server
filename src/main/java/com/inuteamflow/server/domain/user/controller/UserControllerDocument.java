@@ -21,99 +21,81 @@ public interface UserControllerDocument {
 
     @Operation(summary = "getMyInfo", description = "내 정보 조회")
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "내 정보 조회 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MyInfoResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "인증 실패 또는 만료된 토큰",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "정지된 사용자",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
+        @ApiResponse(
+                responseCode = "200",
+                description = "내 정보 조회 성공",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = MyInfoResponse.class))),
+        @ApiResponse(
+                responseCode = "401",
+                description = "인증 실패 또는 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "403",
+                description = "정지된 사용자",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<MyInfoResponse> getMyInfo(
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    );
+    ResponseEntity<MyInfoResponse> getMyInfo(@AuthenticationPrincipal UserDetailsImpl userDetails);
 
     @Operation(summary = "updateMyInfo", description = "내 정보 수정")
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "내 정보 수정 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = MyInfoResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청 값",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "인증 실패 또는 만료된 토큰",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "정지된 사용자",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
+        @ApiResponse(
+                responseCode = "200",
+                description = "내 정보 수정 성공",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = MyInfoResponse.class))),
+        @ApiResponse(
+                responseCode = "400",
+                description = "잘못된 요청 값",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "401",
+                description = "인증 실패 또는 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "403",
+                description = "정지된 사용자",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<MyInfoResponse> updateMyInfo(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Valid @RequestBody UserUpdateRequest request
-    );
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody UserUpdateRequest request);
 
     @Operation(summary = "deleteUser", description = "계정 탈퇴")
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "계정 탈퇴 성공"
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "인증 실패 또는 만료된 토큰",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "팀장 권한 보유 또는 진행 중인 투표 존재",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
+        @ApiResponse(responseCode = "204", description = "계정 탈퇴 성공"),
+        @ApiResponse(
+                responseCode = "401",
+                description = "인증 실패 또는 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "403",
+                description = "팀장 권한 보유 또는 진행 중인 투표 존재",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<Void> deleteUser(
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    );
+    ResponseEntity<Void> deleteUser(@AuthenticationPrincipal UserDetailsImpl userDetails);
 }

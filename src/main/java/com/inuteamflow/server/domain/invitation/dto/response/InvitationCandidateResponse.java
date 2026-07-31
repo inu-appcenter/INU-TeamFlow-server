@@ -28,16 +28,8 @@ public class InvitationCandidateResponse {
     @Schema(description = "초대 상태", example = "PENDING")
     private InvitationCandidateStatus invitationStatus;
 
-    public static InvitationCandidateResponse from(
-            User user,
-            InvitationCandidateStatus invitationStatus
-    ) {
+    public static InvitationCandidateResponse from(User user, InvitationCandidateStatus invitationStatus) {
         return new InvitationCandidateResponse(
-                user.getUserId(),
-                user.getName(),
-                user.getStudentNumber(),
-                user.getDepartment(),
-                invitationStatus
-        );
+                user.getUserId(), user.getName(), user.getStudentNumber(), user.getDepartment(), invitationStatus);
     }
 }

@@ -6,14 +6,13 @@ import com.inuteamflow.server.domain.vote.entity.VoteAvailability;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
 import com.inuteamflow.server.domain.vote.entity.VoteTimeSlot;
 import com.inuteamflow.server.domain.vote.repository.VoteAvailabilityRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,10 +34,7 @@ public class VoteAvailabilityService {
      * @param voteTimeSlots 참여자가 참석 가능한 시간 슬롯 목록
      */
     @Transactional
-    public void updateVoteAvailabilities(
-            VoteParticipant voteParticipant,
-            List<VoteTimeSlot> voteTimeSlots
-    ) {
+    public void updateVoteAvailabilities(VoteParticipant voteParticipant, List<VoteTimeSlot> voteTimeSlots) {
         voteAvailabilityRepository.deleteByVoteParticipant(voteParticipant);
         voteAvailabilityRepository.flush();
 
@@ -67,9 +63,7 @@ public class VoteAvailabilityService {
      * @param vote 선택 인원을 집계할 투표
      * @return 시간 슬롯 ID를 키로 하고 선택 인원 수를 값으로 하는 맵
      */
-    public Map<Long, Integer> countParticipantsByTimeSlot(
-            Vote vote
-    ) {
+    public Map<Long, Integer> countParticipantsByTimeSlot(Vote vote) {
         if (vote.getVoteId() == null) {
             return Map.of();
         }
@@ -91,9 +85,7 @@ public class VoteAvailabilityService {
      * @param voteTimeSlots 참석 가능 여부를 확인할 시간 슬롯 목록
      * @return 모든 시간 슬롯에 참석 가능한 팀 멤버 목록
      */
-    public List<TeamMember> getAvailableTeamMembers(
-            List<VoteTimeSlot> voteTimeSlots
-    ) {
+    public List<TeamMember> getAvailableTeamMembers(List<VoteTimeSlot> voteTimeSlots) {
         if (voteTimeSlots == null || voteTimeSlots.isEmpty()) {
             return List.of();
         }
@@ -109,9 +101,7 @@ public class VoteAvailabilityService {
 
             teamMemberById.put(teamMemberId, teamMember);
             selectedSlotCountByTeamMemberId.put(
-                    teamMemberId,
-                    selectedSlotCountByTeamMemberId.getOrDefault(teamMemberId, 0) + 1
-            );
+                    teamMemberId, selectedSlotCountByTeamMemberId.getOrDefault(teamMemberId, 0) + 1);
         }
 
         for (Long teamMemberId : selectedSlotCountByTeamMemberId.keySet()) {

@@ -4,15 +4,14 @@ import com.inuteamflow.server.domain.event.dto.Recurrence;
 import com.inuteamflow.server.domain.event.enums.RecurrenceFrequency;
 import com.inuteamflow.server.global.BaseTimeEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
@@ -38,10 +37,7 @@ public class RecurrenceRule extends BaseTimeEntity {
 
     // 별도의 테이블을 생성하여 byDay를 리스트로 관리한다.
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(
-            name = "recurrence_rule_by_day",
-            joinColumns = @JoinColumn(name = "recurrence_rule_id")
-    )
+    @CollectionTable(name = "recurrence_rule_by_day", joinColumns = @JoinColumn(name = "recurrence_rule_id"))
     @Column(name = "by_day")
     @Enumerated(EnumType.STRING)
     private List<DayOfWeek> byDay = new ArrayList<>();
@@ -67,8 +63,7 @@ public class RecurrenceRule extends BaseTimeEntity {
             Integer byMonthDay,
             LocalDateTime seriesStartAt,
             LocalDateTime untilAt,
-            Integer occurrenceCount
-    ) {
+            Integer occurrenceCount) {
         this.event = event;
         this.freq = freq;
         this.intervalValue = intervalValue;
@@ -79,11 +74,7 @@ public class RecurrenceRule extends BaseTimeEntity {
         this.occurrenceCount = occurrenceCount;
     }
 
-    public static RecurrenceRule create(
-            Event event,
-            Recurrence recurrence,
-            LocalDateTime seriesStartAt
-    ) {
+    public static RecurrenceRule create(Event event, Recurrence recurrence, LocalDateTime seriesStartAt) {
         return RecurrenceRule.builder()
                 .event(event)
                 .freq(recurrence.getFreq())
@@ -100,15 +91,10 @@ public class RecurrenceRule extends BaseTimeEntity {
         return event.getEventId();
     }
 
-    public void update(
-            Recurrence recurrence,
-            LocalDateTime seriesStartAt
-    ) {
+    public void update(Recurrence recurrence, LocalDateTime seriesStartAt) {
         this.freq = recurrence.getFreq();
         this.intervalValue = recurrence.getIntervalValue();
-        this.byDay = recurrence.getByDay() == null
-                ? new ArrayList<>()
-                : new ArrayList<>(recurrence.getByDay());
+        this.byDay = recurrence.getByDay() == null ? new ArrayList<>() : new ArrayList<>(recurrence.getByDay());
         this.byMonthDay = recurrence.getByMonthDay();
         this.seriesStartAt = seriesStartAt;
         this.untilAt = recurrence.getUntilAt();

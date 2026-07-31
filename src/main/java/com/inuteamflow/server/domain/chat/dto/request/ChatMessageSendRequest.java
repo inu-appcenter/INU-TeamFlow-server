@@ -20,5 +20,4 @@ public class ChatMessageSendRequest {
 
     @Schema(description = "이미지 S3 키 (IMAGE일 때 필수)", example = "chat/image/550e8...")
     private String imageKey;
-
 }

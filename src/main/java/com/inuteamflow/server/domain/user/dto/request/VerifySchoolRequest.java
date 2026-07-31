@@ -18,5 +18,4 @@ public class VerifySchoolRequest {
     @NotBlank
     @Schema(description = "포털 비밀번호", example = "portalPassword123!")
     private String portalPassword;
-
 }

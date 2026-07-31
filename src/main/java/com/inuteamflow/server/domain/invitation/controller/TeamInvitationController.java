@@ -9,6 +9,7 @@ import com.inuteamflow.server.domain.invitation.service.TeamInvitationService;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -19,8 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,8 +32,7 @@ public class TeamInvitationController implements TeamInvitationControllerDocumen
     public ResponseEntity<Page<TeamInvitationResponse>> getInvitations(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestParam InvitationDirection direction,
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
                 .body(teamInvitationService.getInvitations(user, direction, pageable));
@@ -44,21 +42,17 @@ public class TeamInvitationController implements TeamInvitationControllerDocumen
     public ResponseEntity<TeamInvitationResponse> invite(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId,
-            @Valid @RequestBody TeamInvitationCreateRequest request
-    ) {
+            @Valid @RequestBody TeamInvitationCreateRequest request) {
         User user = userDetails.getUser();
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(teamInvitationService.invite(user, teamId, request));
+        return ResponseEntity.status(HttpStatus.OK).body(teamInvitationService.invite(user, teamId, request));
     }
 
     @GetMapping("/teams/{teamId}/invitations/candidates")
     public ResponseEntity<List<InvitationCandidateResponse>> getCandidates(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId,
-            @RequestParam("name") String name
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.OK)
+            @RequestParam("name") String name) {
+        return ResponseEntity.status(HttpStatus.OK)
                 .body(teamInvitationService.getCandidates(userDetails.getUser(), teamId, name));
     }
 
@@ -66,8 +60,7 @@ public class TeamInvitationController implements TeamInvitationControllerDocumen
     public ResponseEntity<TeamInvitationResponse> updateStatus(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long invitationId,
-            @Valid @RequestBody TeamInvitationStatusUpdateRequest request
-    ) {
+            @Valid @RequestBody TeamInvitationStatusUpdateRequest request) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
                 .body(teamInvitationService.updateStatus(user, invitationId, request));
@@ -77,8 +70,7 @@ public class TeamInvitationController implements TeamInvitationControllerDocumen
     public ResponseEntity<TeamInvitationResponse> cancelInvitation(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long teamId,
-            @PathVariable Long invitationId
-    ) {
+            @PathVariable Long invitationId) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
                 .body(teamInvitationService.cancelInvitation(user, teamId, invitationId));

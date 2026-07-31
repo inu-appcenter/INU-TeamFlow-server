@@ -7,12 +7,11 @@ import com.inuteamflow.server.domain.event.entity.RecurrenceException;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.EventColor;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -72,8 +71,7 @@ public class EventDetailResponse {
             RecurrenceRule recurrenceRule,
             String teamName,
             boolean isParticipant,
-            List<Participant> participants
-    ) {
+            List<Participant> participants) {
         return new EventDetailResponse(
                 event.getEventId(),
                 event.getTeamId(),
@@ -90,8 +88,7 @@ public class EventDetailResponse {
                 false,
                 isParticipant,
                 participants,
-                Recurrence.create(recurrenceRule)
-        );
+                Recurrence.create(recurrenceRule));
     }
 
     public static EventDetailResponse createModifiedOccurrence(
@@ -100,8 +97,7 @@ public class EventDetailResponse {
             RecurrenceException recurrenceException,
             String teamName,
             boolean isParticipant,
-            List<Participant> participants
-    ) {
+            List<Participant> participants) {
         return new EventDetailResponse(
                 event.getEventId(),
                 event.getTeamId(),
@@ -118,7 +114,6 @@ public class EventDetailResponse {
                 true,
                 isParticipant,
                 participants,
-                Recurrence.create(recurrenceRule)
-        );
+                Recurrence.create(recurrenceRule));
     }
 }

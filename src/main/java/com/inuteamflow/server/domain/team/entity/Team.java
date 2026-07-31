@@ -37,8 +37,7 @@ public class Team extends BaseEntity {
     private String imageKey;
 
     @Builder
-    private Team (String name, String description, Category category,
-                  String link, String sns, String imageKey) {
+    private Team(String name, String description, Category category, String link, String sns, String imageKey) {
         this.name = name;
         this.description = description;
         this.category = category;

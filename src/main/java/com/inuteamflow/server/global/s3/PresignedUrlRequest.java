@@ -18,5 +18,4 @@ public class PresignedUrlRequest {
     @NotBlank
     @Schema(description = "이미지의 MIME 타입", example = "image/png")
     private String contentType;
-
 }

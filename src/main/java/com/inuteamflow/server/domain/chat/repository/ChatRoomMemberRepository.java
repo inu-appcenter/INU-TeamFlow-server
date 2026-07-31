@@ -4,13 +4,12 @@ import com.inuteamflow.server.domain.chat.entity.ChatRoom;
 import com.inuteamflow.server.domain.chat.entity.ChatRoomMember;
 import com.inuteamflow.server.domain.chat.enums.ChatRoomType;
 import com.inuteamflow.server.domain.user.entity.User;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, Long> {
 
@@ -24,8 +23,10 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     boolean existsByChatRoom(ChatRoom chatRoom);
 
     // 팀인지 1:1 인지 분기해서 조회
-    @Query("SELECT crm FROM ChatRoomMember crm JOIN FETCH crm.chatRoom WHERE crm.user = :user AND crm.chatRoom.chatRoomType = :type")
-    List<ChatRoomMember> findByUserAndChatRoomTypeWithChatRoom(@Param("user") User user, @Param("type") ChatRoomType type);
+    @Query(
+            "SELECT crm FROM ChatRoomMember crm JOIN FETCH crm.chatRoom WHERE crm.user = :user AND crm.chatRoom.chatRoomType = :type")
+    List<ChatRoomMember> findByUserAndChatRoomTypeWithChatRoom(
+            @Param("user") User user, @Param("type") ChatRoomType type);
 
     // 팀 삭제 시 채팅방도 삭제
     @Modifying
@@ -49,7 +50,8 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
         AND crm1.user = :userA
         AND crm2.user = :userB
         """)
-    Optional<ChatRoom> findDirectRoomBetween(@Param("userA") User userA, @Param("userB") User userB, @Param("type") ChatRoomType type);
+    Optional<ChatRoom> findDirectRoomBetween(
+            @Param("userA") User userA, @Param("userB") User userB, @Param("type") ChatRoomType type);
 
     // 채팅방 멤버 전체 조회 (기본 이미지 콜라주, 읽음 명수 계산용)
     @Query("SELECT crm FROM ChatRoomMember crm JOIN FETCH crm.user WHERE crm.chatRoom = :chatRoom")

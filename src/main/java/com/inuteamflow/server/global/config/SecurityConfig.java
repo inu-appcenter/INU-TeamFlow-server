@@ -2,6 +2,7 @@ package com.inuteamflow.server.global.config;
 
 import com.inuteamflow.server.global.jwt.JwtAuthenticationFilter;
 import com.inuteamflow.server.global.jwt.JwtExceptionFilter;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,8 +16,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -35,10 +34,12 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/v3/api-docs",
                                 "/api/v1/users/me/profile/presigned-url",
-                                "/ws-chat/**"
-                        ).permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll() // 로그인 및 회원가입
-                        .anyRequest().authenticated())
+                                "/ws-chat/**")
+                        .permitAll()
+                        .requestMatchers("/api/v1/auth/**")
+                        .permitAll() // 로그인 및 회원가입
+                        .anyRequest()
+                        .authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtExceptionFilter, JwtAuthenticationFilter.class)

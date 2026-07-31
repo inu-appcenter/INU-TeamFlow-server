@@ -2,19 +2,15 @@ package com.inuteamflow.server.domain.vote.entity;
 
 import com.inuteamflow.server.global.BaseTimeEntity;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 @Getter
 @Entity
-@Table(name = "vote_date",
-        uniqueConstraints = @UniqueConstraint(
-                columnNames = {"vote_id", "date"}
-        ))
+@Table(name = "vote_date", uniqueConstraints = @UniqueConstraint(columnNames = {"vote_id", "date"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class VoteDate extends BaseTimeEntity {
 
@@ -31,21 +27,12 @@ public class VoteDate extends BaseTimeEntity {
     private LocalDate date;
 
     @Builder
-    private VoteDate(
-            Vote vote,
-            LocalDate date
-    ) {
+    private VoteDate(Vote vote, LocalDate date) {
         this.vote = vote;
         this.date = date;
     }
 
-    public static VoteDate create(
-            Vote vote,
-            LocalDate date
-    ) {
-        return VoteDate.builder()
-                .vote(vote)
-                .date(date)
-                .build();
+    public static VoteDate create(Vote vote, LocalDate date) {
+        return VoteDate.builder().vote(vote).date(date).build();
     }
 }

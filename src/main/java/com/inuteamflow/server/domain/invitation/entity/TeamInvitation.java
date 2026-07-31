@@ -7,12 +7,11 @@ import com.inuteamflow.server.global.enums.Status;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -85,5 +84,4 @@ public class TeamInvitation extends BaseEntity {
     public Long getReceiverId() {
         return receiver.getUserId();
     }
-
 }

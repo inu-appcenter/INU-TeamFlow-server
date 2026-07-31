@@ -31,7 +31,6 @@ public class TeamMemberResponse {
                 user.getUsername(),
                 user.getName(),
                 teamMember.getTeamRole(),
-                user.getDepartment()
-        );
+                user.getDepartment());
     }
 }

@@ -18,14 +18,7 @@ public class PresignedUrlResponse {
     @Schema(description = "DB에 저장할 이미지 키", example = "users/profile/550e8400-e29b-41d4-a716-446655440000.png")
     private String imageKey;
 
-    public static PresignedUrlResponse create(
-            String uploadUrl,
-            String imageKey
-    ) {
-        return new PresignedUrlResponse(
-                uploadUrl,
-                imageKey
-        );
+    public static PresignedUrlResponse create(String uploadUrl, String imageKey) {
+        return new PresignedUrlResponse(uploadUrl, imageKey);
     }
-
 }

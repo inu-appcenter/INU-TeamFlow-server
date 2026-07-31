@@ -11,7 +11,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-
 @Getter
 @Entity
 @Table(name = "users")
@@ -62,8 +61,7 @@ public class User extends BaseTimeEntity {
             String studentNumber,
             Boolean isSchoolVerified,
             Role role,
-            String imageKey
-    ) {
+            String imageKey) {
         this.username = username;
         this.email = email;
         this.password = password;
@@ -75,10 +73,7 @@ public class User extends BaseTimeEntity {
         this.imageKey = imageKey;
     }
 
-    public static User create(
-            SignupRequest request,
-            String encode
-    ) {
+    public static User create(SignupRequest request, String encode) {
         return User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -92,10 +87,7 @@ public class User extends BaseTimeEntity {
                 .build();
     }
 
-    public void update(
-            UserUpdateRequest request,
-            String encodedPassword
-    ) {
+    public void update(UserUpdateRequest request, String encodedPassword) {
         if (encodedPassword != null) {
             this.password = encodedPassword;
         }
@@ -105,9 +97,7 @@ public class User extends BaseTimeEntity {
         this.imageKey = request.getImageKey();
     }
 
-    public void verifySchool(
-            String studentNumber
-    ) {
+    public void verifySchool(String studentNumber) {
         this.studentNumber = studentNumber;
         this.isSchoolVerified = true;
     }

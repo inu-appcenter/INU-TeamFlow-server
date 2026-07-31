@@ -15,14 +15,13 @@ import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -63,11 +62,13 @@ public class ChatMessageService {
             throw new RestApiException(CustomErrorCode.CHAT_ROOM_FORBIDDEN);
         }
 
-        ChatMessage message = switch (request.getMessageType()) {
-            case TEXT -> ChatMessage.createText(chatRoom, request.getContent());
-            case IMAGE -> ChatMessage.createImage(chatRoom, request.getImageKey());
-            case SYSTEM -> throw new RestApiException(CustomErrorCode.CHAT_MESSAGE_TYPE_INVALID); // 클라이언트가 직접 못 보냄
-        };
+        ChatMessage message =
+                switch (request.getMessageType()) {
+                    case TEXT -> ChatMessage.createText(chatRoom, request.getContent());
+                    case IMAGE -> ChatMessage.createImage(chatRoom, request.getImageKey());
+                    case SYSTEM ->
+                        throw new RestApiException(CustomErrorCode.CHAT_MESSAGE_TYPE_INVALID); // 클라이언트가 직접 못 보냄
+                };
         message.assignAuditor(sender.getUserId()); // SecurityContextHolder 의존 없이 직접 채움
         chatMessageRepository.save(message);
 
@@ -115,7 +116,8 @@ public class ChatMessageService {
      * @throws RestApiException 채팅방을 찾을 수 없는 경우
      */
     private ChatRoom getChatRoomById(Long roomId) {
-        return chatRoomRepository.findById(roomId)
+        return chatRoomRepository
+                .findById(roomId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
@@ -131,8 +133,7 @@ public class ChatMessageService {
      * @param request 전송된 메시지 정보
      */
     private void sendChatFcmIfNeeded(ChatRoom chatRoom, User sender, Long roomId, ChatMessageSendRequest request) {
-        List<Long> fcmTargetIds = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom)
-                .stream()
+        List<Long> fcmTargetIds = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
                 .map(ChatRoomMember::getUser)
                 .filter(u -> !u.getUserId().equals(sender.getUserId())) // 발신자는 제외
                 .filter(u -> {
@@ -153,12 +154,12 @@ public class ChatMessageService {
         String content = request.getMessageType() == ChatMessageType.IMAGE ? "사진을 보냈습니다." : request.getContent();
 
         notificationService.sendChatFcm(
-                fcmTargetIds,       // FCM을 수신해야 하는 사용자 ID
-                sender.getName(),   // 알림 제목: 발신자 실제 이름 (확인 필요)
-                content,            // 알림 본문: IMAGE가 아니라면 채팅 내용
+                fcmTargetIds, // FCM을 수신해야 하는 사용자 ID
+                sender.getName(), // 알림 제목: 발신자 실제 이름 (확인 필요)
+                content, // 알림 본문: IMAGE가 아니라면 채팅 내용
                 NotificationType.CHAT,
                 "/chat/" + roomId,
-                roomId              // 같은 방 알림 묶음을 위한 collapseKey
-        );
+                roomId // 같은 방 알림 묶음을 위한 collapseKey
+                );
     }
 }

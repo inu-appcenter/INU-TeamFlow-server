@@ -1,6 +1,5 @@
 package com.inuteamflow.server.domain.recruitment.controller;
 
-
 import com.inuteamflow.server.domain.recruitment.dto.request.ApplicationCreateRequest;
 import com.inuteamflow.server.domain.recruitment.dto.request.RecruitmentCreateRequest;
 import com.inuteamflow.server.domain.recruitment.dto.request.RecruitmentUpdateRequest;
@@ -33,48 +32,38 @@ public class RecruitmentController implements RecruitmentControllerDocument {
 
     @GetMapping
     public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(recruitmentService.getRecruitments(pageable));
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK).body(recruitmentService.getRecruitments(pageable));
     }
 
     @GetMapping("/me")
     public ResponseEntity<Page<RecruitmentSummaryResponse>> getMyRecruitments(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         User user = userDetails.getUser();
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(recruitmentService.getMyRecruitments(user, pageable));
+        return ResponseEntity.status(HttpStatus.OK).body(recruitmentService.getMyRecruitments(user, pageable));
     }
 
     @GetMapping("/{recruitmentId}")
     public ResponseEntity<RecruitmentDetailResponse> getRecruitment(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long recruitmentId
-    ) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long recruitmentId) {
         User user = userDetails.getUser();
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(recruitmentService.getRecruitment(recruitmentId, user));
+        return ResponseEntity.status(HttpStatus.OK).body(recruitmentService.getRecruitment(recruitmentId, user));
     }
 
     @PostMapping
     public ResponseEntity<RecruitmentDetailResponse> creatRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Valid @RequestBody RecruitmentCreateRequest request
-    ) {
+            @Valid @RequestBody RecruitmentCreateRequest request) {
         User user = userDetails.getUser();
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(recruitmentService.createRecruitment(request, user));
+        return ResponseEntity.status(HttpStatus.OK).body(recruitmentService.createRecruitment(request, user));
     }
 
     @PutMapping("/{recruitmentId}")
     public ResponseEntity<RecruitmentDetailResponse> updateRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long recruitmentId,
-            @Valid @RequestBody RecruitmentUpdateRequest request
-    ) {
+            @Valid @RequestBody RecruitmentUpdateRequest request) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
                 .body(recruitmentService.updateRecruitment(recruitmentId, request, user));
@@ -82,9 +71,7 @@ public class RecruitmentController implements RecruitmentControllerDocument {
 
     @DeleteMapping("/{recruitmentId}")
     public ResponseEntity<Void> deleteRecruitment(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @PathVariable Long recruitmentId
-    ) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long recruitmentId) {
         User user = userDetails.getUser();
         recruitmentService.deleteRecruitment(recruitmentId, user);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
@@ -94,8 +81,7 @@ public class RecruitmentController implements RecruitmentControllerDocument {
     public ResponseEntity<ApplicationSummaryResponse> apply(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long recruitmentId,
-            @Valid @RequestBody ApplicationCreateRequest request
-    ) {
+            @Valid @RequestBody ApplicationCreateRequest request) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
                 .body(recruitmentApplicationService.apply(recruitmentId, request, user));
@@ -105,8 +91,7 @@ public class RecruitmentController implements RecruitmentControllerDocument {
     public ResponseEntity<Page<ApplicationSummaryResponse>> getApplicationsByRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long recruitmentId,
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
                 .body(recruitmentApplicationService.getApplicationsByRecruitment(recruitmentId, user, pageable));

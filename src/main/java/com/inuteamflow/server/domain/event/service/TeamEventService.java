@@ -22,10 +22,6 @@ import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +29,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -67,32 +66,17 @@ public class TeamEventService {
      * @throws RestApiException 팀을 찾을 수 없거나 사용자가 팀 멤버가 아닌 경우,
      *                          또는 월이 유효하지 않은 경우
      */
-    public List<EventListResponse> getTeamEventList(
-            User user,
-            Long teamId,
-            Integer year,
-            Integer month
-    ) {
+    public List<EventListResponse> getTeamEventList(User user, Long teamId, Integer year, Integer month) {
         Team team = getTeam(teamId);
         validateTeamMember(team, user);
         EventOccurrenceService.DateRange dateRange = eventOccurrenceService.createMonthlyDateRange(year, month);
 
         List<Event> singleEvents = eventRepository.findByTeamAndIsSingleAndStartAtBeforeAndEndAtAfter(
-                team,
-                true,
-                dateRange.endAt(),
-                dateRange.startAt()
-        );
-        List<Event> recurringEvents = eventRepository.findByTeamAndIsSingleAndStartAtBefore(
-                team,
-                false,
-                dateRange.endAt()
-        );
-        List<EventListResponse> recurringOccurrences = eventOccurrenceService.expandRecurringEvents(
-                recurringEvents,
-                dateRange,
-                user
-        );
+                team, true, dateRange.endAt(), dateRange.startAt());
+        List<Event> recurringEvents =
+                eventRepository.findByTeamAndIsSingleAndStartAtBefore(team, false, dateRange.endAt());
+        List<EventListResponse> recurringOccurrences =
+                eventOccurrenceService.expandRecurringEvents(recurringEvents, dateRange, user);
 
         return eventOccurrenceService.mergeAndSort(singleEvents, recurringOccurrences, user);
     }
@@ -110,11 +94,7 @@ public class TeamEventService {
      *                          또는 참여자나 반복 규칙이 유효하지 않은 경우
      */
     @Transactional
-    public EventDetailResponse createTeamEvent(
-            User user,
-            Long teamId,
-            TeamEventCreateRequest request
-    ) {
+    public EventDetailResponse createTeamEvent(User user, Long teamId, TeamEventCreateRequest request) {
         Team team = getTeam(teamId);
         TeamMember host = validateTeamEventManager(team, user);
         Event event = eventRepository.save(Event.create(team, request));
@@ -131,10 +111,9 @@ public class TeamEventService {
                 "[" + team.getName() + "] 팀에 새 일정이 추가됐어요",
                 "'" + event.getTitle() + "' 일정을 확인해보세요",
                 NotificationType.TEAM_SCHEDULE,
-                "/team/"+team.getTeamId()
-        );
+                "/team/" + team.getTeamId());
 
-        return EventDetailResponse.create(event, recurrenceRule, team.getName(), true ,participants);
+        return EventDetailResponse.create(event, recurrenceRule, team.getName(), true, participants);
     }
 
     /**
@@ -151,12 +130,7 @@ public class TeamEventService {
      *                          또는 참여자, 반복 규칙이나 회차 정보가 유효하지 않은 경우
      */
     @Transactional
-    public EventDetailResponse updateTeamEvent(
-            User user,
-            Long teamId,
-            Long eventId,
-            TeamEventUpdateRequest request
-    ) {
+    public EventDetailResponse updateTeamEvent(User user, Long teamId, Long eventId, TeamEventUpdateRequest request) {
         Event event = getTeamEvent(teamId, eventId);
         Team team = getTeam(teamId);
         validateTeamEventManager(team, user);
@@ -166,9 +140,7 @@ public class TeamEventService {
         boolean isThisInstance = updateResult.editScope() == RecurrenceEditScope.THIS_INSTANCE;
         boolean isThisAndFollowing = updateResult.editScope() == RecurrenceEditScope.THIS_AND_FOLLOWING;
 
-        TeamMember followingEventHost = isThisAndFollowing
-                ? findEventHost(event)
-                : null;
+        TeamMember followingEventHost = isThisAndFollowing ? findEventHost(event) : null;
 
         List<User> receivers;
         List<Participant> participants;
@@ -176,12 +148,14 @@ public class TeamEventService {
         if (isThisInstance) {
             RecurrenceException recurrenceException = updateResult.recurrenceException();
             participants = syncExceptionParticipants(recurrenceException, team, request.getParticipants());
-            receivers = recurrenceExceptionParticipantRepository.findUsersByExceptionExcluding(recurrenceException, user.getUserId());
+            receivers = recurrenceExceptionParticipantRepository.findUsersByExceptionExcluding(
+                    recurrenceException, user.getUserId());
         } else if (isThisAndFollowing) {
             Event followingEvent = updateResult.event();
-            participants = createParticipants(followingEvent, team, followingEventHost, request.getParticipants()).stream()
-                    .map(Participant::create)
-                    .toList();
+            participants =
+                    createParticipants(followingEvent, team, followingEventHost, request.getParticipants()).stream()
+                            .map(Participant::create)
+                            .toList();
             receivers = eventParticipantRepository.findUsersByEventExcluding(followingEvent, user.getUserId());
         } else {
             Event updatedEvent = updateResult.event();
@@ -202,8 +176,7 @@ public class TeamEventService {
                 "[" + event.getTeam().getName() + "] 팀의 일정이 변경됐어요",
                 updateContent,
                 NotificationType.TEAM_SCHEDULE,
-                "/team/" + team.getTeamId()
-        );
+                "/team/" + team.getTeamId());
 
         boolean isParticipant = Participant.isParticipant(participants, user);
         if (isThisInstance) {
@@ -213,17 +186,11 @@ public class TeamEventService {
                     updateResult.recurrenceException(),
                     team.getName(),
                     isParticipant,
-                    participants
-            );
+                    participants);
         }
 
         return EventDetailResponse.create(
-                updateResult.event(),
-                updateResult.recurrenceRule(),
-                team.getName(),
-                isParticipant,
-                participants
-        );
+                updateResult.event(), updateResult.recurrenceRule(), team.getName(), isParticipant, participants);
     }
 
     /**
@@ -241,12 +208,7 @@ public class TeamEventService {
      */
     @Transactional
     public void deleteTeamEvent(
-            User user,
-            Long teamId,
-            Long eventId,
-            RecurrenceEditScope recurrenceEditScope,
-            LocalDateTime occurrenceAt
-    ) {
+            User user, Long teamId, Long eventId, RecurrenceEditScope recurrenceEditScope, LocalDateTime occurrenceAt) {
         Event event = getTeamEvent(teamId, eventId);
         Team team = getTeam(teamId);
         validateTeamEventManager(team, user);
@@ -255,7 +217,8 @@ public class TeamEventService {
         if (recurrenceEditScope == RecurrenceEditScope.THIS_INSTANCE) {
             receivers = recurrenceExceptionRepository
                     .findByEventAndOriginalOccurrenceAt(event, occurrenceAt)
-                    .map(re -> recurrenceExceptionParticipantRepository.findUsersByExceptionExcluding(re, user.getUserId()))
+                    .map(re -> recurrenceExceptionParticipantRepository.findUsersByExceptionExcluding(
+                            re, user.getUserId()))
                     .orElseGet(() -> eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId()));
         } else {
             receivers = eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId());
@@ -266,8 +229,7 @@ public class TeamEventService {
                 "'" + event.getTitle() + "' 일정이 삭제됐어요",
                 user.getName() + "님이 일정을 삭제했어요",
                 NotificationType.TEAM_SCHEDULE,
-                "/team/" + team.getTeamId()
-        );
+                "/team/" + team.getTeamId());
 
         if (eventRecurrenceService.deleteEvent(event, recurrenceEditScope, occurrenceAt)) {
             eventParticipantRepository.deleteByEvent(event);
@@ -293,11 +255,7 @@ public class TeamEventService {
      * @throws RestApiException 요청된 팀 멤버가 유효한 참여자가 아닌 경우
      */
     private List<EventParticipant> createParticipants(
-            Event event,
-            Team team,
-            TeamMember host,
-            List<Long> participantIds
-    ) {
+            Event event, Team team, TeamMember host, List<Long> participantIds) {
         List<EventParticipant> participants = new ArrayList<>();
         participants.add(EventParticipant.create(event, host, EventRole.HOST));
 
@@ -309,8 +267,7 @@ public class TeamEventService {
                     .toList();
 
             if (!validIds.isEmpty()) {
-                Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(team, validIds)
-                        .stream()
+                Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(team, validIds).stream()
                         .collect(Collectors.toMap(TeamMember::getTeamMemberId, Function.identity()));
 
                 for (Long id : validIds) {
@@ -338,11 +295,7 @@ public class TeamEventService {
      * @throws RestApiException 요청된 팀 멤버가 유효한 참여자가 아닌 경우
      */
     private List<RecurrenceExceptionParticipant> createExceptionParticipants(
-            RecurrenceException recurrenceException,
-            Team team,
-            TeamMember host,
-            List<Long> participantIds
-    ) {
+            RecurrenceException recurrenceException, Team team, TeamMember host, List<Long> participantIds) {
         List<RecurrenceExceptionParticipant> participants = new ArrayList<>();
         participants.add(RecurrenceExceptionParticipant.create(recurrenceException, host, EventRole.HOST));
 
@@ -354,8 +307,7 @@ public class TeamEventService {
                     .toList();
 
             if (!validIds.isEmpty()) {
-                Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(team, validIds)
-                        .stream()
+                Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(team, validIds).stream()
                         .collect(Collectors.toMap(TeamMember::getTeamMemberId, Function.identity()));
 
                 for (Long id : validIds) {
@@ -382,11 +334,7 @@ public class TeamEventService {
      * @return 동기화된 참여자 정보 목록
      * @throws RestApiException 일정이나 주최자를 찾을 수 없거나 참여자가 유효하지 않은 경우
      */
-    private List<Participant> syncParticipants(
-            Event event,
-            Team team,
-            List<Long> participantIds
-    ) {
+    private List<Participant> syncParticipants(Event event, Team team, List<Long> participantIds) {
         Event targetEvent = getTeamEvent(team.getTeamId(), event.getEventId());
         TeamMember host = eventParticipantRepository.findByEvent(event).stream()
                 .filter(participant -> participant.getEventRole() == EventRole.HOST)
@@ -414,10 +362,7 @@ public class TeamEventService {
      * @throws RestApiException 주최자를 찾을 수 없거나 참여자가 유효하지 않은 경우
      */
     private List<Participant> syncExceptionParticipants(
-            RecurrenceException recurrenceException,
-            Team team,
-            List<Long> participantIds
-    ) {
+            RecurrenceException recurrenceException, Team team, List<Long> participantIds) {
         TeamMember host = eventParticipantRepository.findByEvent(recurrenceException.getEvent()).stream()
                 .filter(participant -> participant.getEventRole() == EventRole.HOST)
                 .findFirst()
@@ -442,11 +387,9 @@ public class TeamEventService {
      * @return 조회된 팀 일정
      * @throws RestApiException 일정을 찾을 수 없거나 일정이 요청된 팀에 속하지 않은 경우
      */
-    private Event getTeamEvent(
-            Long teamId,
-            Long eventId
-    ) {
-        Event event = eventRepository.findById(eventId)
+    private Event getTeamEvent(Long teamId, Long eventId) {
+        Event event = eventRepository
+                .findById(eventId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_NOT_FOUND));
 
         if (!teamId.equals(event.getTeamId())) {
@@ -463,11 +406,8 @@ public class TeamEventService {
      * @return 조회된 팀
      * @throws RestApiException 팀을 찾을 수 없는 경우
      */
-    private Team getTeam(
-            Long teamId
-    ) {
-        return teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+    private Team getTeam(Long teamId) {
+        return teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
     }
 
     /**
@@ -477,14 +417,12 @@ public class TeamEventService {
      * @return 일정 주최자
      * @throws RestApiException 일정에 주최자가 등록되지 않은 경우
      */
-    private TeamMember findEventHost(
-            Event event
-    ) {
+    private TeamMember findEventHost(Event event) {
         return eventParticipantRepository.findByEvent(event).stream()
                 .filter(participant -> participant.getEventRole() == EventRole.HOST)
                 .findFirst()
                 .map(EventParticipant::getTeamMember)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_PARTICIPANT_HOST_NOT_FOUND                ));
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_PARTICIPANT_HOST_NOT_FOUND));
     }
 
     /**
@@ -495,11 +433,9 @@ public class TeamEventService {
      * @return 사용자에 대응하는 팀 멤버
      * @throws RestApiException 사용자가 팀 멤버가 아닌 경우
      */
-    private TeamMember validateTeamMember(
-            Team team,
-            User user
-    ) {
-        return teamMemberRepository.findByTeamAndUser(team, user)
+    private TeamMember validateTeamMember(Team team, User user) {
+        return teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
     }
 
@@ -513,13 +449,9 @@ public class TeamEventService {
      * @return 일정 관리 권한을 가진 팀 멤버
      * @throws RestApiException 사용자가 팀 멤버가 아니거나 팀 리더 또는 관리자가 아닌 경우
      */
-    private TeamMember validateTeamEventManager(
-            Team team,
-            User user
-    ) {
+    private TeamMember validateTeamEventManager(Team team, User user) {
         TeamMember teamMember = validateTeamMember(team, user);
-        if (teamMember.getTeamRole() == TeamRole.LEADER
-                || teamMember.getTeamRole() == TeamRole.MANAGER) {
+        if (teamMember.getTeamRole() == TeamRole.LEADER || teamMember.getTeamRole() == TeamRole.MANAGER) {
             return teamMember;
         }
 

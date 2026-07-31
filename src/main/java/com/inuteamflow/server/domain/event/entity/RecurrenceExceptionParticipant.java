@@ -11,10 +11,9 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "recurrence_exception_participant",
-        uniqueConstraints = @UniqueConstraint(
-                columnNames = {"recurrence_exception_id", "team_member_id"}
-        ))
+@Table(
+        name = "recurrence_exception_participant",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"recurrence_exception_id", "team_member_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecurrenceExceptionParticipant extends BaseTimeEntity {
 
@@ -37,25 +36,18 @@ public class RecurrenceExceptionParticipant extends BaseTimeEntity {
 
     @Builder
     private RecurrenceExceptionParticipant(
-            RecurrenceException recurrenceException,
-            TeamMember teamMember,
-            EventRole eventRole
-    ) {
+            RecurrenceException recurrenceException, TeamMember teamMember, EventRole eventRole) {
         this.recurrenceException = recurrenceException;
         this.teamMember = teamMember;
         this.eventRole = eventRole;
     }
 
     public static RecurrenceExceptionParticipant create(
-            RecurrenceException recurrenceException,
-            TeamMember teamMember,
-            EventRole eventRole
-    ) {
+            RecurrenceException recurrenceException, TeamMember teamMember, EventRole eventRole) {
         return RecurrenceExceptionParticipant.builder()
                 .recurrenceException(recurrenceException)
                 .teamMember(teamMember)
                 .eventRole(eventRole)
                 .build();
     }
-
 }

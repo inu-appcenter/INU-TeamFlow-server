@@ -26,21 +26,15 @@ public class FcmToken extends BaseEntity {
     private String deviceType;
 
     @Builder
-    private FcmToken(
-            String fcmToken,
-            String deviceType
-    ) {
+    private FcmToken(String fcmToken, String deviceType) {
         this.fcmToken = fcmToken;
         this.deviceType = deviceType;
     }
 
-    public static FcmToken create(
-            FcmRequest request
-    ) {
+    public static FcmToken create(FcmRequest request) {
         return FcmToken.builder()
                 .fcmToken(request.getToken())
                 .deviceType(request.getDeviceType())
                 .build();
     }
-
 }

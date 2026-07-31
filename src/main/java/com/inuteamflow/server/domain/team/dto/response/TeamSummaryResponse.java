@@ -24,12 +24,6 @@ public class TeamSummaryResponse {
 
     public static TeamSummaryResponse create(Team team, String imageUrl, int memberCount) {
         return new TeamSummaryResponse(
-                team.getTeamId(),
-                team.getName(),
-                team.getCategory(),
-                memberCount,
-                team.getDescription(),
-                imageUrl
-        );
+                team.getTeamId(), team.getName(), team.getCategory(), memberCount, team.getDescription(), imageUrl);
     }
 }

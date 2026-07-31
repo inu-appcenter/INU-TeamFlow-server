@@ -2,14 +2,13 @@ package com.inuteamflow.server.domain.event.repository;
 
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.team.entity.Team;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
@@ -23,8 +22,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("eventIds") Collection<Long> eventIds,
             @Param("isSingle") Boolean isSingle,
             @Param("endAt") LocalDateTime endAt,
-            @Param("startAt") LocalDateTime startAt
-    );
+            @Param("startAt") LocalDateTime startAt);
 
     @Query("""
     SELECT e FROM Event e LEFT JOIN FETCH e.team
@@ -34,22 +32,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByEventIdInAndIsSingleAndStartAtBefore(
             @Param("eventIds") Collection<Long> eventIds,
             @Param("isSingle") Boolean isSingle,
-            @Param("endAt") LocalDateTime endAt
-    );
+            @Param("endAt") LocalDateTime endAt);
 
     // 개인 이벤트 — team이 항상 null이므로 JOIN FETCH 불필요
     List<Event> findByCreatedByAndTeamIsNullAndIsSingleAndStartAtBeforeAndEndAtAfter(
-            Long createdBy,
-            Boolean isSingle,
-            LocalDateTime endAt,
-            LocalDateTime startAt
-    );
+            Long createdBy, Boolean isSingle, LocalDateTime endAt, LocalDateTime startAt);
 
     List<Event> findByCreatedByAndTeamIsNullAndIsSingleAndStartAtBefore(
-            Long createdBy,
-            Boolean isSingle,
-            LocalDateTime endAt
-    );
+            Long createdBy, Boolean isSingle, LocalDateTime endAt);
 
     // 팀 이벤트 — 같은 팀의 이벤트만 반환되므로 JOIN FETCH로 team 한 번에 로딩
     @Query("""
@@ -61,8 +51,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("team") Team team,
             @Param("isSingle") Boolean isSingle,
             @Param("endAt") LocalDateTime endAt,
-            @Param("startAt") LocalDateTime startAt
-    );
+            @Param("startAt") LocalDateTime startAt);
 
     @Query("""
     SELECT e FROM Event e JOIN FETCH e.team
@@ -70,10 +59,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     AND e.startAt < :endAt
     """)
     List<Event> findByTeamAndIsSingleAndStartAtBefore(
-            @Param("team") Team team,
-            @Param("isSingle") Boolean isSingle,
-            @Param("endAt") LocalDateTime endAt
-    );
+            @Param("team") Team team, @Param("isSingle") Boolean isSingle, @Param("endAt") LocalDateTime endAt);
 
     @Modifying
     @Query("DELETE FROM Event e WHERE e.createdBy = :createdBy AND e.team IS NULL")

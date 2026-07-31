@@ -2,12 +2,11 @@ package com.inuteamflow.server.domain.vote.dto.response;
 
 import com.inuteamflow.server.domain.vote.entity.VoteTimeSlot;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -29,16 +28,12 @@ public class EventVoteTimeSlotResponse {
     @Schema(description = "참여 인원 수", example = "5")
     private Integer participantCount;
 
-    public static EventVoteTimeSlotResponse create(
-            VoteTimeSlot voteTimeSlot,
-            Integer participantCount
-    ) {
+    public static EventVoteTimeSlotResponse create(VoteTimeSlot voteTimeSlot, Integer participantCount) {
         return new EventVoteTimeSlotResponse(
                 voteTimeSlot.getVoteTimeSlotId(),
                 voteTimeSlot.getVoteDate().getDate(),
                 voteTimeSlot.getSlotStartAt(),
                 voteTimeSlot.getSlotEndAt(),
-                participantCount
-        );
+                participantCount);
     }
 }

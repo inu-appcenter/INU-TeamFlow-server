@@ -1,7 +1,6 @@
 package com.inuteamflow.server.domain.event.enums;
 
 public enum EventColor {
-
     SUN,
     BLOSSOM,
     OCEAN,
@@ -10,5 +9,4 @@ public enum EventColor {
     PEACH,
     LAVENDER,
     MINT
-
 }

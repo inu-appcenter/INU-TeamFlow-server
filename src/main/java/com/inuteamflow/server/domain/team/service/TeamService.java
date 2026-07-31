@@ -7,10 +7,6 @@ import com.inuteamflow.server.domain.invitation.repository.TeamInvitationReposit
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
-import com.inuteamflow.server.domain.teamNotice.entity.TeamNotice;
-import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeImageRepository;
-import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadRepository;
-import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.team.dto.request.TeamCreateRequest;
 import com.inuteamflow.server.domain.team.dto.request.TeamUpdateRequest;
 import com.inuteamflow.server.domain.team.dto.response.TeamDetailResponse;
@@ -21,6 +17,10 @@ import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
+import com.inuteamflow.server.domain.teamNotice.entity.TeamNotice;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeImageRepository;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadRepository;
+import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteAvailabilityRepository;
@@ -28,14 +28,13 @@ import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -72,21 +71,16 @@ public class TeamService {
 
         List<TeamMember> memberships = teamMemberRepository.findByUserWithTeam(user);
 
-        List<Team> teams = memberships.stream()
-                .map(TeamMember::getTeam)
-                .toList();
+        List<Team> teams = memberships.stream().map(TeamMember::getTeam).toList();
 
-        Map<Long, Long> countMap = teamMemberRepository.countByTeams(teams)
-                .stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> (Long) row[1]
-                ));
+        Map<Long, Long> countMap = teamMemberRepository.countByTeams(teams).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
         return memberships.stream()
                 .map(tm -> {
                     Team team = tm.getTeam();
-                    int memberCount = countMap.getOrDefault(team.getTeamId(), 0L).intValue();
+                    int memberCount =
+                            countMap.getOrDefault(team.getTeamId(), 0L).intValue();
                     String imageUrl = s3Service.getTeamImageUrl(team.getImageKey(), team.getCategory());
                     return TeamSummaryResponse.create(team, imageUrl, memberCount);
                 })
@@ -103,11 +97,12 @@ public class TeamService {
      */
     public TeamDetailResponse getTeamDetails(Long teamId, User user) {
 
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+        Team team =
+                teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
         // 현재 로그인한 유저가 해당 팀의 멤버인지 확인
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, user)
+        TeamMember teamMember = teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         int memberCount = teamMemberRepository.countByTeam(team);
@@ -128,10 +123,11 @@ public class TeamService {
      */
     public List<TeamMemberResponse> getTeamMembers(Long teamId, User user) {
 
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+        Team team =
+                teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        teamMemberRepository.findByTeamAndUser(team, user)
+        teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         return teamMemberRepository.findByTeam(team).stream()
@@ -157,17 +153,19 @@ public class TeamService {
     @Transactional
     public void updateMemberRole(User user, Long teamId, Long targetMemberId, TeamRole newRole) {
 
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+        Team team =
+                teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        TeamMember requester = teamMemberRepository.findByTeamAndUser(team, user)
+        TeamMember requester = teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         if (requester.getTeamRole() != TeamRole.LEADER) {
             throw new RestApiException(CustomErrorCode.TEAM_FORBIDDEN);
         }
 
-        TeamMember targetMember = teamMemberRepository.findById(targetMemberId)
+        TeamMember targetMember = teamMemberRepository
+                .findById(targetMemberId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         if (!targetMember.getTeam().getTeamId().equals(teamId)) {
@@ -238,10 +236,11 @@ public class TeamService {
     @Transactional
     public TeamDetailResponse updateTeam(User user, Long teamId, TeamUpdateRequest request) {
 
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+        Team team =
+                teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, user)
+        TeamMember teamMember = teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         // LEADER, MANAGER 만 수정 가능
@@ -262,7 +261,6 @@ public class TeamService {
         String imageUrl = s3Service.getTeamImageUrl(newImageKey, team.getCategory());
 
         return TeamDetailResponse.create(team, teamMember, imageUrl, memberCount);
-
     }
 
     /**
@@ -278,10 +276,11 @@ public class TeamService {
     @Transactional
     public void deleteTeam(User user, Long teamId) {
 
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+        Team team =
+                teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(team, user)
+        TeamMember teamMember = teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         // LEADER 만 삭제 가능
@@ -300,7 +299,8 @@ public class TeamService {
         List<TeamNotice> notices = teamNoticeRepository.findAllByTeam(team);
         if (!notices.isEmpty()) {
             teamNoticeReadRepository.deleteAllByTeamNoticeIn(notices);
-            teamNoticeImageRepository.findAllByTeamNoticeIn(notices)
+            teamNoticeImageRepository
+                    .findAllByTeamNoticeIn(notices)
                     .forEach(img -> s3Service.deleteImage(img.getImageKey()));
             teamNoticeImageRepository.deleteAllByTeamNoticeIn(notices);
             teamNoticeRepository.deleteAll(notices);
@@ -333,10 +333,11 @@ public class TeamService {
      */
     @Transactional
     public void leaveTeam(User user, Long teamId) {
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+        Team team =
+                teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        TeamMember member = teamMemberRepository.findByTeamAndUser(team, user)
+        TeamMember member = teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         // 리더는 탈퇴 불가 (팀 삭제 또는 리더 위임 후 가능)
@@ -362,13 +363,15 @@ public class TeamService {
      */
     @Transactional
     public void kickMember(User user, Long teamId, Long targetMemberId) {
-        Team team = teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+        Team team =
+                teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        TeamMember requester = teamMemberRepository.findByTeamAndUser(team, user)
+        TeamMember requester = teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
-        TeamMember target = teamMemberRepository.findById(targetMemberId)
+        TeamMember target = teamMemberRepository
+                .findById(targetMemberId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         if (!target.getTeam().getTeamId().equals(teamId)) {
@@ -413,6 +416,4 @@ public class TeamService {
         chatRoomService.removeTeamChatRoomMember(member.getTeam(), member.getUser());
         teamMemberRepository.delete(member);
     }
-
-
 }

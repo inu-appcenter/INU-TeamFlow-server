@@ -5,14 +5,13 @@ import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.RecurrenceFrequency;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -77,7 +76,6 @@ public class Recurrence {
                 recurrenceRule.getByMonthDay(),
                 recurrenceRule.getSeriesStartAt(),
                 recurrenceRule.getUntilAt(),
-                recurrenceRule.getOccurrenceCount()
-        );
+                recurrenceRule.getOccurrenceCount());
     }
 }

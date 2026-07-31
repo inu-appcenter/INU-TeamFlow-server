@@ -42,16 +42,11 @@ public class ChatRoom extends BaseEntity {
     }
 
     public static ChatRoom createTeamRoom(Team team) {
-        return ChatRoom.builder()
-                .chatRoomType(ChatRoomType.TEAM)
-                .team(team)
-                .build();
+        return ChatRoom.builder().chatRoomType(ChatRoomType.TEAM).team(team).build();
     }
 
     public static ChatRoom createDirectRoom() {
-        return ChatRoom.builder()
-                .chatRoomType(ChatRoomType.DIRECT)
-                .build();
+        return ChatRoom.builder().chatRoomType(ChatRoomType.DIRECT).build();
     }
 
     public static ChatRoom createGroupRoom(Team team, String roomName) {

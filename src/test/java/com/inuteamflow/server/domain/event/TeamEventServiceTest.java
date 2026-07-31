@@ -1,5 +1,7 @@
 package com.inuteamflow.server.domain.event;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inuteamflow.server.domain.event.dto.Participant;
@@ -27,7 +29,6 @@ import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
-import com.inuteamflow.server.domain.teamNotice.service.TeamNoticeService;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.enums.Department;
@@ -35,6 +36,8 @@ import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.enums.Category;
 import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,11 +50,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * {@link TeamEventService}의 팀 반복 일정에 대한 동작을 검증한다
  * - 참석자가 정상적으로 포함되어 노출되는지 확인한다.
@@ -62,24 +60,44 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class TeamEventServiceTest {
 
-    private static final LocalDateTime SERIES_START_AT =
-            LocalDateTime.of(2026, 7, 6, 10, 0);
-    private static final LocalDateTime SERIES_END_AT =
-            LocalDateTime.of(2026, 7, 6, 11, 0);
+    private static final LocalDateTime SERIES_START_AT = LocalDateTime.of(2026, 7, 6, 10, 0);
+    private static final LocalDateTime SERIES_END_AT = LocalDateTime.of(2026, 7, 6, 11, 0);
 
-    @Autowired private TeamEventService teamEventService;
-    @Autowired private UserRepository userRepository;
-    @Autowired private TeamRepository teamRepository;
-    @Autowired private TeamMemberRepository teamMemberRepository;
-    @Autowired private EventRepository eventRepository;
-    @Autowired private EventParticipantRepository eventParticipantRepository;
-    @Autowired private RecurrenceRuleRepository recurrenceRuleRepository;
-    @Autowired private RecurrenceExceptionRepository recurrenceExceptionRepository;
-    @Autowired private RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
-    @Autowired private EntityManager entityManager;
-    @Autowired private ObjectMapper objectMapper;
+    @Autowired
+    private TeamEventService teamEventService;
 
-    @MockitoBean private NotificationService notificationService;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
+
+    @Autowired
+    private TeamMemberRepository teamMemberRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
+
+    @Autowired
+    private EventParticipantRepository eventParticipantRepository;
+
+    @Autowired
+    private RecurrenceRuleRepository recurrenceRuleRepository;
+
+    @Autowired
+    private RecurrenceExceptionRepository recurrenceExceptionRepository;
+
+    @Autowired
+    private RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private NotificationService notificationService;
 
     private User hostUser;
     private User participantAUser;
@@ -110,32 +128,18 @@ class TeamEventServiceTest {
                 .category(Category.PROJECT)
                 .build());
 
-        host = teamMemberRepository.save(
-                TeamMember.create(team, hostUser, TeamRole.LEADER)
-        );
-        participantA = teamMemberRepository.save(
-                TeamMember.create(team, participantAUser, TeamRole.MEMBER)
-        );
-        participantB = teamMemberRepository.save(
-                TeamMember.create(team, participantBUser, TeamRole.MEMBER)
-        );
-        replacement = teamMemberRepository.save(
-                TeamMember.create(team, replacementUser, TeamRole.MEMBER)
-        );
+        host = teamMemberRepository.save(TeamMember.create(team, hostUser, TeamRole.LEADER));
+        participantA = teamMemberRepository.save(TeamMember.create(team, participantAUser, TeamRole.MEMBER));
+        participantB = teamMemberRepository.save(TeamMember.create(team, participantBUser, TeamRole.MEMBER));
+        replacement = teamMemberRepository.save(TeamMember.create(team, replacementUser, TeamRole.MEMBER));
         teamMemberRepository.flush();
 
-        TeamEventCreateRequest createRequest = createRecurringEventRequest(
-                List.of(
-                        participantA.getTeamMemberId(),
-                        participantB.getTeamMemberId()
-                )
-        );
+        TeamEventCreateRequest createRequest =
+                createRecurringEventRequest(List.of(participantA.getTeamMemberId(), participantB.getTeamMemberId()));
 
-        Long eventId = teamEventService.createTeamEvent(
-                hostUser,
-                team.getTeamId(),
-                createRequest
-        ).getEventId();
+        Long eventId = teamEventService
+                .createTeamEvent(hostUser, team.getTeamId(), createRequest)
+                .getEventId();
 
         entityManager.flush();
         entityManager.clear();
@@ -154,8 +158,7 @@ class TeamEventServiceTest {
 
     @Test
     void setUp_createsRecurringEventWithHostAndTwoParticipants() {
-        List<EventParticipant> participants =
-                eventParticipantRepository.findByEvent(recurringEvent);
+        List<EventParticipant> participants = eventParticipantRepository.findByEvent(recurringEvent);
 
         assertThat(recurringEvent.getIsSingle()).isFalse();
         assertThat(recurrenceRule.getSeriesStartAt()).isEqualTo(SERIES_START_AT);
@@ -167,31 +170,20 @@ class TeamEventServiceTest {
         assertThat(participants)
                 .filteredOn(participant -> participant.getEventRole() == EventRole.PARTICIPANT)
                 .extracting(EventParticipant::getTeamMemberId)
-                .containsExactlyInAnyOrder(
-                        participantA.getTeamMemberId(),
-                        participantB.getTeamMemberId()
-                );
-        assertThat(recurrenceExceptionRepository.findByEventIn(List.of(recurringEvent))).isEmpty();
+                .containsExactlyInAnyOrder(participantA.getTeamMemberId(), participantB.getTeamMemberId());
+        assertThat(recurrenceExceptionRepository.findByEventIn(List.of(recurringEvent)))
+                .isEmpty();
         assertThat(recurrenceExceptionParticipantRepository.findAll()).isEmpty();
     }
 
     @Test
     @DisplayName("THIS_INSTANCE로 단일 회차를 수정했을 때, 참석자의 변경이 저장되며 이에 따른 응답이 올바른지 확인한다.")
-    void updateThisInstance_savesChangedParticipantsAndReturnsModifiedOccurrence()
-            throws JsonProcessingException {
-        TeamEventUpdateRequest request = createThisInstanceRequest(
-                List.of(
-                        participantB.getTeamMemberId(),
-                        replacement.getTeamMemberId()
-                )
-        );
+    void updateThisInstance_savesChangedParticipantsAndReturnsModifiedOccurrence() throws JsonProcessingException {
+        TeamEventUpdateRequest request =
+                createThisInstanceRequest(List.of(participantB.getTeamMemberId(), replacement.getTeamMemberId()));
 
-        EventDetailResponse response = teamEventService.updateTeamEvent(
-                hostUser,
-                team.getTeamId(),
-                recurringEvent.getEventId(),
-                request
-        );
+        EventDetailResponse response =
+                teamEventService.updateTeamEvent(hostUser, team.getTeamId(), recurringEvent.getEventId(), request);
 
         entityManager.flush();
         entityManager.clear();
@@ -200,19 +192,14 @@ class TeamEventServiceTest {
                 .findByEventAndOriginalOccurrenceAt(recurringEvent, targetOccurrenceAt)
                 .orElseThrow();
         List<RecurrenceExceptionParticipant> savedParticipants =
-                recurrenceExceptionParticipantRepository.findByRecurrenceExceptionInWithMember(
-                        List.of(savedException)
-                );
+                recurrenceExceptionParticipantRepository.findByRecurrenceExceptionInWithMember(List.of(savedException));
 
         assertThat(savedException.getModifiedStartAt()).isEqualTo(targetOccurrenceAt.plusHours(2));
         assertThat(savedException.getModifiedEndAt()).isEqualTo(targetOccurrenceAt.plusHours(3));
         assertThat(savedParticipants)
                 .extracting(participant -> participant.getTeamMember().getTeamMemberId())
                 .containsExactlyInAnyOrder(
-                        host.getTeamMemberId(),
-                        participantB.getTeamMemberId(),
-                        replacement.getTeamMemberId()
-                )
+                        host.getTeamMemberId(), participantB.getTeamMemberId(), replacement.getTeamMemberId())
                 .doesNotContain(participantA.getTeamMemberId());
 
         assertThat(response.getEventId()).isEqualTo(recurringEvent.getEventId());
@@ -226,29 +213,17 @@ class TeamEventServiceTest {
         assertThat(response.getParticipants())
                 .extracting(Participant::getTeamMemberId)
                 .containsExactlyInAnyOrder(
-                        host.getTeamMemberId(),
-                        participantB.getTeamMemberId(),
-                        replacement.getTeamMemberId()
-                );
+                        host.getTeamMemberId(), participantB.getTeamMemberId(), replacement.getTeamMemberId());
     }
 
     @Test
     @DisplayName("THIS_AND_FOLLOWING 으로 이후 회차를 수정했을 때, 참석자의 변경이 저장되며 이에 따른 응답이 올바른지 확인한다.")
-    void updateThisAndFollowing_savesChangedParticipantsAndReturnsFollowingSeries()
-            throws JsonProcessingException {
-        TeamEventUpdateRequest request = createThisAndFollowingRequest(
-                List.of(
-                        participantB.getTeamMemberId(),
-                        replacement.getTeamMemberId()
-                )
-        );
+    void updateThisAndFollowing_savesChangedParticipantsAndReturnsFollowingSeries() throws JsonProcessingException {
+        TeamEventUpdateRequest request =
+                createThisAndFollowingRequest(List.of(participantB.getTeamMemberId(), replacement.getTeamMemberId()));
 
-        EventDetailResponse response = teamEventService.updateTeamEvent(
-                hostUser,
-                team.getTeamId(),
-                recurringEvent.getEventId(),
-                request
-        );
+        EventDetailResponse response =
+                teamEventService.updateTeamEvent(hostUser, team.getTeamId(), recurringEvent.getEventId(), request);
 
         entityManager.flush();
         entityManager.clear();
@@ -258,8 +233,7 @@ class TeamEventServiceTest {
                 recurrenceRuleRepository.findByEvent(followingEvent).orElseThrow();
         RecurrenceRule originalRule =
                 recurrenceRuleRepository.findByEvent(recurringEvent).orElseThrow();
-        List<EventParticipant> followingParticipants =
-                eventParticipantRepository.findByEvent(followingEvent);
+        List<EventParticipant> followingParticipants = eventParticipantRepository.findByEvent(followingEvent);
 
         assertThat(response.getEventId()).isNotEqualTo(recurringEvent.getEventId());
         assertThat(followingEvent.getStartAt()).isEqualTo(targetOccurrenceAt);
@@ -270,10 +244,7 @@ class TeamEventServiceTest {
         assertThat(followingParticipants)
                 .extracting(EventParticipant::getTeamMemberId)
                 .containsExactlyInAnyOrder(
-                        host.getTeamMemberId(),
-                        participantB.getTeamMemberId(),
-                        replacement.getTeamMemberId()
-                )
+                        host.getTeamMemberId(), participantB.getTeamMemberId(), replacement.getTeamMemberId())
                 .doesNotContain(participantA.getTeamMemberId());
 
         assertThat(response.getOccurrenceAt()).isNull();
@@ -286,17 +257,13 @@ class TeamEventServiceTest {
         assertThat(response.getParticipants())
                 .extracting(Participant::getTeamMemberId)
                 .containsExactlyInAnyOrder(
-                        host.getTeamMemberId(),
-                        participantB.getTeamMemberId(),
-                        replacement.getTeamMemberId()
-                );
+                        host.getTeamMemberId(), participantB.getTeamMemberId(), replacement.getTeamMemberId());
     }
 
     @Test
     @DisplayName("특정 월에 대한 반복 일정 응답이 올바른지 검증한다.")
     void getTeamEventList_returnsAllOccurrencesForRequestedMonth() {
-        List<EventListResponse> responses =
-                teamEventService.getTeamEventList(hostUser, team.getTeamId(), 2026, 7);
+        List<EventListResponse> responses = teamEventService.getTeamEventList(hostUser, team.getTeamId(), 2026, 7);
 
         assertThat(responses).hasSize(10);
         assertThat(responses)
@@ -311,8 +278,7 @@ class TeamEventServiceTest {
                         SERIES_START_AT.plusDays(6),
                         SERIES_START_AT.plusDays(7),
                         SERIES_START_AT.plusDays(8),
-                        SERIES_START_AT.plusDays(9)
-                );
+                        SERIES_START_AT.plusDays(9));
         assertThat(responses).allSatisfy(response -> {
             assertThat(response.getEventId()).isEqualTo(recurringEvent.getEventId());
             assertThat(response.getTeamId()).isEqualTo(team.getTeamId());
@@ -325,10 +291,7 @@ class TeamEventServiceTest {
             assertThat(response.getParticipants())
                     .extracting(Participant::getTeamMemberId)
                     .containsExactlyInAnyOrder(
-                            host.getTeamMemberId(),
-                            participantA.getTeamMemberId(),
-                            participantB.getTeamMemberId()
-                    );
+                            host.getTeamMemberId(), participantA.getTeamMemberId(), participantB.getTeamMemberId());
         });
     }
 
@@ -344,10 +307,10 @@ class TeamEventServiceTest {
                 .build());
     }
 
-    private TeamEventCreateRequest createRecurringEventRequest(
-            List<Long> participantIds
-    ) throws JsonProcessingException {
-        return objectMapper.readValue("""
+    private TeamEventCreateRequest createRecurringEventRequest(List<Long> participantIds)
+            throws JsonProcessingException {
+        return objectMapper.readValue(
+                """
                 {
                   "title": "주간 진행 회의",
                   "description": "반복 일정 참여자 테스트",
@@ -367,35 +330,30 @@ class TeamEventServiceTest {
                   }
                 }
                 """.formatted(
-                SERIES_START_AT,
-                SERIES_END_AT,
-                objectMapper.writeValueAsString(participantIds),
-                SERIES_START_AT
-        ), TeamEventCreateRequest.class);
+                                SERIES_START_AT,
+                                SERIES_END_AT,
+                                objectMapper.writeValueAsString(participantIds),
+                                SERIES_START_AT),
+                TeamEventCreateRequest.class);
     }
 
-    private TeamEventUpdateRequest createThisInstanceRequest(
-            List<Long> participantIds
-    ) throws JsonProcessingException {
+    private TeamEventUpdateRequest createThisInstanceRequest(List<Long> participantIds) throws JsonProcessingException {
         return createUpdateRequest(
                 RecurrenceEditScope.THIS_INSTANCE,
                 participantIds,
                 targetOccurrenceAt.plusHours(2),
                 targetOccurrenceAt.plusHours(3),
-                false
-        );
+                false);
     }
 
-    private TeamEventUpdateRequest createThisAndFollowingRequest(
-            List<Long> participantIds
-    ) throws JsonProcessingException {
+    private TeamEventUpdateRequest createThisAndFollowingRequest(List<Long> participantIds)
+            throws JsonProcessingException {
         return createUpdateRequest(
                 RecurrenceEditScope.THIS_AND_FOLLOWING,
                 participantIds,
                 targetOccurrenceAt,
                 targetOccurrenceAt.plusHours(1),
-                true
-        );
+                true);
     }
 
     private TeamEventUpdateRequest createUpdateRequest(
@@ -403,10 +361,9 @@ class TeamEventServiceTest {
             List<Long> participantIds,
             LocalDateTime startAt,
             LocalDateTime endAt,
-            boolean includeRecurrence
-    ) throws JsonProcessingException {
-        String recurrenceJson = includeRecurrence
-                ? """
+            boolean includeRecurrence)
+            throws JsonProcessingException {
+        String recurrenceJson = includeRecurrence ? """
                   {
                     "freq": "DAILY",
                     "intervalValue": 1,
@@ -416,10 +373,10 @@ class TeamEventServiceTest {
                     "untilAt": null,
                     "occurrenceCount": 8
                   }
-                  """.formatted(startAt)
-                : "null";
+                  """.formatted(startAt) : "null";
 
-        return objectMapper.readValue("""
+        return objectMapper.readValue(
+                """
                 {
                   "title": "수정된 주간 진행 회의",
                   "description": "%s 참여자 변경",
@@ -434,24 +391,20 @@ class TeamEventServiceTest {
                   "recurrence": %s
                 }
                 """.formatted(
-                editScope,
-                startAt,
-                endAt,
-                objectMapper.writeValueAsString(participantIds),
-                editScope,
-                targetOccurrenceAt,
-                recurrenceJson
-        ), TeamEventUpdateRequest.class);
+                                editScope,
+                                startAt,
+                                endAt,
+                                objectMapper.writeValueAsString(participantIds),
+                                editScope,
+                                targetOccurrenceAt,
+                                recurrenceJson),
+                TeamEventUpdateRequest.class);
     }
 
     private void actingAs(User user) {
         UserDetailsImpl userDetails = new UserDetailsImpl(user);
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                )
-        );
+        SecurityContextHolder.getContext()
+                .setAuthentication(
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
     }
 }

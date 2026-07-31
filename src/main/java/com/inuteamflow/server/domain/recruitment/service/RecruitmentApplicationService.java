@@ -21,16 +21,15 @@ import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.enums.Status;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -63,17 +62,19 @@ public class RecruitmentApplicationService {
      *                       모집 기한이 지났거나, 사용자가 모집자 본인이거나, 이미 지원한 경우
      */
     @Transactional
-    public ApplicationSummaryResponse apply (Long recruitmentId, ApplicationCreateRequest request, User user) {
+    public ApplicationSummaryResponse apply(Long recruitmentId, ApplicationCreateRequest request, User user) {
 
         if (!Boolean.TRUE.equals(user.getIsSchoolVerified())) {
             throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFICATION_REQUIRED);
         }
 
-        Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
+        Recruitment recruitment = recruitmentRepository
+                .findById(recruitmentId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
 
         boolean isRecruiter = recruitment.getRecruiter().getUserId().equals(user.getUserId());
-        boolean hasApplied = recruitmentApplicationRepository.existsByRecruitmentAndCreatedBy(recruitment, user.getUserId());
+        boolean hasApplied =
+                recruitmentApplicationRepository.existsByRecruitmentAndCreatedBy(recruitment, user.getUserId());
 
         if (!recruitment.getIsOpened()) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_CLOSED);
@@ -97,8 +98,8 @@ public class RecruitmentApplicationService {
                 "[" + recruitment.getTitle() + "] 새 지원자가 있어요",
                 user.getName() + "님이 지원서를 보냈어요",
                 NotificationType.APPLICATION,
-                "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/" + application.getRecruitmentApplicationId()
-        );
+                "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/"
+                        + application.getRecruitmentApplicationId());
 
         return ApplicationSummaryResponse.of(application, user.getName());
     }
@@ -114,8 +115,10 @@ public class RecruitmentApplicationService {
      * @return 지원자 이름을 포함한 지원서 요약 목록
      * @throws RestApiException 모집글을 찾을 수 없거나 사용자가 모집자가 아닌 경우
      */
-    public Page<ApplicationSummaryResponse> getApplicationsByRecruitment(Long recruitmentId, User user, Pageable pageable) {
-        Recruitment recruitment = recruitmentRepository.findById(recruitmentId)
+    public Page<ApplicationSummaryResponse> getApplicationsByRecruitment(
+            Long recruitmentId, User user, Pageable pageable) {
+        Recruitment recruitment = recruitmentRepository
+                .findById(recruitmentId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
 
         if (!recruitment.getRecruiter().getUserId().equals(user.getUserId())) {
@@ -131,8 +134,7 @@ public class RecruitmentApplicationService {
                 .distinct()
                 .toList();
 
-        Map<Long, String> nameMap = userRepository.findAllById(applicantIds)
-                .stream()
+        Map<Long, String> nameMap = userRepository.findAllById(applicantIds).stream()
                 .collect(Collectors.toMap(User::getUserId, User::getName));
 
         return applications.map(application -> {
@@ -149,7 +151,8 @@ public class RecruitmentApplicationService {
      * @return 사용자가 신청한 지원서 요약 목록
      */
     public Page<MyApplicationSummaryResponse> getMyApplications(User user, Pageable pageable) {
-        return recruitmentApplicationRepository.findAllByCreatedBy(user.getUserId(), pageable)
+        return recruitmentApplicationRepository
+                .findAllByCreatedBy(user.getUserId(), pageable)
                 .map(MyApplicationSummaryResponse::from);
     }
 
@@ -169,15 +172,18 @@ public class RecruitmentApplicationService {
                 .findById(applicationId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_NOT_FOUND));
 
-        boolean isRecruiter = recruitmentApplication.getRecruitment().getRecruiter().getUserId().equals(user.getUserId());
+        boolean isRecruiter = recruitmentApplication
+                .getRecruitment()
+                .getRecruiter()
+                .getUserId()
+                .equals(user.getUserId());
 
-        if (!recruitmentApplication.getCreatedBy().equals(user.getUserId()) &&
-                !isRecruiter) {
+        if (!recruitmentApplication.getCreatedBy().equals(user.getUserId()) && !isRecruiter) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICANT_FORBIDDEN);
         }
 
-        User applicant = userRepository.findById(recruitmentApplication.getCreatedBy())
-                .orElse(null);
+        User applicant =
+                userRepository.findById(recruitmentApplication.getCreatedBy()).orElse(null);
 
         return ApplicationDetailResponse.of(
                 recruitmentApplication,
@@ -185,8 +191,7 @@ public class RecruitmentApplicationService {
                 applicant != null ? applicant.getName() : null,
                 applicant != null ? applicant.getDepartment() : null,
                 applicant != null ? applicant.getStudentNumber() : null,
-                isRecruiter
-        );
+                isRecruiter);
     }
 
     /**
@@ -227,9 +232,8 @@ public class RecruitmentApplicationService {
      *                       아니거나, 지원자를 찾을 수 없는 경우
      */
     @Transactional
-    public ApplicationStatusResponse updateDecisionStatus(Long applicationId,
-                                                          ApplicationStatusUpdateRequest request,
-                                                          User user) {
+    public ApplicationStatusResponse updateDecisionStatus(
+            Long applicationId, ApplicationStatusUpdateRequest request, User user) {
         RecruitmentApplication recruitmentApplication = recruitmentApplicationRepository
                 .findById(applicationId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_NOT_FOUND));
@@ -246,7 +250,8 @@ public class RecruitmentApplicationService {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
         }
 
-        User applicant = userRepository.findById(recruitmentApplication.getCreatedBy())
+        User applicant = userRepository
+                .findById(recruitmentApplication.getCreatedBy())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
 
         if (newStatus == Status.ACCEPTED) {
@@ -258,9 +263,7 @@ public class RecruitmentApplicationService {
                     .isPresent();
 
             if (!alreadyMember) {
-                teamMemberRepository.save(
-                        TeamMember.create(recruitment.getTeam(), applicant, TeamRole.MEMBER)
-                );
+                teamMemberRepository.save(TeamMember.create(recruitment.getTeam(), applicant, TeamRole.MEMBER));
             }
             chatRoomService.addTeamChatRoomMember(recruitment.getTeam(), applicant);
 
@@ -269,8 +272,8 @@ public class RecruitmentApplicationService {
                     "합격을 축하드려요!",
                     "'" + recruitment.getTitle() + "' 모집에 합격하셨어요",
                     NotificationType.APPLICATION,
-                    "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/" + recruitmentApplication.getRecruitmentApplicationId()
-            );
+                    "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/"
+                            + recruitmentApplication.getRecruitmentApplicationId());
         } else {
             recruitmentApplication.decline();
 
@@ -279,8 +282,8 @@ public class RecruitmentApplicationService {
                     "지원 결과를 알려드려요",
                     "'" + recruitment.getTitle() + "' 모집에 아쉽게도 선발되지 못했어요",
                     NotificationType.APPLICATION,
-                    "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/" + recruitmentApplication.getRecruitmentApplicationId()
-            );
+                    "/recruitment/" + recruitment.getRecruitmentId() + "/apply/applications/"
+                            + recruitmentApplication.getRecruitmentApplicationId());
         }
 
         return ApplicationStatusResponse.from(recruitmentApplication);

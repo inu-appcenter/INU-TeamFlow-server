@@ -42,13 +42,7 @@ public class Notification extends BaseEntity {
 
     @Builder
     private Notification(
-            User receiver,
-            String title,
-            String content,
-            NotificationType type,
-            String redirectUrl,
-            Boolean isRead
-    ) {
+            User receiver, String title, String content, NotificationType type, String redirectUrl, Boolean isRead) {
         this.receiver = receiver;
         this.title = title;
         this.content = content;
@@ -58,12 +52,7 @@ public class Notification extends BaseEntity {
     }
 
     public static Notification create(
-            User receiver,
-            String title,
-            String content,
-            NotificationType type,
-            String redirectUrl
-    ) {
+            User receiver, String title, String content, NotificationType type, String redirectUrl) {
         return Notification.builder()
                 .receiver(receiver)
                 .title(title)
@@ -77,5 +66,4 @@ public class Notification extends BaseEntity {
     public void read() {
         this.isRead = true;
     }
-
 }

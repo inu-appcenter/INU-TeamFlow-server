@@ -23,82 +23,67 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1")
 public class TeamNoticeController implements TeamNoticeControllerDocument {
 
-	private final TeamNoticeService teamNoticeService;
+    private final TeamNoticeService teamNoticeService;
 
-	@GetMapping("/teams/{teamId}/notices")
-	public ResponseEntity<Page<TeamNoticeSummaryResponse>> getTeamNotices(
-			@PathVariable Long teamId,
-			@AuthenticationPrincipal UserDetailsImpl userDetails,
-			@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-	) {
-		return ResponseEntity
-                .status(HttpStatus.OK)
-				.body(teamNoticeService.getTeamNotices(teamId, userDetails.getUser(), pageable));
-	}
+    @GetMapping("/teams/{teamId}/notices")
+    public ResponseEntity<Page<TeamNoticeSummaryResponse>> getTeamNotices(
+            @PathVariable Long teamId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamNoticeService.getTeamNotices(teamId, userDetails.getUser(), pageable));
+    }
 
-	@GetMapping("/teams/{teamId}/notices/{noticeId}")
-	public ResponseEntity<TeamNoticeDetailResponse> getTeamNotice(
-			@PathVariable Long teamId,
-			@PathVariable Long noticeId,
-			@AuthenticationPrincipal UserDetailsImpl userDetails
-	) {
-		return ResponseEntity
-                .status(HttpStatus.OK)
-				.body(teamNoticeService.getTeamNotice(teamId, noticeId, userDetails.getUser()));
-	}
+    @GetMapping("/teams/{teamId}/notices/{noticeId}")
+    public ResponseEntity<TeamNoticeDetailResponse> getTeamNotice(
+            @PathVariable Long teamId,
+            @PathVariable Long noticeId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamNoticeService.getTeamNotice(teamId, noticeId, userDetails.getUser()));
+    }
 
-	@PostMapping("/teams/{teamId}/notices")
-	public ResponseEntity<TeamNoticeDetailResponse> createTeamNotice(
-			@PathVariable Long teamId,
-			@Valid @RequestBody TeamNoticeCreateRequest request,
-			@AuthenticationPrincipal UserDetailsImpl userDetails
-	) {
-		return ResponseEntity
-                .status(HttpStatus.CREATED)
-				.body(teamNoticeService.createTeamNotice(teamId, userDetails.getUser(), request));
-	}
+    @PostMapping("/teams/{teamId}/notices")
+    public ResponseEntity<TeamNoticeDetailResponse> createTeamNotice(
+            @PathVariable Long teamId,
+            @Valid @RequestBody TeamNoticeCreateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(teamNoticeService.createTeamNotice(teamId, userDetails.getUser(), request));
+    }
 
-	@PutMapping("/teams/{teamId}/notices/{noticeId}")
-	public ResponseEntity<TeamNoticeDetailResponse> updateTeamNotice(
-			@PathVariable Long teamId,
-			@PathVariable Long noticeId,
-			@Valid @RequestBody TeamNoticeUpdateRequest request,
-			@AuthenticationPrincipal UserDetailsImpl userDetails
-	) {
-		return ResponseEntity
-                .status(HttpStatus.OK)
-				.body(teamNoticeService.updateTeamNotice(teamId, noticeId, userDetails.getUser(), request));
-	}
+    @PutMapping("/teams/{teamId}/notices/{noticeId}")
+    public ResponseEntity<TeamNoticeDetailResponse> updateTeamNotice(
+            @PathVariable Long teamId,
+            @PathVariable Long noticeId,
+            @Valid @RequestBody TeamNoticeUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamNoticeService.updateTeamNotice(teamId, noticeId, userDetails.getUser(), request));
+    }
 
-	@DeleteMapping("/teams/{teamId}/notices/{noticeId}")
-	public ResponseEntity<Void> deleteTeamNotice(
-			@PathVariable Long teamId,
-			@PathVariable Long noticeId,
-			@AuthenticationPrincipal UserDetailsImpl userDetails
-	) {
-		teamNoticeService.deleteTeamNotice(teamId, noticeId, userDetails.getUser());
-		return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .build();
-	}
+    @DeleteMapping("/teams/{teamId}/notices/{noticeId}")
+    public ResponseEntity<Void> deleteTeamNotice(
+            @PathVariable Long teamId,
+            @PathVariable Long noticeId,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        teamNoticeService.deleteTeamNotice(teamId, noticeId, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
 
-	@GetMapping("/team-notices/me")
-	public ResponseEntity<Page<TeamNoticeSummaryResponse>> getMyTeamNotices(
-			@AuthenticationPrincipal UserDetailsImpl userDetails,
-			@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-	) {
-		return ResponseEntity
-                .status(HttpStatus.OK)
-				.body(teamNoticeService.getMyTeamNotices(userDetails.getUser(), pageable));
-	}
+    @GetMapping("/team-notices/me")
+    public ResponseEntity<Page<TeamNoticeSummaryResponse>> getMyTeamNotices(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamNoticeService.getMyTeamNotices(userDetails.getUser(), pageable));
+    }
 
-	@GetMapping("/notices/me")
-	public ResponseEntity<Page<TeamNoticeSummaryResponse>> getMyNotices(
-			@AuthenticationPrincipal UserDetailsImpl userDetails,
-			@ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-	) {
-		return ResponseEntity
-				.status(HttpStatus.OK)
-				.body(teamNoticeService.getMyNotices(userDetails.getUser(), pageable));
-	}
+    @GetMapping("/notices/me")
+    public ResponseEntity<Page<TeamNoticeSummaryResponse>> getMyNotices(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(teamNoticeService.getMyNotices(userDetails.getUser(), pageable));
+    }
 }
