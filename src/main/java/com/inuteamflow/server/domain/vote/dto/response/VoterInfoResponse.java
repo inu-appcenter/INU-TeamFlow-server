@@ -18,9 +18,13 @@ public class VoterInfoResponse {
     @Schema(description = "학과", example = "COMPUTER_SCIENCE")
     private Department department;
 
+    @Schema(description = "팀 멤버 ID", example = "131")
+    private Long teamMemberId;
+
     public static VoterInfoResponse create(VoteParticipant voteParticipant) {
         return new VoterInfoResponse(
                 voteParticipant.getTeamMember().getUser().getName(),
-                voteParticipant.getTeamMember().getUser().getDepartment());
+                voteParticipant.getTeamMember().getUser().getDepartment(),
+                voteParticipant.getTeamMember().getTeamMemberId());
     }
 }
