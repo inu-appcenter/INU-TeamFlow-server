@@ -37,7 +37,6 @@ public class InfoPostSummaryResponse {
                 infoPost.isLinkable(),
                 infoPost.getTitle(),
                 thumbnailUrl,
-                recruitmentCount
-        );
+                recruitmentCount);
     }
 }

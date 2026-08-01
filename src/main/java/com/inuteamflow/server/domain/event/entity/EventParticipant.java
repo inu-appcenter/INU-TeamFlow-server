@@ -11,10 +11,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "event_participant",
-        uniqueConstraints = @UniqueConstraint(
-                columnNames = {"event_id", "team_member_id"}
-        ))
+@Table(name = "event_participant", uniqueConstraints = @UniqueConstraint(columnNames = {"event_id", "team_member_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EventParticipant extends BaseTimeEntity {
 
@@ -36,21 +33,13 @@ public class EventParticipant extends BaseTimeEntity {
     private EventRole eventRole;
 
     @Builder
-    private EventParticipant(
-            Event event,
-            TeamMember teamMember,
-            EventRole eventRole
-    ) {
+    private EventParticipant(Event event, TeamMember teamMember, EventRole eventRole) {
         this.event = event;
         this.teamMember = teamMember;
         this.eventRole = eventRole;
     }
 
-    public static EventParticipant create(
-            Event event,
-            TeamMember teamMember,
-            EventRole eventRole
-    ) {
+    public static EventParticipant create(Event event, TeamMember teamMember, EventRole eventRole) {
         return EventParticipant.builder()
                 .event(event)
                 .teamMember(teamMember)

@@ -44,9 +44,7 @@ public class AuthService {
      * @throws RestApiException 사용자 이름 또는 이메일이 이미 사용 중인 경우
      */
     @Transactional
-    public MyInfoResponse signUp(
-            SignupRequest request
-    ) {
+    public MyInfoResponse signUp(SignupRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RestApiException(CustomErrorCode.USER_USERNAME_CONFLICT);
         }
@@ -68,11 +66,10 @@ public class AuthService {
      * @return 발급된 액세스 토큰과 리프레시 토큰
      */
     @Transactional
-    public TokenResponse login(
-            LoginRequest request
-    ) {
-        Authentication authentication = authenticationManagerBuilder.getObject().authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+    public TokenResponse login(LoginRequest request) {
+        Authentication authentication = authenticationManagerBuilder
+                .getObject()
+                .authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
         return jwtTokenProvider.generateToken(authentication);
     }
 
@@ -85,17 +82,17 @@ public class AuthService {
      *                          또는 사용자를 찾을 수 없는 경우
      */
     @Transactional
-    public TokenResponse reissue(
-            String refreshToken
-    ) {
-        RefreshToken savedRefreshToken = refreshTokenRepository.findByRefreshToken(refreshToken)
+    public TokenResponse reissue(String refreshToken) {
+        RefreshToken savedRefreshToken = refreshTokenRepository
+                .findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.JWT_REFRESH_NOT_FOUND));
 
         if (!savedRefreshToken.getRefreshToken().equals(refreshToken)) {
             throw new RestApiException(CustomErrorCode.JWT_REFRESH_NOT_MATCH);
         }
 
-        User user = userRepository.findById(savedRefreshToken.getUserId())
+        User user = userRepository
+                .findById(savedRefreshToken.getUserId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
         return jwtTokenProvider.generateTokenByUsername(user.getUsername());
     }
@@ -113,10 +110,7 @@ public class AuthService {
      *                          또는 사용자를 찾을 수 없는 경우
      */
     @Transactional
-    public MyInfoResponse verifySchool(
-            User user,
-            VerifySchoolRequest request
-    ) {
+    public MyInfoResponse verifySchool(User user, VerifySchoolRequest request) {
         if (user.getIsSchoolVerified()) {
             throw new RestApiException(CustomErrorCode.USER_SCHOOL_ALREADY_VERIFIED);
         }
@@ -126,10 +120,8 @@ public class AuthService {
             throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFY_UNAVAILABLE);
         }
 
-        String loginCheckResult = schoolLoginRepository.loginCheck(
-                request.getStudentNumber(),
-                request.getPortalPassword()
-        );
+        String loginCheckResult =
+                schoolLoginRepository.loginCheck(request.getStudentNumber(), request.getPortalPassword());
 
         if (loginCheckResult == null || "N".equalsIgnoreCase(loginCheckResult.trim())) {
             throw new RestApiException(CustomErrorCode.USER_SCHOOL_VERIFY_FAILED);
@@ -139,7 +131,8 @@ public class AuthService {
             throw new RestApiException(CustomErrorCode.USER_STUDENT_NUMBER_CONFLICT);
         }
 
-        User requester = userRepository.findById(user.getUserId())
+        User requester = userRepository
+                .findById(user.getUserId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
         requester.verifySchool(request.getStudentNumber());
 

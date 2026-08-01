@@ -27,44 +27,29 @@ public class NotificationController implements NotificationControllerDocument {
     public ResponseEntity<NotificationSliceResponse> getNotifications(
             @RequestParam(required = false) NotificationType type,
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.OK)
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK)
                 .body(notificationService.getNotifications(type, userDetails.getUser(), pageable));
     }
 
     @PatchMapping("/{notificationId}")
     public ResponseEntity<Void> readNotification(
-            @PathVariable Long notificationId,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+            @PathVariable Long notificationId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         notificationService.readNotification(notificationId, userDetails.getUser());
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .build();
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @PatchMapping
     public ResponseEntity<Void> readNotifications(
-            @Valid @RequestBody NotificationRequest request,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+            @Valid @RequestBody NotificationRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         notificationService.readNotifications(request, userDetails.getUser());
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .build();
+        return ResponseEntity.status(HttpStatus.OK).build();
     }
 
     @DeleteMapping
     public ResponseEntity<Void> deleteNotifications(
-            @Valid @RequestBody NotificationRequest request,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+            @Valid @RequestBody NotificationRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         notificationService.deleteNotifications(request, userDetails.getUser());
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
-
 }

@@ -33,8 +33,7 @@ public class InfoPostController implements InfoPostControllerDocument {
             @RequestParam(required = false) InfoPostCategory category,
             @RequestParam(required = false) InfoPostType type,
             @RequestParam(required = false) String keyword,
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getInfoPosts(category, type, keyword, pageable));
     }
@@ -42,26 +41,21 @@ public class InfoPostController implements InfoPostControllerDocument {
     @GetMapping("/me")
     public ResponseEntity<Page<InfoPostSummaryResponse>> getMyInfoPosts(
             @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getMyInfoPosts(userDetails.getUser(), pageable));
     }
 
     @GetMapping("/{infoPostId}")
     public ResponseEntity<InfoPostDetailResponse> getInfoPost(
-            @PathVariable Long infoPostId,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+            @PathVariable Long infoPostId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getInfoPost(infoPostId, userDetails.getUser()));
     }
 
     @PostMapping
     public ResponseEntity<InfoPostDetailResponse> createInfoPost(
-            @Valid @RequestBody InfoPostCreateRequest request,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+            @Valid @RequestBody InfoPostCreateRequest request, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(infoPostService.createInfoPost(request, userDetails.getUser()));
     }
@@ -70,17 +64,14 @@ public class InfoPostController implements InfoPostControllerDocument {
     public ResponseEntity<InfoPostDetailResponse> updateInfoPost(
             @PathVariable Long infoPostId,
             @Valid @RequestBody InfoPostUpdateRequest request,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.updateInfoPost(infoPostId, request, userDetails.getUser()));
     }
 
     @DeleteMapping("/{infoPostId}")
     public ResponseEntity<Void> deleteInfoPost(
-            @PathVariable Long infoPostId,
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+            @PathVariable Long infoPostId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
         infoPostService.deleteInfoPost(infoPostId, userDetails.getUser());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
@@ -88,8 +79,7 @@ public class InfoPostController implements InfoPostControllerDocument {
     @GetMapping("/{infoPostId}/recruitments")
     public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitmentsByInfoPost(
             @PathVariable Long infoPostId,
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getRecruitmentsByInfoPost(infoPostId, pageable));
     }

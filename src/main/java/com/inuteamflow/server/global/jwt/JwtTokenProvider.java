@@ -9,6 +9,11 @@ import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import java.security.Key;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -17,16 +22,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.stream.Collectors;
-
 @Component
 public class JwtTokenProvider {
 
-    public static final long ACCESS_TOKEN_VALID_TIME = 3 * 60 * 60 * 1000L;   // 3시간
+    public static final long ACCESS_TOKEN_VALID_TIME = 3 * 60 * 60 * 1000L; // 3시간
     public static final long REFRESH_TOKEN_VALID_TIME = 3 * 24 * 60 * 60 * 1000L; // 3일
 
     private final Key key;
@@ -36,8 +35,7 @@ public class JwtTokenProvider {
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secretKey,
             UserDetailsServiceImpl userDetailsService,
-            RefreshTokenRepository refreshTokenRepository
-    ) {
+            RefreshTokenRepository refreshTokenRepository) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
         this.userDetailsService = userDetailsService;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -68,7 +66,8 @@ public class JwtTokenProvider {
             throw new RestApiException(CustomErrorCode.JWT_INVALID);
         }
 
-        Collection<? extends GrantedAuthority> authorities = Arrays.stream(claims.get("auth").toString().split(","))
+        Collection<? extends GrantedAuthority> authorities = Arrays.stream(
+                        claims.get("auth").toString().split(","))
                 .map(SimpleGrantedAuthority::new)
                 .toList();
         UserDetails userDetails = userDetailsService.loadUserByUsername(claims.getSubject());
@@ -92,7 +91,11 @@ public class JwtTokenProvider {
 
     private Claims parseClaims(String accessToken) {
         try {
-            return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(accessToken).getBody();
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(accessToken)
+                    .getBody();
         } catch (ExpiredJwtException e) {
             return e.getClaims();
         }
@@ -121,18 +124,19 @@ public class JwtTokenProvider {
 
     public TokenResponse generateTokenByUsername(String username) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByUsername(username);
-        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        Authentication authentication =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
         return generateToken(authentication);
     }
 
     private void upsertRefreshToken(User user, String refreshTokenValue) {
-        refreshTokenRepository.findByUserId(user.getUserId())
+        refreshTokenRepository
+                .findByUserId(user.getUserId())
                 .ifPresentOrElse(
                         refreshToken -> refreshToken.updateToken(refreshTokenValue),
                         () -> refreshTokenRepository.save(RefreshToken.builder()
                                 .user(user)
                                 .refreshToken(refreshTokenValue)
-                                .build())
-                );
+                                .build()));
     }
 }

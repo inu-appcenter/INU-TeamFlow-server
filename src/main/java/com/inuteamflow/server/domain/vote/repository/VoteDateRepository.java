@@ -2,12 +2,11 @@ package com.inuteamflow.server.domain.vote.repository;
 
 import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteDate;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
 
 public interface VoteDateRepository extends JpaRepository<VoteDate, Long> {
 

@@ -1,7 +1,7 @@
 package com.inuteamflow.server.domain.user.dto.request;
 
-import com.inuteamflow.server.domain.user.enums.UserConstants;
 import com.inuteamflow.server.domain.user.enums.Department;
+import com.inuteamflow.server.domain.user.enums.UserConstants;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -42,5 +42,4 @@ public class SignupRequest {
     public String getImageKey() {
         return imageKey != null ? imageKey : UserConstants.DEFAULT_PROFILE_KEY;
     }
-
 }

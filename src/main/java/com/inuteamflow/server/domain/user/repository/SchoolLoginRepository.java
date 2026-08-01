@@ -19,19 +19,11 @@ public class SchoolLoginRepository {
     @Qualifier("oracleJdbcTemplate")
     private final JdbcTemplate oracleJdbcTemplate;
 
-    public String loginCheck(
-            String username,
-            String password
-    ) {
+    public String loginCheck(String username, String password) {
         log.info("학교 로그인 조회 id: {}", username);
 
         try {
-            String result = oracleJdbcTemplate.queryForObject(
-                    LOGIN_CHECK_SQL,
-                    String.class,
-                    username,
-                    password
-            );
+            String result = oracleJdbcTemplate.queryForObject(LOGIN_CHECK_SQL, String.class, username, password);
             log.info("학교 DB 조회 결과: {}", result);
             return result;
         } catch (DataAccessException exception) {

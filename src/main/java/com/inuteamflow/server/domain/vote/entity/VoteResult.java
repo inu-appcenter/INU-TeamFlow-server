@@ -3,12 +3,11 @@ package com.inuteamflow.server.domain.vote.entity;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.global.BaseTimeEntity;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -40,12 +39,7 @@ public class VoteResult extends BaseTimeEntity {
 
     @Builder
     private VoteResult(
-            Vote vote,
-            Event event,
-            Boolean isAllDay,
-            LocalDateTime selectedStartAt,
-            LocalDateTime selectedEndAt
-    ) {
+            Vote vote, Event event, Boolean isAllDay, LocalDateTime selectedStartAt, LocalDateTime selectedEndAt) {
         this.vote = vote;
         this.event = event;
         this.isAllDay = isAllDay;
@@ -54,12 +48,7 @@ public class VoteResult extends BaseTimeEntity {
     }
 
     public static VoteResult create(
-            Vote vote,
-            Event event,
-            Boolean isAllDay,
-            LocalDateTime selectedStartAt,
-            LocalDateTime selectedEndAt
-    ) {
+            Vote vote, Event event, Boolean isAllDay, LocalDateTime selectedStartAt, LocalDateTime selectedEndAt) {
         return VoteResult.builder()
                 .vote(vote)
                 .event(event)

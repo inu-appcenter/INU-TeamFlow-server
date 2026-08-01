@@ -9,13 +9,12 @@ import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -41,11 +40,9 @@ public class FcmService {
      * @return 등록되었거나 기존에 존재하는 FCM 토큰 정보
      */
     @Transactional
-    public FcmResponse createFcmToken(
-            User user,
-            FcmRequest request
-    ) {
-        FcmToken fcmToken = fcmTokenRepository.findByCreatedByAndFcmToken(user.getUserId(), request.getToken())
+    public FcmResponse createFcmToken(User user, FcmRequest request) {
+        FcmToken fcmToken = fcmTokenRepository
+                .findByCreatedByAndFcmToken(user.getUserId(), request.getToken())
                 .orElseGet(() -> fcmTokenRepository.save(FcmToken.create(request)));
         return FcmResponse.create(fcmToken);
     }
@@ -60,11 +57,9 @@ public class FcmService {
      * @throws RestApiException 사용자에게 등록된 토큰을 찾을 수 없는 경우
      */
     @Transactional
-    public void deleteFcmToken(
-            User user,
-            FcmRequest request
-    ) {
-        FcmToken fcmToken = fcmTokenRepository.findByCreatedByAndFcmToken(user.getUserId(), request.getToken())
+    public void deleteFcmToken(User user, FcmRequest request) {
+        FcmToken fcmToken = fcmTokenRepository
+                .findByCreatedByAndFcmToken(user.getUserId(), request.getToken())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.FCM_TOKEN_NOT_FOUND));
         fcmTokenRepository.delete(fcmToken);
     }
@@ -83,7 +78,13 @@ public class FcmService {
      * @param notificationId 알림 ID
      */
     @Transactional
-    public void sendToUser(Long receiverId, String title, String body, String redirectUrl, NotificationType type, Long notificationId) {
+    public void sendToUser(
+            Long receiverId,
+            String title,
+            String body,
+            String redirectUrl,
+            NotificationType type,
+            Long notificationId) {
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedBy(receiverId);
         if (tokens.isEmpty()) return;
 
@@ -120,7 +121,8 @@ public class FcmService {
      * @param type 알림 유형
      */
     @Transactional
-    public void sendToUsers(List<Long> receiverIds, String title, String body, String redirectUrl, NotificationType type) {
+    public void sendToUsers(
+            List<Long> receiverIds, String title, String body, String redirectUrl, NotificationType type) {
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
         if (tokens.isEmpty()) return;
 
@@ -137,7 +139,8 @@ public class FcmService {
 
             try {
                 BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
-                log.info("FCM 다중 발송 완료 - userIds: {}, 성공: {}/{}", receiverIds, response.getSuccessCount(), batch.size());
+                log.info(
+                        "FCM 다중 발송 완료 - userIds: {}, 성공: {}/{}", receiverIds, response.getSuccessCount(), batch.size());
                 removeInvalidTokens(batch, response);
             } catch (FirebaseMessagingException e) {
                 log.error("FCM 다중 발송 실패", e);
@@ -160,19 +163,23 @@ public class FcmService {
      * @param collapseKey 동일 채팅방 알림을 식별하는 축약 키
      */
     @Transactional
-    public void sendChatNotification(List<Long> receiverIds, String title, String body, NotificationType type, String redirectUrl, Long roomId, String collapseKey) {
+    public void sendChatNotification(
+            List<Long> receiverIds,
+            String title,
+            String body,
+            NotificationType type,
+            String redirectUrl,
+            Long roomId,
+            String collapseKey) {
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
         if (tokens.isEmpty()) return;
 
         for (List<String> batch : partitionTokens(tokens)) {
             MulticastMessage message = MulticastMessage.builder()
-                    .setNotification(Notification.builder()
-                            .setTitle(title)
-                            .setBody(body)
-                            .build())
-                    .setAndroidConfig(AndroidConfig.builder()
-                            .setCollapseKey(collapseKey)
-                            .build())
+                    .setNotification(
+                            Notification.builder().setTitle(title).setBody(body).build())
+                    .setAndroidConfig(
+                            AndroidConfig.builder().setCollapseKey(collapseKey).build())
                     .setApnsConfig(ApnsConfig.builder()
                             .putHeader("apns-collapse-id", collapseKey)
                             .build())
@@ -237,5 +244,4 @@ public class FcmService {
             fcmTokenRepository.deleteByFcmTokenIn(invalidTokens);
         }
     }
-
 }

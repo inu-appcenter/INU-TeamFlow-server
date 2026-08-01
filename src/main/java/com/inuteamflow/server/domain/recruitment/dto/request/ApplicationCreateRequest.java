@@ -11,5 +11,4 @@ public class ApplicationCreateRequest {
 
     @NotBlank
     private String introduction;
-
 }

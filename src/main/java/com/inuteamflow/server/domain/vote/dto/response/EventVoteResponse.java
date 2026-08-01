@@ -1,16 +1,13 @@
 package com.inuteamflow.server.domain.vote.dto.response;
 
+import com.inuteamflow.server.domain.vote.entity.Vote;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import com.inuteamflow.server.domain.vote.entity.Vote;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -65,8 +62,7 @@ public class EventVoteResponse {
             boolean isCreator,
             List<LocalDate> dates,
             List<VoterInfoResponse> completedVoterList,
-            List<VoterInfoResponse> uncompletedVoterList
-    ) {
+            List<VoterInfoResponse> uncompletedVoterList) {
         return new EventVoteResponse(
                 vote.getVoteId(),
                 vote.getTeam().getTeamId(),
@@ -81,7 +77,6 @@ public class EventVoteResponse {
                 vote.getDailyTimeStart(),
                 vote.getDailyTimeEnd(),
                 completedVoterList,
-                uncompletedVoterList
-        );
+                uncompletedVoterList);
     }
 }

@@ -6,13 +6,12 @@ import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
-import java.util.Objects;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -28,40 +27,29 @@ public class Participant {
 
     private TeamRole teamRole;
 
-    public static Participant create(
-            TeamMember teamMember
-    ) {
+    public static Participant create(TeamMember teamMember) {
         return new Participant(
                 teamMember.getUser().getUserId(),
                 teamMember.getTeamMemberId(),
                 teamMember.getUser().getName(),
-                teamMember.getTeamRole()
-        );
+                teamMember.getTeamRole());
     }
 
-    public static Participant create(
-            EventParticipant eventParticipant
-    ) {
+    public static Participant create(EventParticipant eventParticipant) {
         return create(eventParticipant.getTeamMember());
     }
 
-    public static Participant create(
-            RecurrenceExceptionParticipant recurrenceExceptionParticipant
-    ) {
+    public static Participant create(RecurrenceExceptionParticipant recurrenceExceptionParticipant) {
         return create(recurrenceExceptionParticipant.getTeamMember());
     }
 
-    public static boolean isParticipant(
-            List<Participant> participants,
-            User user
-    ) {
+    public static boolean isParticipant(List<Participant> participants, User user) {
         if (participants == null || user == null) {
             return false;
         }
 
         return participants.stream()
-                .anyMatch(participant -> participant != null
-                        && Objects.equals(participant.getUserId(), user.getUserId()));
+                .anyMatch(participant ->
+                        participant != null && Objects.equals(participant.getUserId(), user.getUserId()));
     }
-
 }

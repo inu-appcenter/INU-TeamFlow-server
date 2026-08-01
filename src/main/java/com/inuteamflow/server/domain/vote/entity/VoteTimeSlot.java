@@ -2,19 +2,17 @@ package com.inuteamflow.server.domain.vote.entity;
 
 import com.inuteamflow.server.global.BaseTimeEntity;
 import jakarta.persistence.*;
+import java.time.LocalTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalTime;
-
 @Getter
 @Entity
-@Table(name = "vote_time_slot",
-        uniqueConstraints = @UniqueConstraint(
-                columnNames = {"vote_date_id", "slot_start_at", "slot_end_at"}
-        ))
+@Table(
+        name = "vote_time_slot",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"vote_date_id", "slot_start_at", "slot_end_at"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class VoteTimeSlot extends BaseTimeEntity {
 
@@ -34,21 +32,13 @@ public class VoteTimeSlot extends BaseTimeEntity {
     private LocalTime slotEndAt;
 
     @Builder
-    private VoteTimeSlot(
-            VoteDate voteDate,
-            LocalTime slotStartAt,
-            LocalTime slotEndAt
-    ) {
+    private VoteTimeSlot(VoteDate voteDate, LocalTime slotStartAt, LocalTime slotEndAt) {
         this.voteDate = voteDate;
         this.slotStartAt = slotStartAt;
         this.slotEndAt = slotEndAt;
     }
 
-    public static VoteTimeSlot create(
-            VoteDate voteDate,
-            LocalTime slotStartAt,
-            LocalTime slotEndAt
-    ) {
+    public static VoteTimeSlot create(VoteDate voteDate, LocalTime slotStartAt, LocalTime slotEndAt) {
         return VoteTimeSlot.builder()
                 .voteDate(voteDate)
                 .slotStartAt(slotStartAt)

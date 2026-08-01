@@ -4,11 +4,10 @@ import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.global.enums.Category;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -51,7 +50,6 @@ public class TeamDetailResponse {
                 imageUrl,
                 teamMember.getJoinedAt(),
                 team.getCreatedAt(),
-                team.getUpdatedAt()
-        );
+                team.getUpdatedAt());
     }
 }

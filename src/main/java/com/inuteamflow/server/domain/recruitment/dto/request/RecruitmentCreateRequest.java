@@ -4,11 +4,10 @@ import com.inuteamflow.server.global.enums.Category;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -34,5 +33,4 @@ public class RecruitmentCreateRequest {
     private LocalDateTime endAt;
 
     private Long infoPostId; // 정보글 연결 시에만 값 있음
-
 }

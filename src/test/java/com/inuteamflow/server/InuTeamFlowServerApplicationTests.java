@@ -9,7 +9,5 @@ import org.springframework.test.context.ActiveProfiles;
 class InuTeamFlowServerApplicationTests {
 
     @Test
-    void contextLoads() {
-    }
-
+    void contextLoads() {}
 }

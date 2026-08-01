@@ -18,5 +18,4 @@ public class FcmRequest {
     @NotBlank
     @Schema(description = "디바이스 타입", example = "web")
     private String deviceType;
-
 }

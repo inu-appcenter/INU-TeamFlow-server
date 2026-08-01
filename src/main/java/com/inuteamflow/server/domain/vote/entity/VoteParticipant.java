@@ -10,10 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "vote_participant",
-        uniqueConstraints = @UniqueConstraint(
-                columnNames = {"vote_id", "team_member_id"}
-        ))
+@Table(name = "vote_participant", uniqueConstraints = @UniqueConstraint(columnNames = {"vote_id", "team_member_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class VoteParticipant extends BaseTimeEntity {
 
@@ -34,20 +31,13 @@ public class VoteParticipant extends BaseTimeEntity {
     private Boolean hasCompleted;
 
     @Builder
-    private VoteParticipant(
-            Vote vote,
-            TeamMember teamMember,
-            Boolean hasCompleted
-    ) {
+    private VoteParticipant(Vote vote, TeamMember teamMember, Boolean hasCompleted) {
         this.vote = vote;
         this.teamMember = teamMember;
         this.hasCompleted = hasCompleted;
     }
 
-    public static VoteParticipant create(
-            Vote vote,
-            TeamMember teamMember
-    ) {
+    public static VoteParticipant create(Vote vote, TeamMember teamMember) {
         return VoteParticipant.builder()
                 .vote(vote)
                 .teamMember(teamMember)

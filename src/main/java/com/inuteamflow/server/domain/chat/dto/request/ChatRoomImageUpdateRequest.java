@@ -9,5 +9,4 @@ import lombok.NoArgsConstructor;
 public class ChatRoomImageUpdateRequest {
 
     private String imageKey; // null 이면 기본 콜라주로 리셋
-
 }

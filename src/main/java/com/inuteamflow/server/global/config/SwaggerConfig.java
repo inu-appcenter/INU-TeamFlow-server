@@ -6,10 +6,9 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 public class SwaggerConfig {
@@ -19,7 +18,7 @@ public class SwaggerConfig {
             createServer("https://teamflow-dev.inuappcenter.kr", "Development Server")
             // Production 서버 배포 시 주석 해제
             // createServer("https://teamflow.inuappcenter.kr", "Production Server")
-    );
+            );
 
     @Bean
     public OpenAPI openAPI() {
@@ -44,8 +43,6 @@ public class SwaggerConfig {
     }
 
     private static Server createServer(String url, String description) {
-        return new Server()
-                .url(url)
-                .description(description);
+        return new Server().url(url).description(description);
     }
 }

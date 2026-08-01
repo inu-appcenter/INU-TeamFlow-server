@@ -10,8 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "chat_room_member",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"chat_room_id", "user_id"}))
+@Table(name = "chat_room_member", uniqueConstraints = @UniqueConstraint(columnNames = {"chat_room_id", "user_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatRoomMember extends BaseTimeEntity {
 
@@ -37,15 +36,10 @@ public class ChatRoomMember extends BaseTimeEntity {
     }
 
     public static ChatRoomMember create(ChatRoom chatRoom, User user) {
-        return ChatRoomMember.builder()
-                .chatRoom(chatRoom)
-                .user(user)
-                .build();
+        return ChatRoomMember.builder().chatRoom(chatRoom).user(user).build();
     }
 
     public void updateLastReadMessageId(Long messageId) {
         this.lastReadMessageId = messageId;
     }
-
-
 }

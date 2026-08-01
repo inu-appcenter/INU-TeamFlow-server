@@ -9,28 +9,25 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "team_notice_read",
-		uniqueConstraints = @UniqueConstraint(columnNames = {"team_notice_id", "created_by"}))
+@Table(name = "team_notice_read", uniqueConstraints = @UniqueConstraint(columnNames = {"team_notice_id", "created_by"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TeamNoticeRead extends BaseEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "team_notice_read_id")
-	private Long teamNoticeReadId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "team_notice_read_id")
+    private Long teamNoticeReadId;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "team_notice_id", nullable = false)
-	private TeamNotice teamNotice;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_notice_id", nullable = false)
+    private TeamNotice teamNotice;
 
-	@Builder
-	private TeamNoticeRead(TeamNotice teamNotice) {
-		this.teamNotice = teamNotice;
-	}
+    @Builder
+    private TeamNoticeRead(TeamNotice teamNotice) {
+        this.teamNotice = teamNotice;
+    }
 
-	public static TeamNoticeRead create(TeamNotice teamNotice) {
-		return TeamNoticeRead.builder()
-				.teamNotice(teamNotice)
-				.build();
-	}
+    public static TeamNoticeRead create(TeamNotice teamNotice) {
+        return TeamNoticeRead.builder().teamNotice(teamNotice).build();
+    }
 }

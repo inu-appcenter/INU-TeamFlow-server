@@ -2,13 +2,12 @@ package com.inuteamflow.server.domain.chat.repository;
 
 import com.inuteamflow.server.domain.chat.entity.ChatMessage;
 import com.inuteamflow.server.domain.chat.entity.ChatRoom;
+import java.util.List;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 

@@ -4,5 +4,6 @@ import com.inuteamflow.server.domain.team.entity.TeamMember;
 
 public interface TeamMemberWithCount {
     TeamMember getTeamMember();
+
     Long getMemberCount();
 }

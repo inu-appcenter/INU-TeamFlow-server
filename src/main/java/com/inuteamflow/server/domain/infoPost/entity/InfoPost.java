@@ -2,17 +2,12 @@ package com.inuteamflow.server.domain.infoPost.entity;
 
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
-import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.BaseEntity;
-import com.inuteamflow.server.global.enums.Category;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Entity
@@ -63,5 +58,4 @@ public class InfoPost extends BaseEntity {
     public boolean isLinkable() {
         return this.category.getType() == InfoPostType.NOTICE;
     }
-
 }

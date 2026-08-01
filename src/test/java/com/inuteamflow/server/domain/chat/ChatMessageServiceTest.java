@@ -1,5 +1,8 @@
 package com.inuteamflow.server.domain.chat;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 import com.inuteamflow.server.domain.chat.dto.request.ChatMessageSendRequest;
 import com.inuteamflow.server.domain.chat.entity.ChatRoom;
 import com.inuteamflow.server.domain.chat.entity.ChatRoomMember;
@@ -12,6 +15,9 @@ import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.s3.S3Service;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,13 +31,6 @@ import org.springframework.messaging.simp.user.SimpSubscription;
 import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 /**
  * {@link ChatMessageService}의 메시지 전송 및 FCM 발송 조건을 Mockito 기반 단위 테스트로 검증한다.
  * - Spring Context와 실제 데이터베이스를 사용하지 않는다.
@@ -43,13 +42,26 @@ class ChatMessageServiceTest {
     @InjectMocks
     ChatMessageService chatMessageService;
 
-    @Mock ChatRoomRepository chatRoomRepository;
-    @Mock ChatRoomMemberRepository chatRoomMemberRepository;
-    @Mock ChatMessageRepository chatMessageRepository;
-    @Mock S3Service s3Service;
-    @Mock SimpMessagingTemplate messagingTemplate;
-    @Mock SimpUserRegistry simpUserRegistry;
-    @Mock NotificationService notificationService;
+    @Mock
+    ChatRoomRepository chatRoomRepository;
+
+    @Mock
+    ChatRoomMemberRepository chatRoomMemberRepository;
+
+    @Mock
+    ChatMessageRepository chatMessageRepository;
+
+    @Mock
+    S3Service s3Service;
+
+    @Mock
+    SimpMessagingTemplate messagingTemplate;
+
+    @Mock
+    SimpUserRegistry simpUserRegistry;
+
+    @Mock
+    NotificationService notificationService;
 
     private static final Long ROOM_ID = 1L;
 
@@ -78,7 +90,8 @@ class ChatMessageServiceTest {
 
         when(chatRoomRepository.findById(ROOM_ID)).thenReturn(Optional.of(chatRoom));
         when(chatRoomMemberRepository.existsByChatRoomAndUser(chatRoom, sender)).thenReturn(true);
-        when(chatRoomMemberRepository.findByChatRoomWithUser(chatRoom)).thenReturn(List.of(senderMember, receiverMember));
+        when(chatRoomMemberRepository.findByChatRoomWithUser(chatRoom))
+                .thenReturn(List.of(senderMember, receiverMember));
     }
 
     @Test
@@ -89,10 +102,8 @@ class ChatMessageServiceTest {
 
         chatMessageService.sendMessage(ROOM_ID, request, sender);
 
-        verify(notificationService).sendChatFcm(
-                eq(List.of(2L)), eq("발신자"), eq("안녕"),
-                eq(NotificationType.CHAT), anyString(), eq(ROOM_ID)
-        );
+        verify(notificationService)
+                .sendChatFcm(eq(List.of(2L)), eq("발신자"), eq("안녕"), eq(NotificationType.CHAT), anyString(), eq(ROOM_ID));
     }
 
     @Test
@@ -116,10 +127,9 @@ class ChatMessageServiceTest {
 
         chatMessageService.sendMessage(ROOM_ID, request, sender);
 
-        verify(notificationService).sendChatFcm(
-                eq(List.of(2L)), anyString(), anyString(),
-                eq(NotificationType.CHAT), anyString(), eq(ROOM_ID)
-        );
+        verify(notificationService)
+                .sendChatFcm(
+                        eq(List.of(2L)), anyString(), anyString(), eq(NotificationType.CHAT), anyString(), eq(ROOM_ID));
     }
 
     @Test
@@ -132,10 +142,14 @@ class ChatMessageServiceTest {
 
         chatMessageService.sendMessage(ROOM_ID, request, sender);
 
-        verify(notificationService).sendChatFcm(
-                eq(List.of(2L)), anyString(), eq("사진을 보냈습니다."),
-                eq(NotificationType.CHAT), anyString(), eq(ROOM_ID)
-        );
+        verify(notificationService)
+                .sendChatFcm(
+                        eq(List.of(2L)),
+                        anyString(),
+                        eq("사진을 보냈습니다."),
+                        eq(NotificationType.CHAT),
+                        anyString(),
+                        eq(ROOM_ID));
     }
 
     private ChatMessageSendRequest textRequest(String content) {

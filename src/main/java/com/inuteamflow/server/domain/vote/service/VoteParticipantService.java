@@ -9,16 +9,15 @@ import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
 import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -44,25 +43,19 @@ public class VoteParticipantService {
      * @throws RestApiException 해당 팀에 속하지 않는 팀 멤버 ID가 포함된 경우
      */
     @Transactional
-    public List<TeamMember> createVoteParticipants(
-            Vote vote,
-            List<Long> teamMemberIds
-    ) {
+    public List<TeamMember> createVoteParticipants(Vote vote, List<Long> teamMemberIds) {
         if (teamMemberIds == null || teamMemberIds.isEmpty()) {
             return List.of();
         }
 
-        List<Long> uniqueIds = teamMemberIds.stream()
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+        List<Long> uniqueIds =
+                teamMemberIds.stream().filter(Objects::nonNull).distinct().toList();
 
         if (uniqueIds.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(vote.getTeam(), uniqueIds)
-                .stream()
+        Map<Long, TeamMember> memberMap = teamMemberRepository.findByTeamAndIds(vote.getTeam(), uniqueIds).stream()
                 .collect(Collectors.toMap(TeamMember::getTeamMemberId, Function.identity()));
 
         List<VoteParticipant> participants = new ArrayList<>();
@@ -86,11 +79,9 @@ public class VoteParticipantService {
      * @return 조회된 투표 참여자
      * @throws RestApiException 해당하는 투표 참여자를 찾을 수 없는 경우
      */
-    public VoteParticipant getVoteParticipant(
-            Vote vote,
-            TeamMember teamMember
-    ) {
-        return voteParticipantRepository.findByVoteAndTeamMember(vote, teamMember)
+    public VoteParticipant getVoteParticipant(Vote vote, TeamMember teamMember) {
+        return voteParticipantRepository
+                .findByVoteAndTeamMember(vote, teamMember)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.VOTE_PARTICIPANT_NOT_FOUND));
     }
 
@@ -100,9 +91,7 @@ public class VoteParticipantService {
      * @param vote 참여 현황을 조회할 투표
      * @return 참여 완료자와 미완료자로 분류된 투표 참여 현황
      */
-    public VoteParticipants getVoteParticipants(
-            Vote vote
-    ) {
+    public VoteParticipants getVoteParticipants(Vote vote) {
         List<VoterInfoResponse> completedVoters = new ArrayList<>();
         List<VoterInfoResponse> uncompletedVoters = new ArrayList<>();
 
@@ -125,10 +114,7 @@ public class VoteParticipantService {
      * @param excludeUserId 결과에서 제외할 사용자 ID
      * @return 지정한 사용자를 제외한 투표 참여자 목록
      */
-    public List<User> getUsersByVoteExcluding(
-            Vote vote,
-            Long excludeUserId
-    ) {
+    public List<User> getUsersByVoteExcluding(Vote vote, Long excludeUserId) {
         return voteParticipantRepository.findByVote(vote).stream()
                 .map(vp -> vp.getTeamMember().getUser())
                 .filter(u -> !u.getUserId().equals(excludeUserId))
@@ -141,9 +127,7 @@ public class VoteParticipantService {
      * @param voteId 참여자를 삭제할 투표 ID
      */
     @Transactional
-    public void deleteByVoteId(
-            Long voteId
-    ) {
+    public void deleteByVoteId(Long voteId) {
         voteParticipantRepository.deleteByVoteId(voteId);
     }
 
@@ -154,10 +138,7 @@ public class VoteParticipantService {
      * @param user 확인할 사용자
      * @return 투표 대상자이면 {@code true}, 그렇지 않으면 {@code false}
      */
-    public boolean isVoter(
-            Vote vote,
-            User user
-    ) {
+    public boolean isVoter(Vote vote, User user) {
         return voteParticipantRepository.existsByVoteIdAndUserId(vote.getVoteId(), user.getUserId());
     }
 
@@ -167,15 +148,10 @@ public class VoteParticipantService {
      * @param user 투표 목록을 조회할 사용자
      * @return 사용자가 투표 대상자로 지정된 투표 목록
      */
-    public List<Vote> getVotesByUser(
-            User user
-    ) {
+    public List<Vote> getVotesByUser(User user) {
         return voteParticipantRepository.findVotesByUser(user);
     }
 
     public record VoteParticipants(
-            List<VoterInfoResponse> completedVoters,
-            List<VoterInfoResponse> uncompletedVoters
-    ) {
-    }
+            List<VoterInfoResponse> completedVoters, List<VoterInfoResponse> uncompletedVoters) {}
 }

@@ -14,10 +14,6 @@ import com.inuteamflow.server.domain.event.repository.RecurrenceRuleRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -30,6 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -55,10 +54,7 @@ public class EventOccurrenceService {
      * @return 월의 시작 시각부터 다음 달 시작 시각까지의 조회 범위
      * @throws RestApiException 연도나 월이 없거나 월이 유효하지 않은 경우
      */
-    public DateRange createMonthlyDateRange(
-            Integer year,
-            Integer month
-    ) {
+    public DateRange createMonthlyDateRange(Integer year, Integer month) {
         if (year == null || month == null || month < 1 || month > 12) {
             throw new RestApiException(CustomErrorCode.EVENT_MONTH_INVALID);
         }
@@ -66,8 +62,7 @@ public class EventOccurrenceService {
         YearMonth yearMonth = YearMonth.of(year, month);
         return new DateRange(
                 yearMonth.atDay(1).atStartOfDay(),
-                yearMonth.plusMonths(1).atDay(1).atStartOfDay()
-        );
+                yearMonth.plusMonths(1).atDay(1).atStartOfDay());
     }
 
     /**
@@ -87,42 +82,27 @@ public class EventOccurrenceService {
             List<Event> recurringEvents,
             EventOccurrenceService.DateRange dateRange,
             User requester,
-            boolean filterByParticipation
-    ) {
+            boolean filterByParticipation) {
         if (recurringEvents.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, RecurrenceRule> ruleByEventId =
-                recurrenceRuleRepository
-                        .findByEventIn(recurringEvents).stream()
-                        .collect(Collectors.toMap(RecurrenceRule::getEventId, Function.identity()));
+        Map<Long, RecurrenceRule> ruleByEventId = recurrenceRuleRepository.findByEventIn(recurringEvents).stream()
+                .collect(Collectors.toMap(RecurrenceRule::getEventId, Function.identity()));
 
-        List<RecurrenceException> recurrenceExceptions =
-                recurrenceExceptionRepository.findByEventIn(recurringEvents);
-        List<RecurrenceException> movedIntoRangeExceptions =
-                recurrenceExceptionRepository.findModifiedOverlapping(
-                        RecurrenceExceptionType.MODIFIED,
-                        recurringEvents,
-                        dateRange.startAt(),
-                        dateRange.endAt()
-                );
+        List<RecurrenceException> recurrenceExceptions = recurrenceExceptionRepository.findByEventIn(recurringEvents);
+        List<RecurrenceException> movedIntoRangeExceptions = recurrenceExceptionRepository.findModifiedOverlapping(
+                RecurrenceExceptionType.MODIFIED, recurringEvents, dateRange.startAt(), dateRange.endAt());
 
-        Map<EventOccurrenceService.OccurrenceKey, RecurrenceException> exceptionByKey =
-                recurrenceExceptions.stream()
-                        .collect(Collectors.toMap(
-                                exception -> new EventOccurrenceService.OccurrenceKey(
-                                        exception.getEventId(),
-                                        exception.getOriginalOccurrenceAt()
-                                ),
-                                Function.identity(),
-                                (first, second) -> second
-                        ));
+        Map<EventOccurrenceService.OccurrenceKey, RecurrenceException> exceptionByKey = recurrenceExceptions.stream()
+                .collect(Collectors.toMap(
+                        exception -> new EventOccurrenceService.OccurrenceKey(
+                                exception.getEventId(), exception.getOriginalOccurrenceAt()),
+                        Function.identity(),
+                        (first, second) -> second));
 
-        Map<Long, List<Participant>> participantsByEventId =
-                createParticipantsByEventId(recurringEvents);
-        Map<Long, List<Participant>> participantsByExceptionId =
-                createParticipantsByExceptionId(recurrenceExceptions);
+        Map<Long, List<Participant>> participantsByEventId = createParticipantsByEventId(recurringEvents);
+        Map<Long, List<Participant>> participantsByExceptionId = createParticipantsByExceptionId(recurrenceExceptions);
 
         List<EventListResponse> responses = new ArrayList<>();
         for (Event event : recurringEvents) {
@@ -134,8 +114,7 @@ public class EventOccurrenceService {
                     participantsByEventId,
                     participantsByExceptionId,
                     requester,
-                    filterByParticipation
-            ));
+                    filterByParticipation));
         }
 
         Set<OccurrenceKey> responseKeys = responses.stream()
@@ -144,7 +123,8 @@ public class EventOccurrenceService {
                 .collect(Collectors.toSet());
 
         for (RecurrenceException recurrenceException : movedIntoRangeExceptions) {
-            OccurrenceKey occurrenceKey = new OccurrenceKey(recurrenceException.getEventId(), recurrenceException.getOriginalOccurrenceAt());
+            OccurrenceKey occurrenceKey =
+                    new OccurrenceKey(recurrenceException.getEventId(), recurrenceException.getOriginalOccurrenceAt());
 
             if (responseKeys.contains(occurrenceKey)) continue;
 
@@ -156,8 +136,7 @@ public class EventOccurrenceService {
                     responses,
                     participantsByExceptionId,
                     requester,
-                    filterByParticipation
-            );
+                    filterByParticipation);
         }
 
         return responses;
@@ -172,10 +151,7 @@ public class EventOccurrenceService {
      * @return 조회 범위에 포함되는 반복 회차 목록
      */
     public List<EventListResponse> expandRecurringEvents(
-            List<Event> recurringEvents,
-            EventOccurrenceService.DateRange dateRange,
-            User requester
-    ) {
+            List<Event> recurringEvents, EventOccurrenceService.DateRange dateRange, User requester) {
         return expandRecurringEvents(recurringEvents, dateRange, requester, false);
     }
 
@@ -202,8 +178,7 @@ public class EventOccurrenceService {
             Map<Long, List<Participant>> participantsByEventId,
             Map<Long, List<Participant>> participantsByExceptionId,
             User requester,
-            boolean filterByParticipation
-    ) {
+            boolean filterByParticipation) {
         if (rule == null || !canAffectDateRange(rule, dateRange)) {
             return List.of();
         }
@@ -213,7 +188,8 @@ public class EventOccurrenceService {
         LocalDateTime occurrenceAt = firstOccurrenceAt(event, rule);
 
         // 원본 이벤트의 duration(start~end 차이)을 유지하기 위해 초 단위로 계산
-        long durationSeconds = Duration.between(event.getStartAt(), event.getEndAt()).getSeconds();
+        long durationSeconds =
+                Duration.between(event.getStartAt(), event.getEndAt()).getSeconds();
         int generatedCount = 0;
 
         // 조회 종료 시각 이전까지 반복 occurrence 생성
@@ -224,9 +200,8 @@ public class EventOccurrenceService {
                 break;
             }
 
-            RecurrenceException recurrenceException = exceptionByKey.get(
-                    new OccurrenceKey(event.getEventId(), occurrenceAt)
-            );
+            RecurrenceException recurrenceException =
+                    exceptionByKey.get(new OccurrenceKey(event.getEventId(), occurrenceAt));
             if (recurrenceException != null) {
                 addExceptionOccurrence(
                         event,
@@ -236,8 +211,7 @@ public class EventOccurrenceService {
                         responses,
                         participantsByExceptionId,
                         requester,
-                        filterByParticipation
-                );
+                        filterByParticipation);
             } else {
                 addNormalOccurrence(
                         event,
@@ -247,8 +221,7 @@ public class EventOccurrenceService {
                         dateRange,
                         responses,
                         participantsByEventId,
-                        requester
-                );
+                        requester);
             }
 
             occurrenceAt = nextOccurrenceAt(occurrenceAt, rule);
@@ -268,24 +241,14 @@ public class EventOccurrenceService {
      * @return 시작 시간 오름차순으로 정렬된 일정 목록
      */
     public List<EventListResponse> mergeAndSort(
-            List<Event> singleEvents,
-            List<EventListResponse> recurringOccurrences,
-            User requester
-    ) {
+            List<Event> singleEvents, List<EventListResponse> recurringOccurrences, User requester) {
         List<EventListResponse> responses = new ArrayList<>();
-        Map<Long, List<Participant>> participantsByEventId =
-                createParticipantsByEventId(singleEvents);
+        Map<Long, List<Participant>> participantsByEventId = createParticipantsByEventId(singleEvents);
         singleEvents.stream()
                 .map(event -> {
-                    List<Participant> participants = participantsByEventId.getOrDefault(
-                            event.getEventId(),
-                            List.of()
-                    );
+                    List<Participant> participants = participantsByEventId.getOrDefault(event.getEventId(), List.of());
                     return EventListResponse.createSingle(
-                            event,
-                            Participant.isParticipant(participants, requester),
-                            participants
-                    );
+                            event, Participant.isParticipant(participants, requester), participants);
                 })
                 .forEach(responses::add);
         responses.addAll(recurringOccurrences);
@@ -304,11 +267,7 @@ public class EventOccurrenceService {
      * @param occurrenceAt 확인할 회차 시작 시각
      * @return 반복 회차가 존재하면 {@code true}, 그렇지 않으면 {@code false}
      */
-    public boolean existsOccurrence(
-            Event event,
-            RecurrenceRule rule,
-            LocalDateTime occurrenceAt
-    ) {
+    public boolean existsOccurrence(Event event, RecurrenceRule rule, LocalDateTime occurrenceAt) {
         if (rule == null || occurrenceAt == null) {
             return false;
         }
@@ -358,15 +317,11 @@ public class EventOccurrenceService {
             DateRange dateRange,
             List<EventListResponse> responses,
             Map<Long, List<Participant>> participantsByEventId,
-            User requester
-    ) {
+            User requester) {
         LocalDateTime startAt = occurrenceAt;
         LocalDateTime endAt = occurrenceAt.plusSeconds(durationSeconds);
         if (isOverlapped(startAt, endAt, dateRange)) {
-            List<Participant> participants = participantsByEventId.getOrDefault(
-                    event.getEventId(),
-                    List.of()
-            );
+            List<Participant> participants = participantsByEventId.getOrDefault(event.getEventId(), List.of());
             responses.add(EventListResponse.createOccurrence(
                     event,
                     rule,
@@ -374,8 +329,7 @@ public class EventOccurrenceService {
                     startAt,
                     endAt,
                     Participant.isParticipant(participants, requester),
-                    participants
-            ));
+                    participants));
         }
     }
 
@@ -402,16 +356,13 @@ public class EventOccurrenceService {
             List<EventListResponse> responses,
             Map<Long, List<Participant>> participantsByExceptionId,
             User requester,
-            boolean filterByParticipation
-    ) {
+            boolean filterByParticipation) {
         if (recurrenceException.getExceptionType() == RecurrenceExceptionType.CANCELLED) {
             return;
         }
 
-        List<Participant> participants = participantsByExceptionId.getOrDefault(
-                recurrenceException.getRecurrenceExceptionId(),
-                List.of()
-        );
+        List<Participant> participants =
+                participantsByExceptionId.getOrDefault(recurrenceException.getRecurrenceExceptionId(), List.of());
         boolean isParticipant = Participant.isParticipant(participants, requester);
         if (filterByParticipation && !isParticipant) {
             return;
@@ -419,17 +370,9 @@ public class EventOccurrenceService {
 
         if (recurrenceException.getExceptionType() == RecurrenceExceptionType.MODIFIED
                 && isOverlapped(
-                recurrenceException.getModifiedStartAt(),
-                recurrenceException.getModifiedEndAt(),
-                dateRange
-        )) {
+                        recurrenceException.getModifiedStartAt(), recurrenceException.getModifiedEndAt(), dateRange)) {
             responses.add(EventListResponse.createModifiedOccurrence(
-                    event,
-                    rule,
-                    recurrenceException,
-                    isParticipant,
-                    participants
-            ));
+                    event, rule, recurrenceException, isParticipant, participants));
         }
     }
 
@@ -439,9 +382,7 @@ public class EventOccurrenceService {
      * @param events 참여자를 조회할 일정 목록
      * @return 일정 ID별 참여자 목록
      */
-    private Map<Long, List<Participant>> createParticipantsByEventId(
-            List<Event> events
-    ) {
+    private Map<Long, List<Participant>> createParticipantsByEventId(List<Event> events) {
         if (events.isEmpty()) {
             return Map.of();
         }
@@ -449,8 +390,7 @@ public class EventOccurrenceService {
         return eventParticipantRepository.findByEventInWithMember(events).stream()
                 .collect(Collectors.groupingBy(
                         participant -> participant.getEvent().getEventId(),
-                        Collectors.mapping(Participant::create, Collectors.toList())
-                ));
+                        Collectors.mapping(Participant::create, Collectors.toList())));
     }
 
     /**
@@ -460,8 +400,7 @@ public class EventOccurrenceService {
      * @return 반복 예외 ID별 참여자 목록
      */
     private Map<Long, List<Participant>> createParticipantsByExceptionId(
-            List<RecurrenceException> recurrenceExceptions
-    ) {
+            List<RecurrenceException> recurrenceExceptions) {
         if (recurrenceExceptions.isEmpty()) {
             return Map.of();
         }
@@ -471,8 +410,7 @@ public class EventOccurrenceService {
                 .stream()
                 .collect(Collectors.groupingBy(
                         participant -> participant.getRecurrenceException().getRecurrenceExceptionId(),
-                        Collectors.mapping(Participant::create, Collectors.toList())
-                ));
+                        Collectors.mapping(Participant::create, Collectors.toList())));
     }
 
     /**
@@ -484,10 +422,7 @@ public class EventOccurrenceService {
      * @param dateRange 조회할 날짜 범위
      * @return 조회 범위에 영향을 줄 수 있으면 {@code true}, 그렇지 않으면 {@code false}
      */
-    private boolean canAffectDateRange(
-            RecurrenceRule rule,
-            DateRange dateRange
-    ) {
+    private boolean canAffectDateRange(RecurrenceRule rule, DateRange dateRange) {
         return rule.getUntilAt() == null || !rule.getUntilAt().isBefore(dateRange.startAt());
     }
 
@@ -501,11 +436,7 @@ public class EventOccurrenceService {
      * @param generatedCount 현재까지 생성한 회차 수
      * @return 반복 종료 조건을 초과했으면 {@code true}, 그렇지 않으면 {@code false}
      */
-    private boolean isAfterRecurrenceEnd(
-            RecurrenceRule rule,
-            LocalDateTime occurrenceAt,
-            int generatedCount
-    ) {
+    private boolean isAfterRecurrenceEnd(RecurrenceRule rule, LocalDateTime occurrenceAt, int generatedCount) {
         if (rule.getOccurrenceCount() != null && generatedCount > rule.getOccurrenceCount()) {
             return true;
         }
@@ -522,10 +453,7 @@ public class EventOccurrenceService {
      * @param rule 일정의 반복 규칙
      * @return 다음 회차 시작 시각
      */
-    private LocalDateTime nextOccurrenceAt(
-            LocalDateTime occurrenceAt,
-            RecurrenceRule rule
-    ) {
+    private LocalDateTime nextOccurrenceAt(LocalDateTime occurrenceAt, RecurrenceRule rule) {
         int interval = rule.getIntervalValue();
         RecurrenceFrequency frequency = rule.getFreq();
 
@@ -546,13 +474,8 @@ public class EventOccurrenceService {
      * @param rule 일정의 반복 규칙
      * @return 첫 회차 시작 시각
      */
-    private LocalDateTime firstOccurrenceAt(
-            Event event,
-            RecurrenceRule rule
-    ) {
-        LocalDateTime seriesStartAt = rule.getSeriesStartAt() != null
-                ? rule.getSeriesStartAt()
-                : event.getStartAt();
+    private LocalDateTime firstOccurrenceAt(Event event, RecurrenceRule rule) {
+        LocalDateTime seriesStartAt = rule.getSeriesStartAt() != null ? rule.getSeriesStartAt() : event.getStartAt();
 
         if (rule.getFreq() != RecurrenceFrequency.WEEKLY || sortedByDays(rule).isEmpty()) {
             return seriesStartAt;
@@ -571,11 +494,7 @@ public class EventOccurrenceService {
      * @param rule 일정의 반복 규칙
      * @return 다음 주간 반복 회차 시작 시각
      */
-    private LocalDateTime nextWeeklyOccurrenceAt(
-            LocalDateTime occurrenceAt,
-            int interval,
-            RecurrenceRule rule
-    ) {
+    private LocalDateTime nextWeeklyOccurrenceAt(LocalDateTime occurrenceAt, int interval, RecurrenceRule rule) {
         List<DayOfWeek> byDays = sortedByDays(rule);
         if (byDays.isEmpty()) {
             return occurrenceAt.plusWeeks(interval);
@@ -588,8 +507,7 @@ public class EventOccurrenceService {
                 .map(nextDay -> moveToDayOfWeek(occurrenceAt, nextDay))
                 .orElseGet(() -> moveToDayOfWeek(
                         occurrenceAt.plusWeeks(interval).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)),
-                        byDays.get(0)
-                ));
+                        byDays.get(0)));
     }
 
     /**
@@ -599,10 +517,7 @@ public class EventOccurrenceService {
      * @param rule 일정의 반복 규칙
      * @return 첫 주간 반복 회차 시작 시각
      */
-    private LocalDateTime firstWeeklyOccurrenceAt(
-            LocalDateTime seriesStartAt,
-            RecurrenceRule rule
-    ) {
+    private LocalDateTime firstWeeklyOccurrenceAt(LocalDateTime seriesStartAt, RecurrenceRule rule) {
         return sortedByDays(rule).stream()
                 .map(dayOfWeek -> moveToDayOfWeek(seriesStartAt, dayOfWeek))
                 .min(Comparator.naturalOrder())
@@ -615,9 +530,7 @@ public class EventOccurrenceService {
      * @param rule 일정의 반복 규칙
      * @return 오름차순으로 정렬된 반복 요일 목록
      */
-    private List<DayOfWeek> sortedByDays(
-            RecurrenceRule rule
-    ) {
+    private List<DayOfWeek> sortedByDays(RecurrenceRule rule) {
         return rule.getByDay().stream()
                 .distinct()
                 .sorted(Comparator.comparingInt(DayOfWeek::getValue))
@@ -631,10 +544,7 @@ public class EventOccurrenceService {
      * @param dayOfWeek 이동할 요일
      * @return 지정 요일로 이동한 시각
      */
-    private LocalDateTime moveToDayOfWeek(
-            LocalDateTime dateTime,
-            DayOfWeek dayOfWeek
-    ) {
+    private LocalDateTime moveToDayOfWeek(LocalDateTime dateTime, DayOfWeek dayOfWeek) {
         return dateTime.with(TemporalAdjusters.nextOrSame(dayOfWeek));
     }
 
@@ -648,11 +558,7 @@ public class EventOccurrenceService {
      * @param rule 일정의 반복 규칙
      * @return 다음 월간 반복 회차 시작 시각
      */
-    private LocalDateTime nextMonthlyOccurrenceAt(
-            LocalDateTime occurrenceAt,
-            int interval,
-            RecurrenceRule rule
-    ) {
+    private LocalDateTime nextMonthlyOccurrenceAt(LocalDateTime occurrenceAt, int interval, RecurrenceRule rule) {
         LocalDateTime next = occurrenceAt.plusMonths(interval);
         if (rule.getByMonthDay() == null) {
             return next;
@@ -670,11 +576,7 @@ public class EventOccurrenceService {
      * @param dateRange 조회할 날짜 범위
      * @return 두 구간이 겹치면 {@code true}, 그렇지 않으면 {@code false}
      */
-    private boolean isOverlapped(
-            LocalDateTime startAt,
-            LocalDateTime endAt,
-            DateRange dateRange
-    ) {
+    private boolean isOverlapped(LocalDateTime startAt, LocalDateTime endAt, DateRange dateRange) {
         if (startAt == null || endAt == null) {
             return false;
         }
@@ -682,15 +584,7 @@ public class EventOccurrenceService {
         return startAt.isBefore(dateRange.endAt()) && endAt.isAfter(dateRange.startAt());
     }
 
-    public record DateRange(
-            LocalDateTime startAt,
-            LocalDateTime endAt
-    ) {
-    }
+    public record DateRange(LocalDateTime startAt, LocalDateTime endAt) {}
 
-    public record OccurrenceKey(
-            Long eventId,
-            LocalDateTime originalOccurrenceAt
-    ) {
-    }
+    public record OccurrenceKey(Long eventId, LocalDateTime originalOccurrenceAt) {}
 }

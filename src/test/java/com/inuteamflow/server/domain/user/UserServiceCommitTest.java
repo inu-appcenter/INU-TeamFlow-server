@@ -1,5 +1,8 @@
 package com.inuteamflow.server.domain.user;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
@@ -23,6 +26,8 @@ import com.inuteamflow.server.domain.vote.repository.VoteRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteTimeSlotRepository;
 import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.s3.S3Service;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,12 +40,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
-
 /**
  * {@link UserService}의 실제 트랜잭션 커밋 경계를 검증한다.
  * - 픽스처 생성, 회원 탈퇴, 결과 조회를 각각 독립된 트랜잭션으로 실행한다.
@@ -51,19 +50,38 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UserServiceCommitTest {
 
-    @Autowired private UserService userService;
-    @Autowired private TransactionTemplate transactionTemplate;
+    @Autowired
+    private UserService userService;
 
-    @MockitoBean private S3Service s3Service;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private TeamRepository teamRepository;
-    @Autowired private TeamMemberRepository teamMemberRepository;
-    @Autowired private VoteRepository voteRepository;
-    @Autowired private VoteParticipantRepository voteParticipantRepository;
-    @Autowired private VoteAvailabilityRepository voteAvailabilityRepository;
-    @Autowired private VoteDateRepository voteDateRepository;
-    @Autowired private VoteTimeSlotRepository voteTimeSlotRepository;
+    @MockitoBean
+    private S3Service s3Service;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
+
+    @Autowired
+    private TeamMemberRepository teamMemberRepository;
+
+    @Autowired
+    private VoteRepository voteRepository;
+
+    @Autowired
+    private VoteParticipantRepository voteParticipantRepository;
+
+    @Autowired
+    private VoteAvailabilityRepository voteAvailabilityRepository;
+
+    @Autowired
+    private VoteDateRepository voteDateRepository;
+
+    @Autowired
+    private VoteTimeSlotRepository voteTimeSlotRepository;
 
     @AfterEach
     void clearSecurityContext() {
@@ -76,8 +94,8 @@ class UserServiceCommitTest {
         FixtureIds ids = transactionTemplate.execute(status -> createFixture());
         assertThat(ids).isNotNull();
 
-        User target = transactionTemplate.execute(status ->
-                userRepository.findById(ids.targetId()).orElseThrow());
+        User target = transactionTemplate.execute(
+                status -> userRepository.findById(ids.targetId()).orElseThrow());
         assertThat(target).isNotNull();
 
         // 테스트 트랜잭션이 없는 상태에서 호출하므로 메서드 반환 전에 서비스 트랜잭션이 커밋된다.
@@ -87,10 +105,14 @@ class UserServiceCommitTest {
             assertThat(userRepository.findById(ids.targetId())).isEmpty();
             assertThat(teamMemberRepository.findById(ids.targetMemberId())).isEmpty();
 
-            assertThat(voteAvailabilityRepository.findById(ids.targetAvailabilityId())).isEmpty();
-            assertThat(voteAvailabilityRepository.findById(ids.leaderAvailabilityId())).isEmpty();
-            assertThat(voteParticipantRepository.findById(ids.targetParticipantId())).isEmpty();
-            assertThat(voteParticipantRepository.findById(ids.leaderParticipantId())).isEmpty();
+            assertThat(voteAvailabilityRepository.findById(ids.targetAvailabilityId()))
+                    .isEmpty();
+            assertThat(voteAvailabilityRepository.findById(ids.leaderAvailabilityId()))
+                    .isEmpty();
+            assertThat(voteParticipantRepository.findById(ids.targetParticipantId()))
+                    .isEmpty();
+            assertThat(voteParticipantRepository.findById(ids.leaderParticipantId()))
+                    .isEmpty();
             assertThat(voteTimeSlotRepository.findById(ids.voteTimeSlotId())).isEmpty();
             assertThat(voteDateRepository.findById(ids.voteDateId())).isEmpty();
             assertThat(voteRepository.findById(ids.voteId())).isEmpty();
@@ -106,52 +128,38 @@ class UserServiceCommitTest {
         User leader = createUser("commit-leader", "commit-leader@inu.ac.kr");
 
         actingAs(leader);
-        Team team = teamRepository.save(
-                Team.builder()
-                        .name("commit-team")
-                        .description("desc")
-                        .category(Category.PROJECT)
-                        .build()
-        );
-        TeamMember leaderMember = teamMemberRepository.save(
-                TeamMember.create(team, leader, TeamRole.LEADER)
-        );
+        Team team = teamRepository.save(Team.builder()
+                .name("commit-team")
+                .description("desc")
+                .category(Category.PROJECT)
+                .build());
+        TeamMember leaderMember = teamMemberRepository.save(TeamMember.create(team, leader, TeamRole.LEADER));
 
         actingAs(target);
-        TeamMember targetMember = teamMemberRepository.save(
-                TeamMember.create(team, target, TeamRole.MEMBER)
-        );
-        Vote closedVote = voteRepository.save(
-                Vote.builder()
-                        .team(team)
-                        .title("commit-closed-vote")
-                        .description("desc")
-                        .isOpened(false)
-                        .isAllDay(false)
-                        .dailyTimeStart(LocalTime.of(9, 0))
-                        .dailyTimeEnd(LocalTime.of(20, 0))
-                        .slotUnitMinute(30)
-                        .build()
-        );
+        TeamMember targetMember = teamMemberRepository.save(TeamMember.create(team, target, TeamRole.MEMBER));
+        Vote closedVote = voteRepository.save(Vote.builder()
+                .team(team)
+                .title("commit-closed-vote")
+                .description("desc")
+                .isOpened(false)
+                .isAllDay(false)
+                .dailyTimeStart(LocalTime.of(9, 0))
+                .dailyTimeEnd(LocalTime.of(20, 0))
+                .slotUnitMinute(30)
+                .build());
         VoteDate voteDate = voteDateRepository.save(
-                VoteDate.create(closedVote, LocalDate.now().plusDays(1))
-        );
-        VoteTimeSlot voteTimeSlot = voteTimeSlotRepository.save(
-                VoteTimeSlot.create(voteDate, LocalTime.of(9, 0), LocalTime.of(9, 30))
-        );
+                VoteDate.create(closedVote, LocalDate.now().plusDays(1)));
+        VoteTimeSlot voteTimeSlot =
+                voteTimeSlotRepository.save(VoteTimeSlot.create(voteDate, LocalTime.of(9, 0), LocalTime.of(9, 30)));
 
-        VoteParticipant targetParticipant = voteParticipantRepository.save(
-                VoteParticipant.create(closedVote, targetMember)
-        );
-        VoteParticipant leaderParticipant = voteParticipantRepository.save(
-                VoteParticipant.create(closedVote, leaderMember)
-        );
-        VoteAvailability targetAvailability = voteAvailabilityRepository.save(
-                VoteAvailability.create(targetParticipant, voteTimeSlot)
-        );
-        VoteAvailability leaderAvailability = voteAvailabilityRepository.save(
-                VoteAvailability.create(leaderParticipant, voteTimeSlot)
-        );
+        VoteParticipant targetParticipant =
+                voteParticipantRepository.save(VoteParticipant.create(closedVote, targetMember));
+        VoteParticipant leaderParticipant =
+                voteParticipantRepository.save(VoteParticipant.create(closedVote, leaderMember));
+        VoteAvailability targetAvailability =
+                voteAvailabilityRepository.save(VoteAvailability.create(targetParticipant, voteTimeSlot));
+        VoteAvailability leaderAvailability =
+                voteAvailabilityRepository.save(VoteAvailability.create(leaderParticipant, voteTimeSlot));
 
         return new FixtureIds(
                 target.getUserId(),
@@ -165,35 +173,28 @@ class UserServiceCommitTest {
                 targetParticipant.getVoteParticipantId(),
                 leaderParticipant.getVoteParticipantId(),
                 targetAvailability.getVoteAvailabilityId(),
-                leaderAvailability.getVoteAvailabilityId()
-        );
+                leaderAvailability.getVoteAvailabilityId());
     }
 
     private User createUser(String username, String email) {
-        return userRepository.save(
-                User.builder()
-                        .username(username)
-                        .email(email)
-                        .password("encoded-password")
-                        .name(username)
-                        .department(Department.COMPUTER_SCIENCE)
-                        .studentNumber(null)
-                        .isSchoolVerified(false)
-                        .role(Role.USER)
-                        .imageKey(null)
-                        .build()
-        );
+        return userRepository.save(User.builder()
+                .username(username)
+                .email(email)
+                .password("encoded-password")
+                .name(username)
+                .department(Department.COMPUTER_SCIENCE)
+                .studentNumber(null)
+                .isSchoolVerified(false)
+                .role(Role.USER)
+                .imageKey(null)
+                .build());
     }
 
     private void actingAs(User user) {
         UserDetailsImpl userDetails = new UserDetailsImpl(user);
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                )
-        );
+        SecurityContextHolder.getContext()
+                .setAuthentication(
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
     }
 
     private record FixtureIds(
@@ -208,7 +209,5 @@ class UserServiceCommitTest {
             Long targetParticipantId,
             Long leaderParticipantId,
             Long targetAvailabilityId,
-            Long leaderAvailabilityId
-    ) {
-    }
+            Long leaderAvailabilityId) {}
 }

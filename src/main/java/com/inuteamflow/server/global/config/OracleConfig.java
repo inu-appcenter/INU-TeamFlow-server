@@ -16,8 +16,7 @@ public class OracleConfig {
             @Value("${oracle.datasource.jdbc-url}") String jdbcUrl,
             @Value("${oracle.datasource.username}") String username,
             @Value("${oracle.datasource.password}") String password,
-            @Value("${oracle.datasource.driver-class-name}") String driverClassName
-    ) {
+            @Value("${oracle.datasource.driver-class-name}") String driverClassName) {
         DriverManagerDataSource oracleDataSource = new DriverManagerDataSource();
         oracleDataSource.setDriverClassName(driverClassName);
         oracleDataSource.setUrl(jdbcUrl);

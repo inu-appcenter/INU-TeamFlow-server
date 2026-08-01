@@ -2,12 +2,11 @@ package com.inuteamflow.server.domain.notification.dto.res;
 
 import com.inuteamflow.server.domain.notification.entity.Notification;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.data.domain.Slice;
-
-import java.util.List;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -23,17 +22,12 @@ public class NotificationSliceResponse {
     @Schema(description = "알림 목록")
     private List<NotificationItemResponse> notifications;
 
-    public static NotificationSliceResponse create(
-            Slice<Notification> slice,
-            Integer unreadCount
-    ) {
+    public static NotificationSliceResponse create(Slice<Notification> slice, Integer unreadCount) {
         return new NotificationSliceResponse(
                 slice.hasNext(),
                 unreadCount,
                 slice.getContent().stream()
                         .map(NotificationItemResponse::create)
-                        .toList()
-        );
+                        .toList());
     }
-
 }

@@ -4,21 +4,27 @@ import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.user.entity.User;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
-
 public interface TeamMemberRepository extends JpaRepository<TeamMember, Long> {
 
     int countByTeam(Team team);
+
     List<TeamMember> findByUser(User user);
+
     List<TeamMember> findByTeam(Team team);
+
     Optional<TeamMember> findByTeamAndUser(Team team, User user);
+
+    boolean existsByTeamAndUser(Team team, User user);
+
     List<TeamMember> findByTeamAndUserIn(Team team, List<User> users);
+
     void deleteAllByTeam(Team team);
 
     @Query("""

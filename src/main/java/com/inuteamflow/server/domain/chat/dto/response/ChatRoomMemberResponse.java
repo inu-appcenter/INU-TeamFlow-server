@@ -33,12 +33,6 @@ public class ChatRoomMemberResponse {
 
     public static ChatRoomMemberResponse create(User user, TeamRole teamRole, String profileImageUrl) {
         return new ChatRoomMemberResponse(
-                user.getUserId(),
-                user.getUsername(),
-                user.getName(),
-                user.getDepartment(),
-                teamRole,
-                profileImageUrl
-        );
+                user.getUserId(), user.getUsername(), user.getName(), user.getDepartment(), teamRole, profileImageUrl);
     }
 }

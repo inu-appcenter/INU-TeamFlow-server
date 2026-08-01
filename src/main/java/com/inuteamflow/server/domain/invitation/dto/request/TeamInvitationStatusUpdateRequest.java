@@ -12,5 +12,4 @@ public class TeamInvitationStatusUpdateRequest {
 
     @NotNull
     private Status status;
-
 }

@@ -20,22 +20,15 @@ public class FcmController implements FcmControllerDocument {
 
     @PostMapping
     public ResponseEntity<FcmResponse> createFcmToken(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Valid @RequestBody FcmRequest fcmRequest
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody FcmRequest fcmRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED)
                 .body(fcmService.createFcmToken(userDetails.getUser(), fcmRequest));
     }
 
     @DeleteMapping
     public ResponseEntity<Void> deleteFcmToken(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Valid @RequestBody FcmRequest fcmRequest
-    ) {
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody FcmRequest fcmRequest) {
         fcmService.deleteFcmToken(userDetails.getUser(), fcmRequest);
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

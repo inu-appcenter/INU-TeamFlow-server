@@ -10,8 +10,8 @@ import com.inuteamflow.server.domain.chat.entity.ChatRoom;
 import com.inuteamflow.server.domain.chat.entity.ChatRoomMember;
 import com.inuteamflow.server.domain.chat.enums.ChatRoomType;
 import com.inuteamflow.server.domain.chat.repository.ChatMessageRepository;
-import com.inuteamflow.server.domain.chat.repository.ChatRoomRepository;
 import com.inuteamflow.server.domain.chat.repository.ChatRoomMemberRepository;
+import com.inuteamflow.server.domain.chat.repository.ChatRoomRepository;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
@@ -22,6 +22,9 @@ import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,10 +34,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -75,7 +74,8 @@ public class ChatRoomService {
             return List.of();
         }
 
-        List<ChatRoom> chatRooms = myMemberships.stream().map(ChatRoomMember::getChatRoom).toList();
+        List<ChatRoom> chatRooms =
+                myMemberships.stream().map(ChatRoomMember::getChatRoom).toList();
         List<Long> chatRoomIds = chatRooms.stream().map(ChatRoom::getChatRoomId).toList();
 
         Map<Long, ChatMessage> lastMessageByRoomId = chatMessageRepository.findLatestByChatRoomIn(chatRoomIds).stream()
@@ -84,11 +84,12 @@ public class ChatRoomService {
         // type이 TEAM으로 고정 조회된 경우엔 DIRECT 상대방 조회 자체가 불필요하니 스킵
         Map<Long, User> partnerByRoomId = type == ChatRoomType.DIRECT
                 ? chatRoomMemberRepository.findPartnersByChatRoomIdIn(chatRoomIds, user).stream()
-                .collect(Collectors.toMap(crm -> crm.getChatRoom().getChatRoomId(), ChatRoomMember::getUser))
+                        .collect(Collectors.toMap(crm -> crm.getChatRoom().getChatRoomId(), ChatRoomMember::getUser))
                 : Map.of();
 
         return myMemberships.stream()
-                .map(member -> toSummary(member, lastMessageByRoomId.get(member.getChatRoom().getChatRoomId()), partnerByRoomId))
+                .map(member -> toSummary(
+                        member, lastMessageByRoomId.get(member.getChatRoom().getChatRoomId()), partnerByRoomId))
                 .toList();
     }
 
@@ -114,11 +115,14 @@ public class ChatRoomService {
 
         if (lastReadMessageId == null) {
             // 최초 진입 시에는 안읽은 메시지 없음
-            unread = chatMessageRepository.findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdAsc(chatRoom, 0L);
+            unread = chatMessageRepository.findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdAsc(
+                    chatRoom, 0L);
             context = List.of();
         } else {
-            unread = chatMessageRepository.findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdAsc(chatRoom, lastReadMessageId);
-            context = chatMessageRepository.findTop5ByChatRoomAndChatMessageIdLessThanEqualOrderByChatMessageIdDesc(chatRoom, lastReadMessageId);
+            unread = chatMessageRepository.findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdAsc(
+                    chatRoom, lastReadMessageId);
+            context = chatMessageRepository.findTop5ByChatRoomAndChatMessageIdLessThanEqualOrderByChatMessageIdDesc(
+                    chatRoom, lastReadMessageId);
         }
 
         List<ChatMessage> combined = new ArrayList<>(context);
@@ -151,7 +155,8 @@ public class ChatRoomService {
         Pageable pageable = PageRequest.of(0, size);
         Slice<ChatMessage> slice = (cursor == null)
                 ? chatMessageRepository.findByChatRoomOrderByChatMessageIdDesc(chatRoom, pageable)
-                : chatMessageRepository.findByChatRoomAndChatMessageIdLessThanOrderByChatMessageIdDesc(chatRoom, cursor, pageable);
+                : chatMessageRepository.findByChatRoomAndChatMessageIdLessThanOrderByChatMessageIdDesc(
+                        chatRoom, cursor, pageable);
 
         List<ChatMessage> reversed = new ArrayList<>(slice.getContent());
         Collections.reverse(reversed); // 오래된순으로 뒤집어서 응답
@@ -175,16 +180,21 @@ public class ChatRoomService {
             throw new RestApiException(CustomErrorCode.CHAT_ROOM_INVALID_TARGET);
         }
 
-        User target = userRepository.findById(request.getTargetUserId())
+        User target = userRepository
+                .findById(request.getTargetUserId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
 
-        ChatRoom chatRoom = chatRoomMemberRepository.findDirectRoomBetween(me, target, ChatRoomType.DIRECT)
+        ChatRoom chatRoom = chatRoomMemberRepository
+                .findDirectRoomBetween(me, target, ChatRoomType.DIRECT)
                 .orElseGet(() -> createDirectRoom(me, target));
 
-        ChatMessage lastMessage = chatMessageRepository.findLatestByChatRoomIn(List.of(chatRoom.getChatRoomId()))
-                .stream().findFirst().orElse(null);
+        ChatMessage lastMessage =
+                chatMessageRepository.findLatestByChatRoomIn(List.of(chatRoom.getChatRoomId())).stream()
+                        .findFirst()
+                        .orElse(null);
 
-        long unreadCount = chatRoomMemberRepository.findByChatRoomAndUser(chatRoom, me)
+        long unreadCount = chatRoomMemberRepository
+                .findByChatRoomAndUser(chatRoom, me)
                 .map(member -> chatMessageRepository.countByChatRoomAndChatMessageIdGreaterThan(
                         chatRoom, member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L))
                 .orElse(0L);
@@ -198,8 +208,7 @@ public class ChatRoomService {
                 null,
                 lastMessage != null ? previewOf(lastMessage) : null,
                 lastMessage != null ? lastMessage.getCreatedAt() : null,
-                (int) unreadCount
-        );
+                (int) unreadCount);
     }
 
     /**
@@ -222,8 +231,7 @@ public class ChatRoomService {
         // 실시간으로 읽음 명수 갱신할 수 있게 브로드캐스트 (누가 읽었는지는 프론트에서 노출하지 않고, 카운트 갱신 트리거로만 사용)
         messagingTemplate.convertAndSend(
                 "/sub/chat-rooms/" + roomId + "/read",
-                ChatReadEventResponse.of(roomId, user.getUserId(), request.getLastReadMessageId())
-        );
+                ChatReadEventResponse.of(roomId, user.getUserId(), request.getLastReadMessageId()));
     }
 
     /**
@@ -245,7 +253,8 @@ public class ChatRoomService {
             throw new RestApiException(CustomErrorCode.CHAT_ROOM_INVALID_TARGET);
         }
 
-        TeamMember teamMember = teamMemberRepository.findByTeamAndUser(chatRoom.getTeam(), user)
+        TeamMember teamMember = teamMemberRepository
+                .findByTeamAndUser(chatRoom.getTeam(), user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
 
         if (teamMember.getTeamRole() != TeamRole.LEADER) {
@@ -340,11 +349,13 @@ public class ChatRoomService {
      */
     @Transactional
     public ChatRoomSummaryResponse createGroupChatRoom(User creator, GroupChatRoomCreateRequest request) {
-        Team team = teamRepository.findById(request.getTeamId())
+        Team team = teamRepository
+                .findById(request.getTeamId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        teamMemberRepository.findByTeamAndUser(team, creator)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+        if (!teamMemberRepository.existsByTeamAndUser(team, creator)) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+        }
 
         List<Long> memberIds = request.getMemberIds().stream().distinct().toList();
         List<User> selectedUsers = userRepository.findAllById(memberIds);
@@ -400,9 +411,7 @@ public class ChatRoomService {
         }
 
         if (!newMembers.isEmpty()) {
-            String names = newMembers.stream()
-                    .map(u -> u.getName() + "님")
-                    .collect(Collectors.joining(", "));
+            String names = newMembers.stream().map(u -> u.getName() + "님").collect(Collectors.joining(", "));
             chatMessageService.sendSystemMessage(chatRoom, names + "이 초대되었습니다.", user);
         }
     }
@@ -452,19 +461,21 @@ public class ChatRoomService {
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
 
         Map<Long, TeamRole> teamRoleByUserId = chatRoom.getChatRoomType() != ChatRoomType.DIRECT
-                ? teamMemberRepository.findByTeamAndUserIn(chatRoom.getTeam(), members.stream().map(ChatRoomMember::getUser).toList()).stream()
-                .collect(Collectors.toMap(tm -> tm.getUser().getUserId(), TeamMember::getTeamRole))
+                ? teamMemberRepository
+                        .findByTeamAndUserIn(
+                                chatRoom.getTeam(),
+                                members.stream().map(ChatRoomMember::getUser).toList())
+                        .stream()
+                        .collect(Collectors.toMap(tm -> tm.getUser().getUserId(), TeamMember::getTeamRole))
                 : Map.of();
 
         return members.stream()
                 .map(crm -> ChatRoomMemberResponse.create(
                         crm.getUser(),
                         teamRoleByUserId.get(crm.getUser().getUserId()),
-                        s3Service.getImageUrl(crm.getUser().getImageKey())
-                ))
+                        s3Service.getImageUrl(crm.getUser().getImageKey())))
                 .toList();
     }
-
 
     // =========================================================================
     // ================================ 헬퍼 함수 ================================
@@ -481,17 +492,20 @@ public class ChatRoomService {
      * @param partnerByRoomId 1:1 채팅방 ID별 상대방 정보
      * @return 채팅방 목록 화면에 표시할 요약 정보
      */
-    private ChatRoomSummaryResponse toSummary(ChatRoomMember member, ChatMessage lastMessage, Map<Long, User> partnerByRoomId) {
+    private ChatRoomSummaryResponse toSummary(
+            ChatRoomMember member, ChatMessage lastMessage, Map<Long, User> partnerByRoomId) {
         return toSummary(member, lastMessage, partnerByRoomId, null);
     }
 
-    private ChatRoomSummaryResponse toSummary(ChatRoomMember member, ChatMessage lastMessage, Map<Long, User> partnerByRoomId, List<ChatRoomMember> preloadedGroupMembers) {
+    private ChatRoomSummaryResponse toSummary(
+            ChatRoomMember member,
+            ChatMessage lastMessage,
+            Map<Long, User> partnerByRoomId,
+            List<ChatRoomMember> preloadedGroupMembers) {
         ChatRoom chatRoom = member.getChatRoom();
 
         long unreadCount = chatMessageRepository.countByChatRoomAndChatMessageIdGreaterThan(
-                chatRoom,
-                member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L
-        );
+                chatRoom, member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L);
 
         String roomName;
         String imageUrl;
@@ -542,8 +556,7 @@ public class ChatRoomService {
                 memberProfileUrls,
                 lastMessage != null ? previewOf(lastMessage) : null,
                 lastMessage != null ? lastMessage.getCreatedAt() : null,
-                (int) unreadCount
-        );
+                (int) unreadCount);
     }
 
     /**
@@ -605,9 +618,14 @@ public class ChatRoomService {
         if (messages.isEmpty()) {
             return List.of();
         }
-        Map<Long, User> senderById = userRepository.findAllById(
-                messages.stream().map(ChatMessage::getCreatedBy).distinct().toList()
-        ).stream().collect(Collectors.toMap(User::getUserId, Function.identity()));
+        Map<Long, User> senderById =
+                userRepository
+                        .findAllById(messages.stream()
+                                .map(ChatMessage::getCreatedBy)
+                                .distinct()
+                                .toList())
+                        .stream()
+                        .collect(Collectors.toMap(User::getUserId, Function.identity()));
 
         // 읽음 명수 계산용으로 방 멤버 전체를 한 번만 조회 (N+1 방지)
         List<ChatRoomMember> members = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
@@ -633,7 +651,8 @@ public class ChatRoomService {
      * @throws RestApiException 채팅방을 찾을 수 없는 경우
      */
     private ChatRoom getChatRoomById(Long roomId) {
-        return chatRoomRepository.findById(roomId)
+        return chatRoomRepository
+                .findById(roomId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.CHAT_ROOM_NOT_FOUND));
     }
 
@@ -646,7 +665,8 @@ public class ChatRoomService {
      * @throws RestApiException 사용자가 해당 채팅방 멤버가 아닌 경우
      */
     private ChatRoomMember getMemberOrThrow(ChatRoom chatRoom, User user) {
-        return chatRoomMemberRepository.findByChatRoomAndUser(chatRoom, user)
+        return chatRoomMemberRepository
+                .findByChatRoomAndUser(chatRoom, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.CHAT_ROOM_FORBIDDEN));
     }
 

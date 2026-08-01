@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '8.9.0'
+    id 'net.ltgt.errorprone' version '5.1.0'
 }
 
 group = 'com.inuteamflow'
@@ -19,6 +21,8 @@ repositories {
 }
 
 dependencies {
+    errorprone 'com.google.errorprone:error_prone_core:2.42.0'
+
     implementation platform('software.amazon.awssdk:bom:2.27.21')
 
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -63,4 +67,52 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone.disable('MissingOverride')
+}
+
+spotless {
+
+    // dev 브랜치와 비교했을 때 변경된 파일에 한에서 spotless 검사를 진행
+    ratchetFrom 'origin/dev'
+
+    java {
+        target 'src/*/java/**/*.java'
+
+        palantirJavaFormat('2.96.0')
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+// scripts/hooks 의 스크립트를 .git/hooks 로 복사하여 git 훅을 설치합니다.
+//  - pre-commit: 커밋 전 spotlessCheck 실행 (변경 파일만)
+//  - pre-push  : push 전 compileJava 실행 (Error Prone 정적 분석)
+// 팀원은 클론 후 `./gradlew installGitHook`을 한 번 실행하면 됩니다.
+// scripts/hooks 의 훅 스크립트를 수정하면 명령어를 다시 실행해야 합니다.
+tasks.register('installGitHook', Copy) {
+    group = 'git hooks'
+    description = 'Installs pre-commit (spotlessCheck) and pre-push (Error Prone) hooks'
+
+    def hooksDir = file("$rootDir/.git/hooks")
+    onlyIf {
+        boolean present = hooksDir.exists()
+        if (!present) {
+            logger.warn('[installGitHook] .git/hooks directory not found; skipping hook installation.')
+        }
+        present
+    }
+
+    from "$rootDir/scripts/hooks"
+    into hooksDir
+    filePermissions {
+        unix("rwxr-xr-x")
+    }
+
+    doLast {
+        logger.lifecycle("[installGitHook] Hooks installed into $hooksDir")
+    }
 }

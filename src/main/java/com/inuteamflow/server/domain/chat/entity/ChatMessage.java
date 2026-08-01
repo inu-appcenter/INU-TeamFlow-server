@@ -64,5 +64,4 @@ public class ChatMessage extends BaseEntity {
                 .content(content)
                 .build();
     }
-
 }

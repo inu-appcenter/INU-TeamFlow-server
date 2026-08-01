@@ -17,17 +17,16 @@ import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -56,7 +55,8 @@ public class InfoPostService {
      * @param pageable 페이지 정보
      * @return 대표 이미지와 모집글 수를 포함한 정보글 목록
      */
-    public Page<InfoPostSummaryResponse> getInfoPosts(InfoPostCategory category, InfoPostType type, String keyword, Pageable pageable) {
+    public Page<InfoPostSummaryResponse> getInfoPosts(
+            InfoPostCategory category, InfoPostType type, String keyword, Pageable pageable) {
         List<InfoPostCategory> categories = resolveCategories(category, type);
         Page<InfoPost> infoPostPage = infoPostRepository.search(categories, keyword, pageable);
         return toSummaryPage(infoPostPage);
@@ -90,7 +90,8 @@ public class InfoPostService {
         boolean isAuthor = infoPost.isAuthor(user.getUserId());
         Integer recruitmentCount = getRecruitmentCount(infoPost);
 
-        return InfoPostDetailResponse.of(infoPost, author, authorProfileUrl, images, s3Service::getImageUrl, isAuthor, recruitmentCount);
+        return InfoPostDetailResponse.of(
+                infoPost, author, authorProfileUrl, images, s3Service::getImageUrl, isAuthor, recruitmentCount);
     }
 
     /**
@@ -116,7 +117,8 @@ public class InfoPostService {
         List<InfoPostImage> images = saveImages(infoPost, request.getImageKeys());
         String authorProfileUrl = s3Service.getImageUrl(user.getImageKey());
 
-        return InfoPostDetailResponse.of(infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, getRecruitmentCount(infoPost));
+        return InfoPostDetailResponse.of(
+                infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, getRecruitmentCount(infoPost));
     }
 
     /**
@@ -146,7 +148,8 @@ public class InfoPostService {
         String authorProfileUrl = s3Service.getImageUrl(user.getImageKey());
         Integer recruitmentCount = getRecruitmentCount(infoPost);
 
-        return InfoPostDetailResponse.of(infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, recruitmentCount);
+        return InfoPostDetailResponse.of(
+                infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, recruitmentCount);
     }
 
     /**
@@ -179,8 +182,7 @@ public class InfoPostService {
      */
     public Page<RecruitmentSummaryResponse> getRecruitmentsByInfoPost(Long infoPostId, Pageable pageable) {
         InfoPost infoPost = getInfoPostById(infoPostId);
-        return recruitmentRepository.findAllByInfoPost(infoPost, pageable)
-                .map(RecruitmentSummaryResponse::from);
+        return recruitmentRepository.findAllByInfoPost(infoPost, pageable).map(RecruitmentSummaryResponse::from);
     }
 
     // =========================================================================
@@ -199,9 +201,11 @@ public class InfoPostService {
         List<InfoPost> infoPosts = infoPostPage.getContent();
 
         // N+1 방지: 대표 이미지(sortOrder=0)를 한 번에 조회
-        Map<Long, String> thumbnailKeyByInfoPostId = infoPosts.isEmpty() ? Map.of()
+        Map<Long, String> thumbnailKeyByInfoPostId = infoPosts.isEmpty()
+                ? Map.of()
                 : infoPostImageRepository.findAllByInfoPostInAndSortOrder(infoPosts, 0).stream()
-                .collect(Collectors.toMap(img -> img.getInfoPost().getInfoPostId(), InfoPostImage::getImageKey));
+                        .collect(
+                                Collectors.toMap(img -> img.getInfoPost().getInfoPostId(), InfoPostImage::getImageKey));
 
         return infoPostPage.map(infoPost -> {
             String thumbnailKey = thumbnailKeyByInfoPostId.get(infoPost.getInfoPostId());
@@ -269,7 +273,8 @@ public class InfoPostService {
      * @throws RestApiException 정보글을 찾을 수 없는 경우
      */
     private InfoPost getInfoPostById(Long infoPostId) {
-        return infoPostRepository.findById(infoPostId)
+        return infoPostRepository
+                .findById(infoPostId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.INFO_POST_NOT_FOUND));
     }
 
@@ -281,8 +286,7 @@ public class InfoPostService {
      * @throws RestApiException 사용자를 찾을 수 없는 경우
      */
     private User getUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
+        return userRepository.findById(userId).orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
     }
 
     /**
@@ -306,5 +310,4 @@ public class InfoPostService {
         }
         return null;
     }
-
 }

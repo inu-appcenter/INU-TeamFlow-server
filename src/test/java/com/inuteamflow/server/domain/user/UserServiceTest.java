@@ -1,5 +1,8 @@
 package com.inuteamflow.server.domain.user;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.inuteamflow.server.domain.chat.entity.ChatRoom;
 import com.inuteamflow.server.domain.chat.entity.ChatRoomMember;
 import com.inuteamflow.server.domain.chat.repository.ChatRoomMemberRepository;
@@ -68,6 +71,11 @@ import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import com.inuteamflow.server.global.s3.S3Service;
 import jakarta.persistence.EntityManager;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -79,15 +87,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 /**
  * {@link UserService}의 회원 탈퇴 기능을 실제 Repository와 H2 데이터베이스로 검증한다.
  * - 사용자와 연관된 도메인 데이터를 구성한 뒤 삭제 순서, FK 무결성, 연관 데이터 정리 및 탈퇴 제한 조건을 확인한다.
@@ -98,37 +97,92 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Transactional
 class UserServiceTest {
 
-    @Autowired private UserService userService;
-    @Autowired private EntityManager entityManager;
+    @Autowired
+    private UserService userService;
 
-    @MockitoBean private S3Service s3Service; // 실제 AWS 호출 방지
+    @Autowired
+    private EntityManager entityManager;
 
-    @Autowired private UserRepository userRepository;
-    @Autowired private TeamRepository teamRepository;
-    @Autowired private TeamMemberRepository teamMemberRepository;
-    @Autowired private RecruitmentRepository recruitmentRepository;
-    @Autowired private RecruitmentApplicationRepository recruitmentApplicationRepository;
-    @Autowired private InfoPostRepository infoPostRepository;
-    @Autowired private InfoPostImageRepository infoPostImageRepository;
-    @Autowired private TeamInvitationRepository teamInvitationRepository;
-    @Autowired private VoteRepository voteRepository;
-    @Autowired private VoteParticipantRepository voteParticipantRepository;
-    @Autowired private VoteAvailabilityRepository voteAvailabilityRepository;
-    @Autowired private VoteDateRepository voteDateRepository;
-    @Autowired private VoteTimeSlotRepository voteTimeSlotRepository;
-    @Autowired private TeamNoticeRepository teamNoticeRepository;
-    @Autowired private TeamNoticeImageRepository teamNoticeImageRepository;
-    @Autowired private TeamNoticeReadRepository teamNoticeReadRepository;
-    @Autowired private EventRepository eventRepository;
-    @Autowired private EventParticipantRepository eventParticipantRepository;
-    @Autowired private RecurrenceRuleRepository recurrenceRuleRepository;
-    @Autowired private RecurrenceExceptionRepository recurrenceExceptionRepository;
-    @Autowired private RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
-    @Autowired private FcmTokenRepository fcmTokenRepository;
-    @Autowired private NotificationRepository notificationRepository;
-    @Autowired private RefreshTokenRepository refreshTokenRepository;
-    @Autowired private ChatRoomRepository chatRoomRepository;
-    @Autowired private ChatRoomMemberRepository chatRoomMemberRepository;
+    @MockitoBean
+    private S3Service s3Service; // 실제 AWS 호출 방지
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
+
+    @Autowired
+    private TeamMemberRepository teamMemberRepository;
+
+    @Autowired
+    private RecruitmentRepository recruitmentRepository;
+
+    @Autowired
+    private RecruitmentApplicationRepository recruitmentApplicationRepository;
+
+    @Autowired
+    private InfoPostRepository infoPostRepository;
+
+    @Autowired
+    private InfoPostImageRepository infoPostImageRepository;
+
+    @Autowired
+    private TeamInvitationRepository teamInvitationRepository;
+
+    @Autowired
+    private VoteRepository voteRepository;
+
+    @Autowired
+    private VoteParticipantRepository voteParticipantRepository;
+
+    @Autowired
+    private VoteAvailabilityRepository voteAvailabilityRepository;
+
+    @Autowired
+    private VoteDateRepository voteDateRepository;
+
+    @Autowired
+    private VoteTimeSlotRepository voteTimeSlotRepository;
+
+    @Autowired
+    private TeamNoticeRepository teamNoticeRepository;
+
+    @Autowired
+    private TeamNoticeImageRepository teamNoticeImageRepository;
+
+    @Autowired
+    private TeamNoticeReadRepository teamNoticeReadRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
+
+    @Autowired
+    private EventParticipantRepository eventParticipantRepository;
+
+    @Autowired
+    private RecurrenceRuleRepository recurrenceRuleRepository;
+
+    @Autowired
+    private RecurrenceExceptionRepository recurrenceExceptionRepository;
+
+    @Autowired
+    private RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
+
+    @Autowired
+    private FcmTokenRepository fcmTokenRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private ChatRoomRepository chatRoomRepository;
+
+    @Autowired
+    private ChatRoomMemberRepository chatRoomMemberRepository;
 
     @AfterEach
     void clearSecurityContext() {
@@ -144,8 +198,11 @@ class UserServiceTest {
         User other = createUser("other1", "other1@inu.ac.kr");
 
         actingAs(leader);
-        Team team = teamRepository.save(
-                Team.builder().name("team1").description("desc").category(Category.PROJECT).build());
+        Team team = teamRepository.save(Team.builder()
+                .name("team1")
+                .description("desc")
+                .category(Category.PROJECT)
+                .build());
         TeamMember leaderMember = teamMemberRepository.save(TeamMember.create(team, leader, TeamRole.LEADER));
 
         actingAs(target);
@@ -153,33 +210,52 @@ class UserServiceTest {
 
         // Recruitment/RecruitmentApplication: target이 만든 모집글(R1) + 남이 만든 모집글에 target이 지원(A2)
         actingAs(target);
-        InfoPost infoPost = infoPostRepository.save(
-                InfoPost.create(InfoPostCategory.CLUB, "정보글", "내용"));
-        InfoPostImage infoPostImage = infoPostImageRepository.save(
-                InfoPostImage.create("info-posts/image/target.png", 0, infoPost));
+        InfoPost infoPost = infoPostRepository.save(InfoPost.create(InfoPostCategory.CLUB, "정보글", "내용"));
+        InfoPostImage infoPostImage =
+                infoPostImageRepository.save(InfoPostImage.create("info-posts/image/target.png", 0, infoPost));
         Recruitment r1 = recruitmentRepository.save(Recruitment.builder()
-                .title("target 모집").description("설명").category(Category.PROJECT)
-                .targetMemberCount(5).endAt(LocalDateTime.now().plusDays(7))
-                .team(team).recruiter(target).build());
+                .title("target 모집")
+                .description("설명")
+                .category(Category.PROJECT)
+                .targetMemberCount(5)
+                .endAt(LocalDateTime.now().plusDays(7))
+                .team(team)
+                .recruiter(target)
+                .build());
 
         actingAs(other);
         recruitmentApplicationRepository.save(RecruitmentApplication.builder()
-                .recruitment(r1).introduction("other 지원").build());
+                .recruitment(r1)
+                .introduction("other 지원")
+                .build());
 
         actingAs(leader);
         Recruitment r2 = recruitmentRepository.save(Recruitment.builder()
-                .title("leader 모집").description("설명").category(Category.PROJECT)
-                .targetMemberCount(5).endAt(LocalDateTime.now().plusDays(7))
-                .team(team).recruiter(leader).build());
+                .title("leader 모집")
+                .description("설명")
+                .category(Category.PROJECT)
+                .targetMemberCount(5)
+                .endAt(LocalDateTime.now().plusDays(7))
+                .team(team)
+                .recruiter(leader)
+                .build());
         // target의 InfoPost를 연결한, leader가 만든 모집글(R3) -> clearInfoPostByCreatedBy 검증용
         Recruitment r3 = recruitmentRepository.save(Recruitment.builder()
-                .title("leader 모집2").description("설명").category(Category.PROJECT)
-                .targetMemberCount(5).endAt(LocalDateTime.now().plusDays(7))
-                .team(team).recruiter(leader).infoPost(infoPost).build());
+                .title("leader 모집2")
+                .description("설명")
+                .category(Category.PROJECT)
+                .targetMemberCount(5)
+                .endAt(LocalDateTime.now().plusDays(7))
+                .team(team)
+                .recruiter(leader)
+                .infoPost(infoPost)
+                .build());
 
         actingAs(target);
         recruitmentApplicationRepository.save(RecruitmentApplication.builder()
-                .recruitment(r2).introduction("target 지원").build());
+                .recruitment(r2)
+                .introduction("target 지원")
+                .build());
 
         // TeamInvitation: target이 받은 초대 + target이 보낸 초대
         actingAs(leader);
@@ -190,64 +266,97 @@ class UserServiceTest {
         // Vote/VoteParticipant/VoteAvailability: leader가 만든 투표에 target이 참여
         actingAs(leader);
         Vote vote = voteRepository.save(Vote.builder()
-                .team(team).title("투표").description("설명").isOpened(true).isAllDay(false)
-                .dailyTimeStart(LocalTime.of(9, 0)).dailyTimeEnd(LocalTime.of(20, 0))
-                .slotUnitMinute(30).build());
-        VoteDate voteDate = voteDateRepository.save(VoteDate.create(vote, LocalDate.now().plusDays(1)));
-        VoteTimeSlot voteTimeSlot = voteTimeSlotRepository.save(
-                VoteTimeSlot.create(voteDate, LocalTime.of(9, 0), LocalTime.of(9, 30)));
-        VoteParticipant voteParticipant = voteParticipantRepository.save(
-                VoteParticipant.create(vote, targetMember));
+                .team(team)
+                .title("투표")
+                .description("설명")
+                .isOpened(true)
+                .isAllDay(false)
+                .dailyTimeStart(LocalTime.of(9, 0))
+                .dailyTimeEnd(LocalTime.of(20, 0))
+                .slotUnitMinute(30)
+                .build());
+        VoteDate voteDate =
+                voteDateRepository.save(VoteDate.create(vote, LocalDate.now().plusDays(1)));
+        VoteTimeSlot voteTimeSlot =
+                voteTimeSlotRepository.save(VoteTimeSlot.create(voteDate, LocalTime.of(9, 0), LocalTime.of(9, 30)));
+        VoteParticipant voteParticipant = voteParticipantRepository.save(VoteParticipant.create(vote, targetMember));
         voteAvailabilityRepository.save(VoteAvailability.create(voteParticipant, voteTimeSlot));
 
         // TeamNotice: target이 작성, leader가 읽음
         actingAs(target);
         TeamNotice teamNotice = teamNoticeRepository.save(TeamNotice.builder()
-                .team(team).title("공지").content("내용").isPinned(false).build());
-        teamNoticeImageRepository.save(
-                TeamNoticeImage.create("teams/notices/target.png", 0, teamNotice));
+                .team(team)
+                .title("공지")
+                .content("내용")
+                .isPinned(false)
+                .build());
+        teamNoticeImageRepository.save(TeamNoticeImage.create("teams/notices/target.png", 0, teamNotice));
         actingAs(leader);
         teamNoticeReadRepository.save(TeamNoticeRead.create(teamNotice));
 
         // Event: 팀 일정(E1, team 존재) - team이 있으므로 개인일정 삭제 대상이 아님, 참여자 행만 제거되어야 함
         actingAs(target);
         Event teamEvent = eventRepository.save(Event.builder()
-                .team(team).title("팀 일정")
-                .startAt(LocalDateTime.now()).endAt(LocalDateTime.now().plusHours(1))
-                .isAllDay(false).color(EventColor.SUN).uid("uid-team-event")
-                .sequence(0).isFinished(false).isSingle(true).build());
+                .team(team)
+                .title("팀 일정")
+                .startAt(LocalDateTime.now())
+                .endAt(LocalDateTime.now().plusHours(1))
+                .isAllDay(false)
+                .color(EventColor.SUN)
+                .uid("uid-team-event")
+                .sequence(0)
+                .isFinished(false)
+                .isSingle(true)
+                .build());
         eventParticipantRepository.save(EventParticipant.create(teamEvent, targetMember, EventRole.HOST));
         RecurrenceException teamEventException = recurrenceExceptionRepository.save(RecurrenceException.builder()
-                .event(teamEvent).originalOccurrenceAt(LocalDateTime.now())
-                .exceptionType(RecurrenceExceptionType.CANCELLED).build());
+                .event(teamEvent)
+                .originalOccurrenceAt(LocalDateTime.now())
+                .exceptionType(RecurrenceExceptionType.CANCELLED)
+                .build());
         recurrenceExceptionParticipantRepository.save(
                 RecurrenceExceptionParticipant.create(teamEventException, targetMember, EventRole.HOST));
 
         // Event: 개인 일정(E2, team=null) - createdBy=target, team이 null이므로 통째로 삭제되어야 함
         Event personalEvent = eventRepository.save(Event.builder()
                 .title("개인 일정")
-                .startAt(LocalDateTime.now()).endAt(LocalDateTime.now().plusHours(1))
-                .isAllDay(false).color(EventColor.LEAF).uid("uid-personal-event")
-                .sequence(0).isFinished(false).isSingle(false).build());
+                .startAt(LocalDateTime.now())
+                .endAt(LocalDateTime.now().plusHours(1))
+                .isAllDay(false)
+                .color(EventColor.LEAF)
+                .uid("uid-personal-event")
+                .sequence(0)
+                .isFinished(false)
+                .isSingle(false)
+                .build());
         recurrenceRuleRepository.save(RecurrenceRule.builder()
-                .event(personalEvent).freq(RecurrenceFrequency.WEEKLY).intervalValue(1)
+                .event(personalEvent)
+                .freq(RecurrenceFrequency.WEEKLY)
+                .intervalValue(1)
                 .byDay(List.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY))
-                .seriesStartAt(LocalDateTime.now()).build());
+                .seriesStartAt(LocalDateTime.now())
+                .build());
         recurrenceExceptionRepository.save(RecurrenceException.builder()
-                .event(personalEvent).originalOccurrenceAt(LocalDateTime.now().plusDays(7))
-                .exceptionType(RecurrenceExceptionType.CANCELLED).build());
+                .event(personalEvent)
+                .originalOccurrenceAt(LocalDateTime.now().plusDays(7))
+                .exceptionType(RecurrenceExceptionType.CANCELLED)
+                .build());
 
         // FcmToken
-        fcmTokenRepository.save(FcmToken.builder().fcmToken("fcm-token-target").deviceType("WEB").build());
+        fcmTokenRepository.save(FcmToken.builder()
+                .fcmToken("fcm-token-target")
+                .deviceType("WEB")
+                .build());
 
         // Notification: target이 받은 알림(삭제 대상) + target이 보낸 알림(receiver=leader, 삭제되면 안됨)
-        notificationRepository.save(Notification.create(
-                target, "제목", "내용", NotificationType.CHAT, "/url"));
-        notificationRepository.save(Notification.create(
-                leader, "제목2", "내용2", NotificationType.CHAT, "/url2"));
+        notificationRepository.save(Notification.create(target, "제목", "내용", NotificationType.CHAT, "/url"));
+        notificationRepository.save(Notification.create(leader, "제목2", "내용2", NotificationType.CHAT, "/url2"));
 
         // RefreshToken
-        refreshTokenRepository.save(RefreshToken.builder().user(target).refreshToken("refresh-token").build());
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(target)
+                .refreshToken("refresh-token")
+                .build());
 
         // ChatRoom/ChatRoomMember: 팀 채팅방 + 1:1 채팅방 양쪽에 target 소속
         ChatRoom teamChatRoom = chatRoomRepository.save(ChatRoom.createTeamRoom(team));
@@ -327,13 +436,15 @@ class UserServiceTest {
     void deleteUser_throwsWhenUserIsTeamLeader() {
         User leader = createUser("target2", "target2@inu.ac.kr");
         actingAs(leader);
-        Team team = teamRepository.save(
-                Team.builder().name("team2").description("desc").category(Category.PROJECT).build());
+        Team team = teamRepository.save(Team.builder()
+                .name("team2")
+                .description("desc")
+                .category(Category.PROJECT)
+                .build());
         teamMemberRepository.save(TeamMember.create(team, leader, TeamRole.LEADER));
         entityManager.flush();
 
-        RestApiException exception = assertThrows(RestApiException.class,
-                () -> userService.deleteUser(leader));
+        RestApiException exception = assertThrows(RestApiException.class, () -> userService.deleteUser(leader));
 
         assertThat(exception.getErrorCode()).isEqualTo(CustomErrorCode.TEAM_MEMBER_IS_HOST);
         assertThat(userRepository.findById(leader.getUserId())).isPresent();
@@ -346,20 +457,28 @@ class UserServiceTest {
         User leader = createUser("leader3", "leader3@inu.ac.kr");
 
         actingAs(leader);
-        Team team = teamRepository.save(
-                Team.builder().name("team3").description("desc").category(Category.PROJECT).build());
+        Team team = teamRepository.save(Team.builder()
+                .name("team3")
+                .description("desc")
+                .category(Category.PROJECT)
+                .build());
         teamMemberRepository.save(TeamMember.create(team, leader, TeamRole.LEADER));
 
         actingAs(target);
         teamMemberRepository.save(TeamMember.create(team, target, TeamRole.MEMBER));
         voteRepository.save(Vote.builder()
-                .team(team).title("진행중 투표").description("설명").isOpened(true).isAllDay(false)
-                .dailyTimeStart(LocalTime.of(9, 0)).dailyTimeEnd(LocalTime.of(20, 0))
-                .slotUnitMinute(30).build());
+                .team(team)
+                .title("진행중 투표")
+                .description("설명")
+                .isOpened(true)
+                .isAllDay(false)
+                .dailyTimeStart(LocalTime.of(9, 0))
+                .dailyTimeEnd(LocalTime.of(20, 0))
+                .slotUnitMinute(30)
+                .build());
         entityManager.flush();
 
-        RestApiException exception = assertThrows(RestApiException.class,
-                () -> userService.deleteUser(target));
+        RestApiException exception = assertThrows(RestApiException.class, () -> userService.deleteUser(target));
 
         assertThat(exception.getErrorCode()).isEqualTo(CustomErrorCode.VOTE_IS_OPEN);
         assertThat(userRepository.findById(target.getUserId())).isPresent();
@@ -372,31 +491,36 @@ class UserServiceTest {
         User leader = createUser("leader4", "leader4@inu.ac.kr");
 
         actingAs(leader);
-        Team team = teamRepository.save(
-                Team.builder().name("team4").description("desc").category(Category.PROJECT).build());
-        TeamMember leaderMember = teamMemberRepository.save(
-                TeamMember.create(team, leader, TeamRole.LEADER));
+        Team team = teamRepository.save(Team.builder()
+                .name("team4")
+                .description("desc")
+                .category(Category.PROJECT)
+                .build());
+        TeamMember leaderMember = teamMemberRepository.save(TeamMember.create(team, leader, TeamRole.LEADER));
 
         actingAs(target);
-        TeamMember targetMember = teamMemberRepository.save(
-                TeamMember.create(team, target, TeamRole.MEMBER));
+        TeamMember targetMember = teamMemberRepository.save(TeamMember.create(team, target, TeamRole.MEMBER));
         Vote closedVote = voteRepository.save(Vote.builder()
-                .team(team).title("종료된 투표").description("설명").isOpened(false).isAllDay(false)
-                .dailyTimeStart(LocalTime.of(9, 0)).dailyTimeEnd(LocalTime.of(20, 0))
-                .slotUnitMinute(30).build());
+                .team(team)
+                .title("종료된 투표")
+                .description("설명")
+                .isOpened(false)
+                .isAllDay(false)
+                .dailyTimeStart(LocalTime.of(9, 0))
+                .dailyTimeEnd(LocalTime.of(20, 0))
+                .slotUnitMinute(30)
+                .build());
         VoteDate voteDate = voteDateRepository.save(
                 VoteDate.create(closedVote, LocalDate.now().plusDays(1)));
-        VoteTimeSlot voteTimeSlot = voteTimeSlotRepository.save(
-                VoteTimeSlot.create(voteDate, LocalTime.of(9, 0), LocalTime.of(9, 30)));
+        VoteTimeSlot voteTimeSlot =
+                voteTimeSlotRepository.save(VoteTimeSlot.create(voteDate, LocalTime.of(9, 0), LocalTime.of(9, 30)));
 
-        VoteParticipant targetParticipant = voteParticipantRepository.save(
-                VoteParticipant.create(closedVote, targetMember));
-        VoteParticipant leaderParticipant = voteParticipantRepository.save(
-                VoteParticipant.create(closedVote, leaderMember));
-        voteAvailabilityRepository.save(
-                VoteAvailability.create(targetParticipant, voteTimeSlot));
-        voteAvailabilityRepository.save(
-                VoteAvailability.create(leaderParticipant, voteTimeSlot));
+        VoteParticipant targetParticipant =
+                voteParticipantRepository.save(VoteParticipant.create(closedVote, targetMember));
+        VoteParticipant leaderParticipant =
+                voteParticipantRepository.save(VoteParticipant.create(closedVote, leaderMember));
+        voteAvailabilityRepository.save(VoteAvailability.create(targetParticipant, voteTimeSlot));
+        voteAvailabilityRepository.save(VoteAvailability.create(leaderParticipant, voteTimeSlot));
 
         entityManager.flush();
         entityManager.clear();
@@ -414,9 +538,8 @@ class UserServiceTest {
         assertThat(userRepository.findById(leaderId)).isPresent();
         assertThat(teamRepository.findById(teamId)).isPresent();
         assertThat(teamMemberRepository.findByTeamAndUser(
-                teamRepository.getReferenceById(teamId),
-                userRepository.getReferenceById(leaderId)
-        )).isPresent();
+                        teamRepository.getReferenceById(teamId), userRepository.getReferenceById(leaderId)))
+                .isPresent();
 
         assertThat(voteRepository.findById(closedVoteId)).isEmpty();
         assertThat(voteParticipantRepository.count()).isZero();
@@ -440,8 +563,8 @@ class UserServiceTest {
     }
 
     private void actingAs(User user) {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken(
                         new UserDetailsImpl(user), null, new UserDetailsImpl(user).getAuthorities()));
     }
 }

@@ -11,9 +11,9 @@ import org.springframework.messaging.handler.annotation.support.MethodArgumentTy
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 @RestControllerAdvice
@@ -41,9 +41,9 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.create(errorCode.getCode(), message));
     }
 
-
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e) {
         ErrorCode errorCode = CustomErrorCode.COMMON_INVALID_REQUEST_TYPE;
         log.error("MethodArgumentTypeMismatchException", e);
         return ResponseEntity.status(errorCode.getHttpStatus())
@@ -51,7 +51,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameter(MissingServletRequestParameterException e) {
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameter(
+            MissingServletRequestParameterException e) {
         ErrorCode errorCode = CustomErrorCode.COMMON_INVALID_PARAMETER;
         log.error("MissingServletRequestParameterException", e);
         return ResponseEntity.status(errorCode.getHttpStatus())
@@ -62,8 +63,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleNoHandlerFound(NoHandlerFoundException e) {
         ErrorCode errorCode = CustomErrorCode.COMMON_HANDLER_NOT_FOUND;
         log.error("NoHandlerFoundException", e);
-        return ResponseEntity.status(errorCode.getHttpStatus())
-                .body(ErrorResponse.create(errorCode.getCode(), ""));
+        return ResponseEntity.status(errorCode.getHttpStatus()).body(ErrorResponse.create(errorCode.getCode(), ""));
     }
 
     @ExceptionHandler(BadCredentialsException.class)

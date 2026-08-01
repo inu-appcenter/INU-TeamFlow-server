@@ -11,14 +11,13 @@ import com.inuteamflow.server.domain.notification.repository.NotificationReposit
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -42,11 +41,7 @@ public class NotificationService {
      * @param pageable 알림 목록의 페이지 정보
      * @return 다음 페이지 여부와 읽지 않은 알림 수를 포함한 알림 목록
      */
-    public NotificationSliceResponse getNotifications(
-            NotificationType type,
-            User user,
-            Pageable pageable
-    ) {
+    public NotificationSliceResponse getNotifications(NotificationType type, User user, Pageable pageable) {
         Slice<Notification> slice = (type != null)
                 ? notificationRepository.findByReceiverAndType(user, type, pageable)
                 : notificationRepository.findByReceiver(user, pageable);
@@ -64,11 +59,9 @@ public class NotificationService {
      * @throws RestApiException 알림을 찾을 수 없거나 사용자가 알림 수신자가 아닌 경우
      */
     @Transactional
-    public void readNotification(
-            Long notificationId,
-            User user
-    ) {
-        Notification notification = notificationRepository.findByIdWithReceiver(notificationId)
+    public void readNotification(Long notificationId, User user) {
+        Notification notification = notificationRepository
+                .findByIdWithReceiver(notificationId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.NOTIFICATION_NOT_FOUND));
 
         if (!notification.getReceiver().getUserId().equals(user.getUserId())) {
@@ -85,10 +78,7 @@ public class NotificationService {
      * @param user 알림을 읽는 사용자
      */
     @Transactional
-    public void readNotifications(
-            NotificationRequest request,
-            User user
-    ) {
+    public void readNotifications(NotificationRequest request, User user) {
         notificationRepository.bulkRead(request.getNotificationIds(), user);
     }
 
@@ -99,10 +89,7 @@ public class NotificationService {
      * @param user 알림을 삭제하는 사용자
      */
     @Transactional
-    public void deleteNotifications(
-            NotificationRequest request,
-            User user
-    ) {
+    public void deleteNotifications(NotificationRequest request, User user) {
         notificationRepository.bulkDelete(request.getNotificationIds(), user);
     }
 
@@ -119,23 +106,11 @@ public class NotificationService {
      */
     @Transactional
     public void createNotification(
-            User receiver,
-            String title,
-            String content,
-            NotificationType type,
-            String redirectUrl
-    ) {
-        Notification notification = notificationRepository.save(Notification.create(receiver, title, content, type, redirectUrl));
-        eventPublisher.publishEvent(
-                new FcmSingleEvent(
-                        receiver.getUserId(),
-                        title,
-                        content,
-                        redirectUrl,
-                        type,
-                        notification.getNotificationId()
-                )
-        );
+            User receiver, String title, String content, NotificationType type, String redirectUrl) {
+        Notification notification =
+                notificationRepository.save(Notification.create(receiver, title, content, type, redirectUrl));
+        eventPublisher.publishEvent(new FcmSingleEvent(
+                receiver.getUserId(), title, content, redirectUrl, type, notification.getNotificationId()));
     }
 
     /**
@@ -151,26 +126,13 @@ public class NotificationService {
      */
     @Transactional
     public void createNotifications(
-            List<User> receivers,
-            String title,
-            String content,
-            NotificationType type,
-            String redirectUrl
-    ) {
+            List<User> receivers, String title, String content, NotificationType type, String redirectUrl) {
         List<Notification> notifications = receivers.stream()
                 .map(receiver -> Notification.create(receiver, title, content, type, redirectUrl))
                 .toList();
         notificationRepository.saveAll(notifications);
         List<Long> receiverIds = receivers.stream().map(User::getUserId).toList();
-        eventPublisher.publishEvent(
-                new FcmMultiEvent(
-                        receiverIds,
-                        title,
-                        content,
-                        redirectUrl,
-                        type
-                )
-        );
+        eventPublisher.publishEvent(new FcmMultiEvent(receiverIds, title, content, redirectUrl, type));
     }
 
     /**
@@ -191,19 +153,8 @@ public class NotificationService {
             String content,
             NotificationType type,
             String redirectUrl,
-            Long roomId
-    ) {
+            Long roomId) {
         eventPublisher.publishEvent(
-                new ChatFcmEvent(
-                        receiverIds,
-                        title,
-                        content,
-                        type,
-                        redirectUrl,
-                        roomId,
-                        "chat-room-" + roomId
-                )
-        );
+                new ChatFcmEvent(receiverIds, title, content, type, redirectUrl, roomId, "chat-room-" + roomId));
     }
-
 }

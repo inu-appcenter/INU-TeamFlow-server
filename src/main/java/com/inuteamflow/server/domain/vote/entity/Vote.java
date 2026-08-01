@@ -4,12 +4,11 @@ import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.vote.dto.request.EventVoteCreateRequest;
 import com.inuteamflow.server.global.BaseEntity;
 import jakarta.persistence.*;
+import java.time.LocalTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalTime;
 
 @Getter
 @Entity
@@ -56,8 +55,7 @@ public class Vote extends BaseEntity {
             Boolean isAllDay,
             LocalTime dailyTimeStart,
             LocalTime dailyTimeEnd,
-            Integer slotUnitMinute
-    ) {
+            Integer slotUnitMinute) {
         this.team = team;
         this.title = title;
         this.description = description;
@@ -68,10 +66,7 @@ public class Vote extends BaseEntity {
         this.slotUnitMinute = slotUnitMinute;
     }
 
-    public static Vote create(
-            Team team,
-            EventVoteCreateRequest request
-    ) {
+    public static Vote create(Team team, EventVoteCreateRequest request) {
         return Vote.builder()
                 .team(team)
                 .title(request.getTitle())

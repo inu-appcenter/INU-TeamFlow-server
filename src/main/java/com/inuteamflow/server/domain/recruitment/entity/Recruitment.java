@@ -8,12 +8,11 @@ import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -60,9 +59,15 @@ public class Recruitment extends BaseEntity {
     private InfoPost infoPost; // 정보글 연결 안 하면 null
 
     @Builder
-    private Recruitment(String title, String description, Category category,
-                        Integer targetMemberCount, LocalDateTime endAt,
-                        Team team, User recruiter, InfoPost infoPost) {
+    private Recruitment(
+            String title,
+            String description,
+            Category category,
+            Integer targetMemberCount,
+            LocalDateTime endAt,
+            Team team,
+            User recruiter,
+            InfoPost infoPost) {
         this.title = title;
         this.description = description;
         this.category = category;
@@ -75,8 +80,7 @@ public class Recruitment extends BaseEntity {
         this.infoPost = infoPost;
     }
 
-    public void update(String title, String description,
-                       Integer targetMemberCount, LocalDateTime endAt) {
+    public void update(String title, String description, Integer targetMemberCount, LocalDateTime endAt) {
         this.title = title;
         this.description = description;
         this.targetMemberCount = targetMemberCount;
@@ -96,5 +100,4 @@ public class Recruitment extends BaseEntity {
     public void close() {
         this.isOpened = false;
     }
-
 }

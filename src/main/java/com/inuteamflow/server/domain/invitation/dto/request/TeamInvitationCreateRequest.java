@@ -11,5 +11,4 @@ public class TeamInvitationCreateRequest {
 
     @NotBlank
     private String studentNumber;
-
 }

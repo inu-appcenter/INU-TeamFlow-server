@@ -7,13 +7,12 @@ import com.inuteamflow.server.domain.event.enums.EventColor;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.global.BaseEntity;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Getter
 @Entity
@@ -73,8 +72,7 @@ public class Event extends BaseEntity {
             String uid,
             Integer sequence,
             Boolean isFinished,
-            Boolean isSingle
-    ) {
+            Boolean isSingle) {
         this.team = team;
         this.title = title;
         this.description = description;
@@ -88,9 +86,7 @@ public class Event extends BaseEntity {
         this.isSingle = isSingle;
     }
 
-    public static Event create(
-            EventCreateCommand command
-    ) {
+    public static Event create(EventCreateCommand command) {
         return Event.builder()
                 .title(command.getTitle())
                 .description(command.getDescription())
@@ -105,10 +101,7 @@ public class Event extends BaseEntity {
                 .build();
     }
 
-    public static Event create(
-            Team team,
-            EventCreateCommand command
-    ) {
+    public static Event create(Team team, EventCreateCommand command) {
         return Event.builder()
                 .team(team)
                 .title(command.getTitle())
@@ -124,9 +117,7 @@ public class Event extends BaseEntity {
                 .build();
     }
 
-    public static Event createRecurring(
-            EventUpdateCommand command
-    ) {
+    public static Event createRecurring(EventUpdateCommand command) {
         return Event.builder()
                 .title(command.getTitle())
                 .description(command.getDescription())
@@ -141,10 +132,7 @@ public class Event extends BaseEntity {
                 .build();
     }
 
-    public static Event createRecurring(
-            Team team,
-            EventUpdateCommand command
-    ) {
+    public static Event createRecurring(Team team, EventUpdateCommand command) {
         return Event.builder()
                 .team(team)
                 .title(command.getTitle())
@@ -187,6 +175,4 @@ public class Event extends BaseEntity {
     private static Boolean resolveIsSingle(Recurrence recurrence) {
         return recurrence == null;
     }
-
-
 }

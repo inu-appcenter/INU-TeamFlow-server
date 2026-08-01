@@ -16,49 +16,44 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TeamNotice extends BaseEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "team_notice_id")
-	private Long teamNoticeId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "team_notice_id")
+    private Long teamNoticeId;
 
-	@Column(name = "title", nullable = false)
-	private String title;
+    @Column(name = "title", nullable = false)
+    private String title;
 
-	@Column(name = "content")
-	private String content;
+    @Column(name = "content")
+    private String content;
 
-	@Column(name = "is_pinned")
-	private Boolean isPinned;
+    @Column(name = "is_pinned")
+    private Boolean isPinned;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "team_id", nullable = false)
-	private Team team;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id", nullable = false)
+    private Team team;
 
-	@Builder
-	private TeamNotice(
-			String title,
-			String content,
-			Boolean isPinned,
-			Team team
-	) {
-		this.title = title;
-		this.content = content;
-		this.isPinned = isPinned;
-		this.team = team;
-	}
+    @Builder
+    private TeamNotice(String title, String content, Boolean isPinned, Team team) {
+        this.title = title;
+        this.content = content;
+        this.isPinned = isPinned;
+        this.team = team;
+    }
 
-	public static TeamNotice create(Team team, TeamNoticeCreateRequest request) {
-		return TeamNotice.builder()
-				.team(team)
-				.title(request.getTitle())
-				.content(request.getContent())
-				.isPinned(request.getIsPinned())
-				.build();
-	}
+    public static TeamNotice create(Team team, TeamNoticeCreateRequest request) {
+        return TeamNotice.builder()
+                .team(team)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .isPinned(request.getIsPinned())
+                .build();
+    }
 
-	public void update(TeamNoticeUpdateRequest request) {
-		this.title = request.getTitle();
-		this.content = request.getContent();
-		this.isPinned = request.getIsPinned();
-	}
+    public void update(TeamNoticeUpdateRequest request) {
+        this.title = request.getTitle();
+        this.content = request.getContent();
+        this.isPinned = request.getIsPinned();
+    }
 }

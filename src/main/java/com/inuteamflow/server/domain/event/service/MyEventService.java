@@ -12,13 +12,12 @@ import com.inuteamflow.server.domain.event.repository.EventRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -45,54 +44,29 @@ public class MyEventService {
      * @return 시작 시간 오름차순으로 정렬된 일정 목록
      * @throws RestApiException 월이 유효하지 않은 경우
      */
-    public List<EventListResponse> getMyEventList(
-            User user,
-            Integer year,
-            Integer month
-    ) {
+    public List<EventListResponse> getMyEventList(User user, Integer year, Integer month) {
         EventOccurrenceService.DateRange dateRange = eventOccurrenceService.createMonthlyDateRange(year, month);
 
-        List<Event> singleEvents = new ArrayList<>(eventRepository.findByCreatedByAndTeamIsNullAndIsSingleAndStartAtBeforeAndEndAtAfter(
-                user.getUserId(),
-                true,
-                dateRange.endAt(),
-                dateRange.startAt()
-        ));
+        List<Event> singleEvents =
+                new ArrayList<>(eventRepository.findByCreatedByAndTeamIsNullAndIsSingleAndStartAtBeforeAndEndAtAfter(
+                        user.getUserId(), true, dateRange.endAt(), dateRange.startAt()));
         List<Event> recurringEvents = eventRepository.findByCreatedByAndTeamIsNullAndIsSingleAndStartAtBefore(
-                user.getUserId(),
-                false,
-                dateRange.endAt()
-        );
-        List<EventListResponse> recurringOccurrences = new ArrayList<>(eventOccurrenceService.expandRecurringEvents(
-                recurringEvents,
-                dateRange,
-                user
-        ));
+                user.getUserId(), false, dateRange.endAt());
+        List<EventListResponse> recurringOccurrences =
+                new ArrayList<>(eventOccurrenceService.expandRecurringEvents(recurringEvents, dateRange, user));
 
-        List<Long> participatingEventIds = eventParticipantRepository.findEventIdsByUser(user)
-                .stream()
+        List<Long> participatingEventIds = eventParticipantRepository.findEventIdsByUser(user).stream()
                 .distinct()
                 .toList();
 
         if (!participatingEventIds.isEmpty()) {
             singleEvents.addAll(eventRepository.findByEventIdInAndIsSingleAndStartAtBeforeAndEndAtAfter(
-                    participatingEventIds,
-                    true,
-                    dateRange.endAt(),
-                    dateRange.startAt()
-            ));
+                    participatingEventIds, true, dateRange.endAt(), dateRange.startAt()));
 
             List<Event> participatingRecurringEvents = eventRepository.findByEventIdInAndIsSingleAndStartAtBefore(
-                    participatingEventIds,
-                    false,
-                    dateRange.endAt()
-            );
-            recurringOccurrences.addAll(eventOccurrenceService.expandRecurringEvents(
-                    participatingRecurringEvents,
-                    dateRange,
-                    user,
-                    true
-            ));
+                    participatingEventIds, false, dateRange.endAt());
+            recurringOccurrences.addAll(
+                    eventOccurrenceService.expandRecurringEvents(participatingRecurringEvents, dateRange, user, true));
         }
 
         return eventOccurrenceService.mergeAndSort(singleEvents, recurringOccurrences, user);
@@ -108,10 +82,7 @@ public class MyEventService {
      * @return 생성된 일정 상세 정보
      */
     @Transactional
-    public EventDetailResponse createMyEvent(
-            User user,
-            MyEventCreateRequest request
-    ) {
+    public EventDetailResponse createMyEvent(User user, MyEventCreateRequest request) {
         Event event = eventRepository.save(Event.create(request));
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
 
@@ -131,11 +102,7 @@ public class MyEventService {
      *                          또는 반복 일정이나 회차 정보가 유효하지 않은 경우
      */
     @Transactional
-    public EventDetailResponse updateMyEvent(
-            User user,
-            Long eventId,
-            MyEventUpdateRequest request
-    ) {
+    public EventDetailResponse updateMyEvent(User user, Long eventId, MyEventUpdateRequest request) {
         Event event = getMyEvent(user, eventId);
         EventRecurrenceService.EventUpdateResult updateResult =
                 eventRecurrenceService.updateEvent(event, null, request);
@@ -147,17 +114,10 @@ public class MyEventService {
                     updateResult.recurrenceException(),
                     null,
                     false,
-                    List.of()
-            );
+                    List.of());
         }
 
-        return EventDetailResponse.create(
-                updateResult.event(),
-                updateResult.recurrenceRule(),
-                null,
-                false,
-                List.of()
-        );
+        return EventDetailResponse.create(updateResult.event(), updateResult.recurrenceRule(), null, false, List.of());
     }
 
     /**
@@ -174,11 +134,7 @@ public class MyEventService {
      */
     @Transactional
     public void deleteMyEvent(
-            User user,
-            Long eventId,
-            RecurrenceEditScope recurrenceEditScope,
-            LocalDateTime occurrenceAt
-    ) {
+            User user, Long eventId, RecurrenceEditScope recurrenceEditScope, LocalDateTime occurrenceAt) {
         Event event = getMyEvent(user, eventId);
 
         if (eventRecurrenceService.deleteEvent(event, recurrenceEditScope, occurrenceAt)) {
@@ -200,11 +156,9 @@ public class MyEventService {
      * @return 조회된 개인 일정
      * @throws RestApiException 일정을 찾을 수 없거나 사용자에게 접근 권한이 없는 경우
      */
-    private Event getMyEvent(
-            User user,
-            Long eventId
-    ) {
-        Event event = eventRepository.findById(eventId)
+    private Event getMyEvent(User user, Long eventId) {
+        Event event = eventRepository
+                .findById(eventId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.EVENT_NOT_FOUND));
 
         if (event.getTeamId() != null || !event.getCreatedBy().equals(user.getUserId())) {

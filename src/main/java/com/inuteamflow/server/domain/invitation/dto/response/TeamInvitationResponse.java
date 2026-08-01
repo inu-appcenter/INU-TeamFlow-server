@@ -2,11 +2,10 @@ package com.inuteamflow.server.domain.invitation.dto.response;
 
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
 import com.inuteamflow.server.global.enums.Status;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -28,7 +27,6 @@ public class TeamInvitationResponse {
                 senderName,
                 invitation.getReceiver().getName(),
                 invitation.getCreatedAt(),
-                invitation.getRespondedAt()
-        );
+                invitation.getRespondedAt());
     }
 }

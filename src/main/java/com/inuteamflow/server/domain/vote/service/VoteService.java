@@ -21,14 +21,13 @@ import com.inuteamflow.server.domain.vote.entity.VoteTimeSlot;
 import com.inuteamflow.server.domain.vote.repository.*;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -59,21 +58,15 @@ public class VoteService {
      * @return 팀에 생성된 투표 목록
      * @throws RestApiException 팀을 찾을 수 없는 경우
      */
-    public List<EventVoteResponse> getVotes(
-            User user,
-            Long teamId
-    ) {
+    public List<EventVoteResponse> getVotes(User user, Long teamId) {
         Team team = getTeamById(teamId);
         List<EventVoteResponse> responses = new ArrayList<>();
 
         for (Vote vote : voteRepository.findByTeam(team)) {
             boolean isVoter = voteParticipantService.isVoter(vote, user);
 
-            responses.add(createEventVoteResponse(
-                    vote,
-                    isVoter,
-                    vote.getCreatedBy().equals(user.getUserId())
-            ));
+            responses.add(
+                    createEventVoteResponse(vote, isVoter, vote.getCreatedBy().equals(user.getUserId())));
         }
 
         return responses;
@@ -93,11 +86,7 @@ public class VoteService {
      *                          또는 참여자나 후보 시간 정보가 유효하지 않은 경우
      */
     @Transactional
-    public EventVoteResponse createVote(
-            User user,
-            Long teamId,
-            EventVoteCreateRequest request
-    ) {
+    public EventVoteResponse createVote(User user, Long teamId, EventVoteCreateRequest request) {
         Team team = getTeamById(teamId);
         validateTeamMember(team, user);
 
@@ -119,15 +108,10 @@ public class VoteService {
                 "[" + team.getName() + "] 팀에서 일정 투표가 시작됐어요",
                 "'" + vote.getTitle() + "' 투표에 참여해주세요",
                 NotificationType.TEAM_SCHEDULE,
-                "/team/" + team.getTeamId() + "/vote/" + vote.getVoteId()
-        );
+                "/team/" + team.getTeamId() + "/vote/" + vote.getVoteId());
         boolean isVoter = voteParticipantService.isVoter(vote, user);
 
-        return createEventVoteResponse(
-                vote,
-                isVoter,
-                vote.getCreatedBy().equals(user.getUserId())
-        );
+        return createEventVoteResponse(vote, isVoter, vote.getCreatedBy().equals(user.getUserId()));
     }
 
     /**
@@ -140,18 +124,11 @@ public class VoteService {
      * @return 투표 상세 정보
      * @throws RestApiException 투표를 찾을 수 없는 경우
      */
-    public EventVoteResponse getVote(
-            User user,
-            Long voteId
-    ) {
+    public EventVoteResponse getVote(User user, Long voteId) {
         Vote vote = getVoteById(voteId);
         boolean isVoter = voteParticipantService.isVoter(vote, user);
 
-        return createEventVoteResponse(
-                vote,
-                isVoter,
-                vote.getCreatedBy().equals(user.getUserId())
-        );
+        return createEventVoteResponse(vote, isVoter, vote.getCreatedBy().equals(user.getUserId()));
     }
 
     /**
@@ -163,15 +140,10 @@ public class VoteService {
      * @param user 투표 목록을 조회할 사용자
      * @return 요청자가 투표 대상자로 지정된 투표 목록
      */
-    public List<EventVoteResponse> getMyVotes(
-            User user
-    ) {
+    public List<EventVoteResponse> getMyVotes(User user) {
         return voteParticipantService.getVotesByUser(user).stream()
-                .map(vote -> createEventVoteResponse(
-                        vote,
-                        true,
-                        vote.getCreatedBy().equals(user.getUserId())
-                ))
+                .map(vote ->
+                        createEventVoteResponse(vote, true, vote.getCreatedBy().equals(user.getUserId())))
                 .toList();
     }
 
@@ -182,9 +154,7 @@ public class VoteService {
      * @return 후보 시간 슬롯과 각 슬롯을 선택한 인원 수
      * @throws RestApiException 투표를 찾을 수 없는 경우
      */
-    public List<EventVoteTimeSlotResponse> getTimeSlot(
-            Long voteId
-    ) {
+    public List<EventVoteTimeSlotResponse> getTimeSlot(Long voteId) {
         Vote vote = getVoteById(voteId);
         List<VoteTimeSlot> voteTimeSlots = voteTimeService.getVoteTimeSlots(vote);
         Map<Long, Integer> participantCountByTimeSlot = voteAvailabilityService.countParticipantsByTimeSlot(vote);
@@ -192,9 +162,7 @@ public class VoteService {
 
         for (VoteTimeSlot voteTimeSlot : voteTimeSlots) {
             responses.add(EventVoteTimeSlotResponse.create(
-                    voteTimeSlot,
-                    participantCountByTimeSlot.getOrDefault(voteTimeSlot.getVoteTimeSlotId(), 0)
-            ));
+                    voteTimeSlot, participantCountByTimeSlot.getOrDefault(voteTimeSlot.getVoteTimeSlotId(), 0)));
         }
 
         return responses;
@@ -215,10 +183,7 @@ public class VoteService {
      */
     @Transactional
     public List<EventVoteTimeSlotResponse> selectTimeSlot(
-            User user,
-            Long voteId,
-            EventVoteTimeSlotSelectRequest request
-    ) {
+            User user, Long voteId, EventVoteTimeSlotSelectRequest request) {
         Vote vote = getVoteById(voteId);
         validateVoteIsOpened(vote);
 
@@ -234,9 +199,7 @@ public class VoteService {
 
         for (VoteTimeSlot voteTimeSlot : voteTimeSlots) {
             responses.add(EventVoteTimeSlotResponse.create(
-                    voteTimeSlot,
-                    countMap.getOrDefault(voteTimeSlot.getVoteTimeSlotId(), 0)
-            ));
+                    voteTimeSlot, countMap.getOrDefault(voteTimeSlot.getVoteTimeSlotId(), 0)));
         }
 
         return responses;
@@ -257,21 +220,14 @@ public class VoteService {
      *                          이미 결과가 확정되었거나 확정 시간이 유효하지 않은 경우
      */
     @Transactional
-    public EventDetailResponse createVoteResult(
-            User user,
-            Long voteId,
-            EventVoteTimeSelectRequest request
-    ) {
+    public EventDetailResponse createVoteResult(User user, Long voteId, EventVoteTimeSelectRequest request) {
         Vote vote = getVoteById(voteId);
         validateVoteIsOpened(vote);
         validateVoteCreator(vote, user);
         TeamMember host = validateTeamMember(vote.getTeam(), user);
 
         List<VoteTimeSlot> selectedVoteTimeSlots = voteTimeService.getContinuousVoteTimeSlots(
-                vote,
-                request.getSelectedStartAt(),
-                request.getSelectedEndAt()
-        );
+                vote, request.getSelectedStartAt(), request.getSelectedEndAt());
 
         List<TeamMember> availableTeamMembers = voteAvailabilityService.getAvailableTeamMembers(selectedVoteTimeSlots);
 
@@ -282,8 +238,7 @@ public class VoteService {
                 "\"" + vote.getTitle() + "\" 일정이 확정됐어요",
                 "확정된 일정을 캘린더에서 확인해보세요",
                 NotificationType.TEAM_SCHEDULE,
-                "/team/" + vote.getTeam().getTeamId() + "/vote/" + vote.getVoteId()
-        );
+                "/team/" + vote.getTeam().getTeamId() + "/vote/" + vote.getVoteId());
 
         return voteResultService.createVoteResult(vote, host, availableTeamMembers, request);
     }
@@ -299,10 +254,7 @@ public class VoteService {
      *                          또는 투표 삭제 권한이 없는 경우
      */
     @Transactional
-    public void deleteVote(
-            User user,
-            Long voteId
-    ) {
+    public void deleteVote(User user, Long voteId) {
         Vote vote = getVoteById(voteId);
         TeamMember requester = validateTeamMember(vote.getTeam(), user);
         validateVoteDeletable(vote, requester);
@@ -321,11 +273,8 @@ public class VoteService {
      * @return 조회된 팀
      * @throws RestApiException 팀을 찾을 수 없는 경우
      */
-    private Team getTeamById(
-            Long teamId
-    ) {
-        return teamRepository.findById(teamId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+    private Team getTeamById(Long teamId) {
+        return teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
     }
 
     /**
@@ -336,11 +285,9 @@ public class VoteService {
      * @return 사용자에 해당하는 팀 멤버
      * @throws RestApiException 사용자가 해당 팀의 멤버가 아닌 경우
      */
-    private TeamMember validateTeamMember(
-            Team team,
-            User user
-    ) {
-        return teamMemberRepository.findByTeamAndUser(team, user)
+    private TeamMember validateTeamMember(Team team, User user) {
+        return teamMemberRepository
+                .findByTeamAndUser(team, user)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
     }
 
@@ -351,11 +298,8 @@ public class VoteService {
      * @return 조회된 투표
      * @throws RestApiException 투표를 찾을 수 없는 경우
      */
-    private Vote getVoteById(
-            Long voteId
-    ) {
-        return voteRepository.findById(voteId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.VOTE_NOT_FOUND));
+    private Vote getVoteById(Long voteId) {
+        return voteRepository.findById(voteId).orElseThrow(() -> new RestApiException(CustomErrorCode.VOTE_NOT_FOUND));
     }
 
     /**
@@ -366,13 +310,8 @@ public class VoteService {
      * @param isCreator 요청자의 투표 생성자 여부
      * @return 투표 정보, 후보 날짜 및 참여 현황을 포함한 응답
      */
-    private EventVoteResponse createEventVoteResponse(
-            Vote vote,
-            boolean isVoter,
-            boolean isCreator
-    ) {
-        VoteParticipantService.VoteParticipants voteParticipants =
-                voteParticipantService.getVoteParticipants(vote);
+    private EventVoteResponse createEventVoteResponse(Vote vote, boolean isVoter, boolean isCreator) {
+        VoteParticipantService.VoteParticipants voteParticipants = voteParticipantService.getVoteParticipants(vote);
 
         List<LocalDate> dates = voteTimeService.getVoteDates(vote).stream()
                 .map(VoteDate::getDate)
@@ -384,8 +323,7 @@ public class VoteService {
                 isCreator,
                 dates,
                 voteParticipants.completedVoters(),
-                voteParticipants.uncompletedVoters()
-        );
+                voteParticipants.uncompletedVoters());
     }
 
     /**
@@ -394,9 +332,7 @@ public class VoteService {
      * @param vote 상태를 확인할 투표
      * @throws RestApiException 투표가 열려 있지 않은 경우
      */
-    private void validateVoteIsOpened(
-            Vote vote
-    ) {
+    private void validateVoteIsOpened(Vote vote) {
         if (!Boolean.TRUE.equals(vote.getIsOpened())) {
             throw new RestApiException(CustomErrorCode.VOTE_NOT_OPENED);
         }
@@ -409,10 +345,7 @@ public class VoteService {
      * @param user 생성자 여부를 확인할 사용자
      * @throws RestApiException 사용자가 투표 생성자가 아닌 경우
      */
-    private void validateVoteCreator(
-            Vote vote,
-            User user
-    ) {
+    private void validateVoteCreator(Vote vote, User user) {
         if (!vote.getCreatedBy().equals(user.getUserId())) {
             throw new RestApiException(CustomErrorCode.VOTE_NOT_CREATOR);
         }
@@ -427,10 +360,7 @@ public class VoteService {
      * @param requester 삭제를 요청한 팀 멤버
      * @throws RestApiException 요청자에게 투표 삭제 권한이 없는 경우
      */
-    private void validateVoteDeletable(
-            Vote vote,
-            TeamMember requester
-    ) {
+    private void validateVoteDeletable(Vote vote, TeamMember requester) {
         boolean isCreator = vote.getCreatedBy().equals(requester.getUser().getUserId());
         boolean isManager = requester.getTeamRole() == TeamRole.LEADER || requester.getTeamRole() == TeamRole.MANAGER;
 
@@ -449,14 +379,11 @@ public class VoteService {
      * @param voteId 삭제할 투표 ID
      */
     @Transactional
-    public void deleteVoteCascade(
-            Long voteId
-    ) {
+    public void deleteVoteCascade(Long voteId) {
         voteAvailabilityService.deleteByVoteId(voteId);
         voteResultService.deleteByVoteId(voteId);
         voteParticipantService.deleteByVoteId(voteId);
         voteTimeService.deleteByVoteId(voteId);
         voteRepository.deleteByVoteId(voteId);
     }
-
 }

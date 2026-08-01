@@ -14,37 +14,24 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
-public class UserController implements UserControllerDocument{
+public class UserController implements UserControllerDocument {
 
     private final UserService userService;
 
     @GetMapping("/me")
-    public ResponseEntity<MyInfoResponse> getMyInfo(
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(userService.getMyInfo(userDetails.getUser()));
+    public ResponseEntity<MyInfoResponse> getMyInfo(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.status(HttpStatus.OK).body(userService.getMyInfo(userDetails.getUser()));
     }
 
     @PutMapping("/me")
     public ResponseEntity<MyInfoResponse> updateMyInfo(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Valid @RequestBody UserUpdateRequest request
-    ) {
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(userService.updateMyInfo(userDetails.getUser(), request));
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody UserUpdateRequest request) {
+        return ResponseEntity.status(HttpStatus.OK).body(userService.updateMyInfo(userDetails.getUser(), request));
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<Void> deleteUser(
-            @AuthenticationPrincipal UserDetailsImpl userDetails
-    ) {
+    public ResponseEntity<Void> deleteUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         userService.deleteUser(userDetails.getUser());
-        return ResponseEntity
-                .status(HttpStatus.NO_CONTENT)
-                .build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
-
 }

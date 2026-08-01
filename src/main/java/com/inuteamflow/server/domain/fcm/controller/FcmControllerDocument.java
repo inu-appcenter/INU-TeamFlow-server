@@ -21,61 +21,49 @@ public interface FcmControllerDocument {
 
     @Operation(summary = "createFcmToken", description = "FCM 토큰 등록 (이미 등록된 토큰이면 기존 토큰 반환)")
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "FCM 토큰 등록 성공",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = FcmResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "잘못된 요청 값",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "유효하지 않거나 만료된 토큰",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
+        @ApiResponse(
+                responseCode = "201",
+                description = "FCM 토큰 등록 성공",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = FcmResponse.class))),
+        @ApiResponse(
+                responseCode = "400",
+                description = "잘못된 요청 값",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<FcmResponse> createFcmToken(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Valid @RequestBody FcmRequest fcmRequest
-    );
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody FcmRequest fcmRequest);
 
     @Operation(summary = "deleteFcmToken", description = "FCM 토큰 삭제 (로그아웃 또는 알림 수신 거부 시 호출)")
     @ApiResponses({
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "FCM 토큰 삭제 성공"
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "유효하지 않거나 만료된 토큰",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "등록되지 않은 FCM 토큰",
-                    content = @Content(
-                            mediaType = MediaType.APPLICATION_JSON_VALUE,
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
+        @ApiResponse(responseCode = "204", description = "FCM 토큰 삭제 성공"),
+        @ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "404",
+                description = "등록되지 않은 FCM 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Void> deleteFcmToken(
-            @AuthenticationPrincipal UserDetailsImpl userDetails,
-            @Valid @RequestBody FcmRequest fcmRequest
-    );
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody FcmRequest fcmRequest);
 }

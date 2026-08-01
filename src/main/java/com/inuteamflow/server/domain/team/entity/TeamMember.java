@@ -4,18 +4,16 @@ import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.BaseTimeEntity;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Getter
-@Table(name = "team_member",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"team_id", "user_id"}))
+@Table(name = "team_member", uniqueConstraints = @UniqueConstraint(columnNames = {"team_id", "user_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TeamMember extends BaseTimeEntity {
 
@@ -48,9 +46,7 @@ public class TeamMember extends BaseTimeEntity {
     }
 
     public static TeamMember create(Team team, User user, TeamRole teamRole) {
-        return TeamMember.builder()
-                .team(team).user(user).teamRole(teamRole)
-                .build();
+        return TeamMember.builder().team(team).user(user).teamRole(teamRole).build();
     }
 
     public void updateRole(TeamRole role) {

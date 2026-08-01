@@ -1,5 +1,8 @@
 package com.inuteamflow.server.domain.invitation;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.inuteamflow.server.domain.chat.service.ChatRoomService;
 import com.inuteamflow.server.domain.invitation.dto.response.InvitationCandidateResponse;
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
@@ -21,6 +24,9 @@ import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.enums.Status;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,13 +39,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -47,14 +46,26 @@ class TeamInvitationServiceTest {
 
     private static final String CANDIDATE_NAME = "초대후보";
 
-    @Autowired private TeamInvitationService teamInvitationService;
-    @Autowired private TeamInvitationRepository teamInvitationRepository;
-    @Autowired private TeamMemberRepository teamMemberRepository;
-    @Autowired private TeamRepository teamRepository;
-    @Autowired private UserRepository userRepository;
+    @Autowired
+    private TeamInvitationService teamInvitationService;
 
-    @MockitoBean private ChatRoomService chatRoomService;
-    @MockitoBean private NotificationService notificationService;
+    @Autowired
+    private TeamInvitationRepository teamInvitationRepository;
+
+    @Autowired
+    private TeamMemberRepository teamMemberRepository;
+
+    @Autowired
+    private TeamRepository teamRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @MockitoBean
+    private ChatRoomService chatRoomService;
+
+    @MockitoBean
+    private NotificationService notificationService;
 
     private User requester;
     private User currentMember;
@@ -113,9 +124,7 @@ class TeamInvitationServiceTest {
 
         Map<Long, InvitationCandidateStatus> statusByUserId = responses.stream()
                 .collect(Collectors.toMap(
-                        InvitationCandidateResponse::getUserId,
-                        InvitationCandidateResponse::getInvitationStatus
-                ));
+                        InvitationCandidateResponse::getUserId, InvitationCandidateResponse::getInvitationStatus));
 
         assertThat(statusByUserId)
                 .containsEntry(currentMember.getUserId(), InvitationCandidateStatus.MEMBER)
@@ -139,8 +148,7 @@ class TeamInvitationServiceTest {
     @Test
     @DisplayName("팀에 속하지 않은 사용자는 초대 후보를 검색할 수 없다")
     void getCandidates_rejectsNonMember() {
-        assertThatThrownBy(() ->
-                teamInvitationService.getCandidates(outsider, team.getTeamId(), CANDIDATE_NAME))
+        assertThatThrownBy(() -> teamInvitationService.getCandidates(outsider, team.getTeamId(), CANDIDATE_NAME))
                 .isInstanceOf(RestApiException.class)
                 .extracting(exception -> ((RestApiException) exception).getErrorCode())
                 .isEqualTo(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
@@ -149,8 +157,7 @@ class TeamInvitationServiceTest {
     @Test
     @DisplayName("존재하지 않는 팀의 초대 후보를 조회하면 예외가 발생한다")
     void getCandidates_rejectsUnknownTeam() {
-        assertThatThrownBy(() ->
-                teamInvitationService.getCandidates(requester, Long.MAX_VALUE, CANDIDATE_NAME))
+        assertThatThrownBy(() -> teamInvitationService.getCandidates(requester, Long.MAX_VALUE, CANDIDATE_NAME))
                 .isInstanceOf(RestApiException.class)
                 .extracting(exception -> ((RestApiException) exception).getErrorCode())
                 .isEqualTo(CustomErrorCode.TEAM_NOT_FOUND);
@@ -165,11 +172,7 @@ class TeamInvitationServiceTest {
         assertThat(responses).isEmpty();
     }
 
-    private User saveUser(
-            String username,
-            String name,
-            boolean schoolVerified
-    ) {
+    private User saveUser(String username, String name, boolean schoolVerified) {
         return userRepository.save(User.builder()
                 .username(username)
                 .email(username + "@inu.ac.kr")
@@ -182,10 +185,7 @@ class TeamInvitationServiceTest {
                 .build());
     }
 
-    private TeamInvitation saveInvitation(
-            User receiver,
-            Status status
-    ) {
+    private TeamInvitation saveInvitation(User receiver, Status status) {
         TeamInvitation invitation = TeamInvitation.create(team, receiver);
 
         switch (status) {
@@ -202,12 +202,8 @@ class TeamInvitationServiceTest {
 
     private void actingAs(User user) {
         UserDetailsImpl userDetails = new UserDetailsImpl(user);
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                )
-        );
+        SecurityContextHolder.getContext()
+                .setAuthentication(
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
     }
 }

@@ -2,16 +2,14 @@ package com.inuteamflow.server.domain.vote.repository;
 
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.user.entity.User;
-import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteAvailability;
 import com.inuteamflow.server.domain.vote.entity.VoteParticipant;
 import com.inuteamflow.server.domain.vote.entity.VoteTimeSlot;
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
 
 public interface VoteAvailabilityRepository extends JpaRepository<VoteAvailability, Long> {
 

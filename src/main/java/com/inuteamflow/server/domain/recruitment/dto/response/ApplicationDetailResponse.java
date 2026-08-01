@@ -4,11 +4,10 @@ import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
 import com.inuteamflow.server.domain.user.enums.Department;
 import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.enums.Status;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -29,12 +28,13 @@ public class ApplicationDetailResponse {
     private LocalDateTime createdAt;
     private LocalDateTime respondedAt;
 
-    public static ApplicationDetailResponse of(RecruitmentApplication application,
-                                               Long applicantId,
-                                               String applicantName,
-                                               Department applicantDepartment,
-                                               String applicantStudentNumber,
-                                               Boolean isRecruiter) {
+    public static ApplicationDetailResponse of(
+            RecruitmentApplication application,
+            Long applicantId,
+            String applicantName,
+            Department applicantDepartment,
+            String applicantStudentNumber,
+            Boolean isRecruiter) {
         return new ApplicationDetailResponse(
                 application.getRecruitmentApplicationId(),
                 application.getApplicationStatus(),
@@ -49,7 +49,6 @@ public class ApplicationDetailResponse {
                 applicantStudentNumber,
                 isRecruiter,
                 application.getCreatedAt(),
-                application.getRespondedAt()
-        );
+                application.getRespondedAt());
     }
 }

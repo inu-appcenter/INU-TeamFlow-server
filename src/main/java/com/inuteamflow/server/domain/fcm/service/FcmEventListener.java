@@ -29,8 +29,7 @@ public class FcmEventListener {
                 event.body(),
                 event.redirectUrl(),
                 event.type(),
-                event.notificationId()
-        );
+                event.notificationId());
     }
 
     /**
@@ -42,13 +41,7 @@ public class FcmEventListener {
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleMulti(FcmMultiEvent event) {
-        fcmService.sendToUsers(
-                event.receiverIds(),
-                event.title(),
-                event.body(),
-                event.redirectUrl(),
-                event.type()
-        );
+        fcmService.sendToUsers(event.receiverIds(), event.title(), event.body(), event.redirectUrl(), event.type());
     }
 
     /**
@@ -67,7 +60,6 @@ public class FcmEventListener {
                 event.type(),
                 event.redirectUrl(),
                 event.roomId(),
-                event.collapseKey()
-        );
+                event.collapseKey());
     }
 }
