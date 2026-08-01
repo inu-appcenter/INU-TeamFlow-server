@@ -353,9 +353,9 @@ public class ChatRoomService {
                 .findById(request.getTeamId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        teamMemberRepository
-                .findByTeamAndUser(team, creator)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+        if (!teamMemberRepository.existsByTeamAndUser(team, creator)) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+        }
 
         List<Long> memberIds = request.getMemberIds().stream().distinct().toList();
         List<User> selectedUsers = userRepository.findAllById(memberIds);

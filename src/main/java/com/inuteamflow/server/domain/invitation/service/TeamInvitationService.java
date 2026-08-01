@@ -157,9 +157,9 @@ public class TeamInvitationService {
         Team team =
                 teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        teamMemberRepository
-                .findByTeamAndUser(team, user)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+        if (!teamMemberRepository.existsByTeamAndUser(team, user)) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+        }
 
         // 학교 인증 사용자 중 요청자 본인을 제외하고 이름이 일치하는 후보를 검색한다.
         List<User> candidates = userRepository.searchByName(name, user.getUserId());

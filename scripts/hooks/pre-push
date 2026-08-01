@@ -1,0 +1,13 @@
+#!/bin/sh
+# 'installGitHook' Gradle 태스크로 설치됩니다. 이 파일을 수정한 뒤 태스크를 다시 실행하세요.
+echo "[errorprone] Running static analysis (compileJava)..."
+if [ -x ./gradlew ]; then GRADLE=./gradlew; else GRADLE=gradle; fi
+"$GRADLE" compileJava --daemon -q
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "[errorprone] Static analysis failed."
+  echo "[errorprone] Fix the reported issues, commit them, and push again."
+  exit 1
+fi
+echo "[errorprone] Static analysis OK. Proceeding with push."
+exit 0

@@ -1,0 +1,13 @@
+#!/bin/sh
+# 'installGitHook' Gradle 태스크로 설치됩니다. 이 파일을 수정한 뒤 태스크를 다시 실행하세요.
+echo "[spotless] Checking formatting on changed files..."
+if [ -x ./gradlew ]; then GRADLE=./gradlew; else GRADLE=gradle; fi
+"$GRADLE" spotlessCheck --daemon -q
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "[spotless] Formatting violations found."
+  echo "[spotless] Run './gradlew spotlessApply', then 'git add' the changed files and commit again."
+  exit 1
+fi
+echo "[spotless] Formatting OK. Proceeding with commit."
+exit 0

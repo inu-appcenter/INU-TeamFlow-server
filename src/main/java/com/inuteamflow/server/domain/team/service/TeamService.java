@@ -126,9 +126,8 @@ public class TeamService {
         Team team =
                 teamRepository.findById(teamId).orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
 
-        teamMemberRepository
-                .findByTeamAndUser(team, user)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+        if (!teamMemberRepository.existsByTeamAndUser(team, user))
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
 
         return teamMemberRepository.findByTeam(team).stream()
                 .map(tm -> TeamMemberResponse.create(tm, tm.getUser()))
