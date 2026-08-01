@@ -1,7 +1,5 @@
 package com.inuteamflow.server.global.s3;
 
-import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
-import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
@@ -32,9 +30,6 @@ public class S3Service {
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
-
-    private final TeamRepository teamRepository;
-    private final TeamMemberRepository teamMemberRepository;
 
     @Value("${aws.s3.bucket}")
     private String bucket;

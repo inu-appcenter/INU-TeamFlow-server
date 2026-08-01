@@ -189,7 +189,7 @@ public class EventOccurrenceService {
 
         // 원본 이벤트의 duration(start~end 차이)을 유지하기 위해 초 단위로 계산
         long durationSeconds =
-                Duration.between(event.getStartAt(), event.getEndAt()).getSeconds();
+                Duration.between(event.getStartAt(), event.getEndAt()).toSeconds();
         int generatedCount = 0;
 
         // 조회 종료 시각 이전까지 반복 occurrence 생성

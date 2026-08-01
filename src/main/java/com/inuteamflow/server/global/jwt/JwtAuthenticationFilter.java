@@ -35,10 +35,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             if (userDetails.getUser().getRole() == Role.BANNED) {
+                log.warn("차단된 사용자의 접근 시도 - username: {}, uri: {}", userDetails.getUsername(), request.getRequestURI());
                 throw new RestApiException(CustomErrorCode.USER_BANNED);
             }
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.debug("인증 성공 - username: {}, uri: {}", userDetails.getUsername(), request.getRequestURI());
         }
 
         filterChain.doFilter(request, response);

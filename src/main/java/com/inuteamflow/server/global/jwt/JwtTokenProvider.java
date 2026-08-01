@@ -9,7 +9,9 @@ import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -36,7 +38,7 @@ public class JwtTokenProvider {
             @Value("${jwt.secret}") String secretKey,
             UserDetailsServiceImpl userDetailsService,
             RefreshTokenRepository refreshTokenRepository) {
-        this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
+        this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.userDetailsService = userDetailsService;
         this.refreshTokenRepository = refreshTokenRepository;
     }
@@ -102,22 +104,22 @@ public class JwtTokenProvider {
     }
 
     private String createAccessToken(String username, String authorities) {
-        Date now = new Date();
+        Instant now = Instant.now();
         return Jwts.builder()
                 .setSubject(username)
                 .claim("auth", authorities)
-                .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + ACCESS_TOKEN_VALID_TIME))
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plusMillis(ACCESS_TOKEN_VALID_TIME)))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     private String createRefreshToken(String username) {
-        Date now = new Date();
+        Instant now = Instant.now();
         return Jwts.builder()
                 .setSubject(username)
-                .setIssuedAt(now)
-                .setExpiration(new Date(now.getTime() + REFRESH_TOKEN_VALID_TIME))
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plusMillis(REFRESH_TOKEN_VALID_TIME)))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
