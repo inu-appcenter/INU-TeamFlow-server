@@ -73,6 +73,14 @@ tasks.withType(JavaCompile).configureEach {
     options.errorprone.disable('MissingOverride')
 }
 
+tasks.named('compileTestJava') {
+    // @MockBean/@Mock 필드는 실제 외부 호출(S3, FCM 등)을 막기 위해 선언만 하고 검증에 사용하지 않는 경우가 많아 오탐이 발생
+    options.errorprone.disable('UnusedVariable')
+
+    // 테스트 픽스처의 상대 시간 계산(now().plusDays(7) 등)은 타임존과 무관하게 동작
+    options.errorprone.disable('JavaTimeDefaultTimeZone')
+}
+
 spotless {
 
     // dev 브랜치와 비교했을 때 변경된 파일에 한에서 spotless 검사를 진행
