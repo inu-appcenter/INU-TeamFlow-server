@@ -203,7 +203,7 @@ class UserServiceTest {
                 .description("desc")
                 .category(Category.PROJECT)
                 .build());
-        TeamMember leaderMember = teamMemberRepository.save(TeamMember.create(team, leader, TeamRole.LEADER));
+        teamMemberRepository.save(TeamMember.create(team, leader, TeamRole.LEADER));
 
         actingAs(target);
         TeamMember targetMember = teamMemberRepository.save(TeamMember.create(team, target, TeamRole.MEMBER));
@@ -211,8 +211,7 @@ class UserServiceTest {
         // Recruitment/RecruitmentApplication: target이 만든 모집글(R1) + 남이 만든 모집글에 target이 지원(A2)
         actingAs(target);
         InfoPost infoPost = infoPostRepository.save(InfoPost.create(InfoPostCategory.CLUB, "정보글", "내용"));
-        InfoPostImage infoPostImage =
-                infoPostImageRepository.save(InfoPostImage.create("info-posts/image/target.png", 0, infoPost));
+        infoPostImageRepository.save(InfoPostImage.create("info-posts/image/target.png", 0, infoPost));
         Recruitment r1 = recruitmentRepository.save(Recruitment.builder()
                 .title("target 모집")
                 .description("설명")
