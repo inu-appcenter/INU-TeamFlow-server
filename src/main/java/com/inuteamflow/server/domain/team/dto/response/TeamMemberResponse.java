@@ -24,13 +24,17 @@ public class TeamMemberResponse {
 
     private Department department;
 
-    public static TeamMemberResponse create(TeamMember teamMember, User user) {
+    private String profileImageUrl;
+
+    public static TeamMemberResponse create(TeamMember teamMember, User user, String profileImageUrl) {
         return new TeamMemberResponse(
                 teamMember.getTeamMemberId(),
                 user.getUserId(),
                 user.getUsername(),
                 user.getName(),
                 teamMember.getTeamRole(),
-                user.getDepartment());
+                user.getDepartment(),
+                profileImageUrl
+        );
     }
 }

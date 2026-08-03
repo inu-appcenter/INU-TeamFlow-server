@@ -82,7 +82,7 @@ public class TeamService {
                     int memberCount =
                             countMap.getOrDefault(team.getTeamId(), 0L).intValue();
                     String imageUrl = s3Service.getTeamImageUrl(team.getImageKey(), team.getCategory());
-                    return TeamSummaryResponse.create(team, imageUrl, memberCount);
+                    return TeamSummaryResponse.create(team, imageUrl, memberCount, tm.getTeamRole());
                 })
                 .toList();
     }
@@ -130,7 +130,7 @@ public class TeamService {
             throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
 
         return teamMemberRepository.findByTeam(team).stream()
-                .map(tm -> TeamMemberResponse.create(tm, tm.getUser()))
+                .map(tm -> TeamMemberResponse.create(tm, tm.getUser(), s3Service.getImageUrl(tm.getUser().getImageKey())))
                 .toList();
     }
 
