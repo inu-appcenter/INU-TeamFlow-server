@@ -88,8 +88,14 @@ public class ChatRoomService {
                 : Map.of();
 
         return myMemberships.stream()
-                .map(member -> toSummary(
-                        member, lastMessageByRoomId.get(member.getChatRoom().getChatRoomId()), partnerByRoomId))
+                .map(member -> {
+                    ChatMessage lastMessage = lastMessageByRoomId.get(member.getChatRoom().getChatRoomId());
+                    // 합류 시점 이전 메시지는 방 목록 미리보기에도 노출하지 않음
+                    if (lastMessage != null && lastMessage.getChatMessageId() <= member.getVisibleFromMessageId()) {
+                        lastMessage = null;
+                    }
+                    return toSummary(member, lastMessage, partnerByRoomId);
+                })
                 .toList();
     }
 
@@ -109,20 +115,19 @@ public class ChatRoomService {
         ChatRoom chatRoom = getChatRoomById(roomId);
         ChatRoomMember member = getMemberOrThrow(chatRoom, user);
         Long lastReadMessageId = member.getLastReadMessageId();
+        Long visibleFromMessageId = member.getVisibleFromMessageId();
 
         List<ChatMessage> unread;
         List<ChatMessage> context;
 
         if (lastReadMessageId == null) {
-            // 최초 진입 시에는 안읽은 메시지 없음
-            unread = chatMessageRepository.findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdAsc(
-                    chatRoom, 0L);
+            // 최초 진입 시에는 안읽은 메시지 없음 (합류 시점 이전은 애초에 안 보임)
+            unread = chatMessageRepository.findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdAsc(chatRoom, visibleFromMessageId);
             context = List.of();
         } else {
-            unread = chatMessageRepository.findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdAsc(
-                    chatRoom, lastReadMessageId);
-            context = chatMessageRepository.findTop5ByChatRoomAndChatMessageIdLessThanEqualOrderByChatMessageIdDesc(
-                    chatRoom, lastReadMessageId);
+            unread = chatMessageRepository.findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdAsc(chatRoom, lastReadMessageId);
+            context = chatMessageRepository.findTop5ByChatRoomAndChatMessageIdLessThanEqualAndChatMessageIdGreaterThanOrderByChatMessageIdDesc(
+                    chatRoom, lastReadMessageId, visibleFromMessageId);
         }
 
         List<ChatMessage> combined = new ArrayList<>(context);
@@ -150,13 +155,14 @@ public class ChatRoomService {
      */
     public Slice<ChatMessageResponse> getMessageHistory(Long roomId, Long cursor, int size, User user) {
         ChatRoom chatRoom = getChatRoomById(roomId);
-        getMemberOrThrow(chatRoom, user);
+        ChatRoomMember member = getMemberOrThrow(chatRoom, user);
+        Long visibleFromMessageId = member.getVisibleFromMessageId();
 
         Pageable pageable = PageRequest.of(0, size);
         Slice<ChatMessage> slice = (cursor == null)
-                ? chatMessageRepository.findByChatRoomOrderByChatMessageIdDesc(chatRoom, pageable)
+                ? chatMessageRepository.findByChatRoomOrderByChatMessageIdDesc(chatRoom, visibleFromMessageId, pageable)
                 : chatMessageRepository.findByChatRoomAndChatMessageIdLessThanOrderByChatMessageIdDesc(
-                        chatRoom, cursor, pageable);
+                        chatRoom, cursor, visibleFromMessageId, pageable);
 
         List<ChatMessage> reversed = new ArrayList<>(slice.getContent());
         Collections.reverse(reversed); // 오래된순으로 뒤집어서 응답
@@ -292,7 +298,10 @@ public class ChatRoomService {
         // 채팅방이 없는 경우(레거시 팀 등)는 조용히 스킵
         chatRoomRepository.findByTeamAndChatRoomType(team, ChatRoomType.TEAM).ifPresent(chatRoom -> {
             if (!chatRoomMemberRepository.existsByChatRoomAndUser(chatRoom, user)) {
-                chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, user));
+                Long visibleFromMessageId = chatMessageRepository.findTopByChatRoomOrderByChatMessageIdDesc(chatRoom)
+                        .map(ChatMessage::getChatMessageId)
+                        .orElse(0L);
+                chatRoomMemberRepository.save(ChatRoomMember.createJoiningExisting(chatRoom, user, visibleFromMessageId));
             }
         });
     }
@@ -406,8 +415,12 @@ public class ChatRoomService {
                 .filter(u -> !existingMemberIds.contains(u.getUserId()))
                 .toList();
 
+        Long visibleFromMessageId = chatMessageRepository.findTopByChatRoomOrderByChatMessageIdDesc(chatRoom)
+                .map(ChatMessage::getChatMessageId)
+                .orElse(0L);
+
         for (User newMember : newMembers) {
-            chatRoomMemberRepository.save(ChatRoomMember.create(chatRoom, newMember));
+            chatRoomMemberRepository.save(ChatRoomMember.createJoiningExisting(chatRoom, newMember, visibleFromMessageId));
         }
 
         if (!newMembers.isEmpty()) {
@@ -505,7 +518,12 @@ public class ChatRoomService {
         ChatRoom chatRoom = member.getChatRoom();
 
         long unreadCount = chatMessageRepository.countByChatRoomAndChatMessageIdGreaterThan(
-                chatRoom, member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L);
+                chatRoom,
+                Math.max(
+                        member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L,
+                        member.getVisibleFromMessageId()
+                )
+        );
 
         String roomName;
         String imageUrl;

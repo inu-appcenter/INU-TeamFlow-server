@@ -1,0 +1,1 @@
+ALTER TABLE chat_room_member ADD COLUMN visible_from_message_id BIGINT NOT NULL DEFAULT 0;
