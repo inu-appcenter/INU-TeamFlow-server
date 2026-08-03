@@ -29,14 +29,32 @@ public class ChatRoomMember extends BaseTimeEntity {
     @Column(name = "last_read_message_id")
     private Long lastReadMessageId;
 
+    @Column(name = "visible_from_message_id", nullable = false)
+    private Long visibleFromMessageId; // 이 값보다 큰 메시지부터 조회 가능 (중간 합류자 이전 내역 차단)
+
     @Builder
-    private ChatRoomMember(ChatRoom chatRoom, User user) {
+    private ChatRoomMember(ChatRoom chatRoom, User user, Long visibleFromMessageId) {
         this.chatRoom = chatRoom;
         this.user = user;
+        this.visibleFromMessageId = visibleFromMessageId;
     }
 
+    // 방 생성 시점의 원년 멤버 - 기존 메시지가 있을 수 없으니 제한 없음
     public static ChatRoomMember create(ChatRoom chatRoom, User user) {
-        return ChatRoomMember.builder().chatRoom(chatRoom).user(user).build();
+        return ChatRoomMember.builder()
+                .chatRoom(chatRoom)
+                .user(user)
+                .visibleFromMessageId(0L)
+                .build();
+    }
+
+    // 이미 메시지가 쌓인 기존 방에 나중에 합류하는 멤버 - 합류 시점 이전 메시지는 안 보이게 기준점을 둠
+    public static ChatRoomMember createJoiningExisting(ChatRoom chatRoom, User user, Long visibleFromMessageId) {
+        return ChatRoomMember.builder()
+                .chatRoom(chatRoom)
+                .user(user)
+                .visibleFromMessageId(visibleFromMessageId != null ? visibleFromMessageId : 0L)
+                .build();
     }
 
     public void updateLastReadMessageId(Long messageId) {
