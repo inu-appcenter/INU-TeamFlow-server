@@ -3,6 +3,7 @@ package com.inuteamflow.server.domain.infoPost.dto.response;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -30,6 +31,9 @@ public class InfoPostSummaryResponse {
     @Schema(description = "이 정보글을 참조하는 모집글 수 (공고형만 값, 자유형은 null)", example = "4")
     private Integer recruitmentCount;
 
+    @Schema(description = "작성일시")
+    private LocalDateTime createdAt;
+
     public static InfoPostSummaryResponse of(InfoPost infoPost, String thumbnailUrl, Integer recruitmentCount) {
         return new InfoPostSummaryResponse(
                 infoPost.getInfoPostId(),
@@ -37,6 +41,7 @@ public class InfoPostSummaryResponse {
                 infoPost.isLinkable(),
                 infoPost.getTitle(),
                 thumbnailUrl,
-                recruitmentCount);
+                recruitmentCount,
+                infoPost.getCreatedAt());
     }
 }
