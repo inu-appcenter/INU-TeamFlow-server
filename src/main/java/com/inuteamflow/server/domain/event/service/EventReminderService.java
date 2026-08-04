@@ -17,14 +17,17 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventReminderService {
@@ -62,20 +65,34 @@ public class EventReminderService {
 
         List<DueOccurrence> candidates = new ArrayList<>();
         collectSingleOccurrences(from, to, candidates);
+        int collected = candidates.size();
         collectRecurringOccurrences(from, to, candidates);
+        int afterRecurring = candidates.size();
 
         // 알림 시각이 (from, baseAt] 구간에 든 회차만 발송 대상으로 남긴다.
         candidates.removeIf(candidate -> !isDue(candidate, from, baseAt));
+        int due = candidates.size();
+
+        log.info(
+                "[reminder] baseAt={} collected(single={}, recurring={}) due={}",
+                baseAt,
+                collected,
+                afterRecurring - collected,
+                due);
+
         if (candidates.isEmpty()) {
             return;
         }
 
-        Set<ReminderKey> alreadySent = eventReminderLogRepository.findByOccurrenceAtBetween(from, to).stream()
+        Set<Long> candidateEventIds =
+                candidates.stream().map(DueOccurrence::eventId).collect(Collectors.toSet());
+        Set<ReminderKey> alreadySent = eventReminderLogRepository.findByEventIdIn(candidateEventIds).stream()
                 .map(log -> new ReminderKey(log.getEventId(), log.getOccurrenceAt()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(HashSet::new));
 
         for (DueOccurrence candidate : candidates) {
-            if (alreadySent.contains(new ReminderKey(candidate.eventId(), candidate.occurrenceAt()))) {
+            ReminderKey key = new ReminderKey(candidate.eventId(), candidate.occurrenceAt());
+            if (!alreadySent.add(key)) {
                 continue;
             }
 
@@ -87,7 +104,7 @@ public class EventReminderService {
             if (!receivers.isEmpty()) {
                 notificationService.createSystemNotifications(
                         receivers,
-                        "곧 시작하는 일정이 있어요",
+                        buildTitle(),
                         buildContent(candidate),
                         NotificationType.TEAM_SCHEDULE,
                         "/team/" + candidate.teamId(),
@@ -196,9 +213,19 @@ public class EventReminderService {
      * @return 알림 시각이 {@code (from, baseAt]}에 들면 {@code true}
      */
     private boolean isDue(DueOccurrence candidate, LocalDateTime from, LocalDateTime baseAt) {
-        LocalDateTime notifyAt =
-                candidate.allDay() ? candidate.startAt() : candidate.startAt().minus(LEAD_TIME);
+        LocalDateTime notifyAt = candidate.allDay()
+                ? candidate.startAt()
+                : candidate.startAt().minus(LEAD_TIME).truncatedTo(ChronoUnit.MINUTES);
         return notifyAt.isAfter(from) && !notifyAt.isAfter(baseAt);
+    }
+
+    /**
+     * 시스템 알림의 제목을 생성한다.
+     *
+     * @return {@code "곧 시작하는 일정이 있어요"}
+     */
+    private String buildTitle() {
+        return "곧 시작하는 일정이 있어요";
     }
 
     /**
