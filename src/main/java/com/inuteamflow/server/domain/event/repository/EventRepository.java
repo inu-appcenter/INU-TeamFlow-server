@@ -77,4 +77,17 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     WHERE e.team IS NOT NULL AND e.isSingle = false AND e.isFinished = false
     """)
     List<Event> findAllTeamRecurringEvents();
+
+    @Query("""
+    SELECT e FROM Event e
+    WHERE e.team IS NULL AND e.isSingle = true AND e.isFinished = false
+    AND e.startAt > :from AND e.startAt <= :to
+    """)
+    List<Event> findPersonalSingleEventsForReminder(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+    SELECT e FROM Event e
+    WHERE e.team IS NULL AND e.isSingle = false AND e.isFinished = false
+    """)
+    List<Event> findAllPersonalRecurringEvents();
 }

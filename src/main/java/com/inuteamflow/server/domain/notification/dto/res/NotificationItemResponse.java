@@ -22,7 +22,7 @@ public class NotificationItemResponse {
     @Schema(description = "알림 내용", example = "오프라인으로 진행될거구요. 가능하신 시간대 투표해주세요~")
     private String content;
 
-    @Schema(description = "알림 유형", example = "TEAM_SCHEDULE")
+    @Schema(description = "알림 유형", example = "CALENDAR")
     private NotificationType type;
 
     @Schema(description = "리다이렉트 URL", example = "/teams/1/notice/5")

@@ -107,7 +107,7 @@ public class VoteService {
                 receivers,
                 "[" + team.getName() + "] 팀에서 일정 투표가 시작됐어요",
                 "'" + vote.getTitle() + "' 투표에 참여해주세요",
-                NotificationType.TEAM_SCHEDULE,
+                NotificationType.CALENDAR,
                 "/team/" + team.getTeamId() + "/vote/" + vote.getVoteId());
         boolean isVoter = voteParticipantService.isVoter(vote, user);
 
@@ -237,7 +237,7 @@ public class VoteService {
                 receivers,
                 "\"" + vote.getTitle() + "\" 일정이 확정됐어요",
                 "확정된 일정을 캘린더에서 확인해보세요",
-                NotificationType.TEAM_SCHEDULE,
+                NotificationType.CALENDAR,
                 "/team/" + vote.getTeam().getTeamId() + "/vote/" + vote.getVoteId());
 
         return voteResultService.createVoteResult(vote, host, availableTeamMembers, request);

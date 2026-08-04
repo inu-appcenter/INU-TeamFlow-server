@@ -7,3 +7,8 @@ CREATE TABLE event_reminder_log (
     CONSTRAINT uq_event_reminder UNIQUE (event_id, occurrence_at)
 );
 CREATE INDEX idx_event_reminder_occurrence_at ON event_reminder_log (occurrence_at);
+
+-- 팀/개인 일정 알림 유형을 CALENDAR 로 통합한다.
+ALTER TABLE notification DROP CONSTRAINT notification_type_check;
+UPDATE notification SET type = 'CALENDAR' WHERE type IN ('TEAM_SCHEDULE', 'PERSONAL_SCHEDULE');
+ALTER TABLE notification ADD CONSTRAINT notification_type_check CHECK (type IN ('NOTICE', 'INVITE', 'APPLICATION', 'CALENDAR', 'CHAT'));

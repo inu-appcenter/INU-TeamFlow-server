@@ -39,7 +39,7 @@ public class EventReminderService {
     private final NotificationService notificationService;
     private final UserRepository userRepository;
 
-    private static final Duration LEAD_TIME = Duration.ofMinutes(10);
+    private static final Duration LEAD_TIME = Duration.ofMinutes(30);
     private static final Duration LOOKBACK = Duration.ofMinutes(5);
 
     // =========================================================================
@@ -65,19 +65,25 @@ public class EventReminderService {
 
         List<DueOccurrence> candidates = new ArrayList<>();
         collectSingleOccurrences(from, to, candidates);
-        int collected = candidates.size();
+        int teamSingle = candidates.size();
         collectRecurringOccurrences(from, to, candidates);
-        int afterRecurring = candidates.size();
+        int teamRecurring = candidates.size() - teamSingle;
+        collectPersonalSingleOccurrences(from, to, candidates);
+        int personalSingle = candidates.size() - teamSingle - teamRecurring;
+        collectPersonalRecurringOccurrences(from, to, candidates);
+        int personalRecurring = candidates.size() - teamSingle - teamRecurring - personalSingle;
 
         // 알림 시각이 (from, baseAt] 구간에 든 회차만 발송 대상으로 남긴다.
         candidates.removeIf(candidate -> !isDue(candidate, from, baseAt));
         int due = candidates.size();
 
         log.info(
-                "[reminder] baseAt={} collected(single={}, recurring={}) due={}",
+                "[reminder] baseAt={} team(single={}, recurring={}) personal(single={}, recurring={}) due={}",
                 baseAt,
-                collected,
-                afterRecurring - collected,
+                teamSingle,
+                teamRecurring,
+                personalSingle,
+                personalRecurring,
                 due);
 
         if (candidates.isEmpty()) {
@@ -102,12 +108,13 @@ public class EventReminderService {
                     .toList();
 
             if (!receivers.isEmpty()) {
+                String redirectUrl = candidate.teamId() == null ? "/calendar" : "/team/" + candidate.teamId();
                 notificationService.createSystemNotifications(
                         receivers,
                         buildTitle(),
                         buildContent(candidate),
-                        NotificationType.TEAM_SCHEDULE,
-                        "/team/" + candidate.teamId(),
+                        NotificationType.CALENDAR,
+                        redirectUrl,
                         candidate.createdBy());
             }
 
@@ -195,6 +202,73 @@ public class EventReminderService {
                     Boolean.TRUE.equals(occurrence.getIsAllDay()),
                     occurrence.getTitle(),
                     receiverIds));
+        }
+    }
+
+    /**
+     * 발송 대상 단일 개인 일정을 수집한다.
+     *
+     * <p>개인 일정은 팀이 없으므로 수신자는 생성자 본인 한 명이며, {@code teamId}는 {@code null}로 둔다.
+     * 단일 일정은 회차가 곧 자기 자신이므로 이력 키({@code occurrenceAt})로 시작 시각을 사용한다.</p>
+     *
+     * @param from 조회 구간 하한
+     * @param to 조회 구간 상한
+     * @param candidates 수집한 회차를 추가할 목록
+     */
+    private void collectPersonalSingleOccurrences(
+            LocalDateTime from, LocalDateTime to, List<DueOccurrence> candidates) {
+        for (Event event : eventRepository.findPersonalSingleEventsForReminder(from, to)) {
+            candidates.add(new DueOccurrence(
+                    event.getEventId(),
+                    null,
+                    event.getCreatedBy(),
+                    event.getStartAt(),
+                    event.getStartAt(),
+                    Boolean.TRUE.equals(event.getIsAllDay()),
+                    event.getTitle(),
+                    List.of(event.getCreatedBy())));
+        }
+    }
+
+    /**
+     * 발송 대상 반복 개인 일정 회차를 수집한다.
+     *
+     * <p>회차 전개는 팀 일정과 동일하게 {@link EventOccurrenceService#expandRecurringEvents}에 위임하되, 수신자는
+     * 생성자 본인 한 명이며 {@code teamId}는 {@code null}로 둔다.</p>
+     *
+     * @param from 조회 구간 하한
+     * @param to 조회 구간 상한
+     * @param candidates 수집한 회차를 추가할 목록
+     */
+    private void collectPersonalRecurringOccurrences(
+            LocalDateTime from, LocalDateTime to, List<DueOccurrence> candidates) {
+        List<Event> recurringEvents = eventRepository.findAllPersonalRecurringEvents();
+        if (recurringEvents.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Long> createdByByEventId = recurringEvents.stream()
+                .collect(Collectors.toMap(Event::getEventId, Event::getCreatedBy, (first, second) -> first));
+
+        List<EventListResponse> occurrences = eventOccurrenceService.expandRecurringEvents(
+                recurringEvents, new EventOccurrenceService.DateRange(from, to), null);
+
+        for (EventListResponse occurrence : occurrences) {
+            // 회차 단위로 완료 처리된 수정 회차는 제외한다.
+            if (Boolean.TRUE.equals(occurrence.getIsFinished())) {
+                continue;
+            }
+
+            Long createdBy = createdByByEventId.get(occurrence.getEventId());
+            candidates.add(new DueOccurrence(
+                    occurrence.getEventId(),
+                    null,
+                    createdBy,
+                    occurrence.getOccurrenceAt(),
+                    occurrence.getStartAt(),
+                    Boolean.TRUE.equals(occurrence.getIsAllDay()),
+                    occurrence.getTitle(),
+                    List.of(createdBy)));
         }
     }
 

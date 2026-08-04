@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.inuteamflow.server.domain.event.dto.request.MyEventCreateRequest;
 import com.inuteamflow.server.domain.event.dto.request.TeamEventCreateRequest;
 import com.inuteamflow.server.domain.event.dto.request.TeamEventUpdateRequest;
 import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
@@ -17,6 +18,7 @@ import com.inuteamflow.server.domain.event.entity.EventReminderLog;
 import com.inuteamflow.server.domain.event.enums.RecurrenceEditScope;
 import com.inuteamflow.server.domain.event.repository.EventReminderLogRepository;
 import com.inuteamflow.server.domain.event.service.EventReminderService;
+import com.inuteamflow.server.domain.event.service.MyEventService;
 import com.inuteamflow.server.domain.event.service.TeamEventService;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.service.NotificationService;
@@ -67,6 +69,9 @@ class EventReminderServiceTest {
 
     @Autowired
     private TeamEventService teamEventService;
+
+    @Autowired
+    private MyEventService myEventService;
 
     @Autowired
     private EventReminderLogRepository eventReminderLogRepository;
@@ -158,7 +163,7 @@ class EventReminderServiceTest {
                         anyList(),
                         eq("곧 시작하는 일정이 있어요"),
                         anyString(),
-                        eq(NotificationType.TEAM_SCHEDULE),
+                        eq(NotificationType.CALENDAR),
                         eq("/team/" + team.getTeamId()),
                         any());
 
@@ -207,7 +212,7 @@ class EventReminderServiceTest {
                         anyList(),
                         eq("곧 시작하는 일정이 있어요"),
                         anyString(),
-                        eq(NotificationType.TEAM_SCHEDULE),
+                        eq(NotificationType.CALENDAR),
                         eq("/team/" + team.getTeamId()),
                         any());
 
@@ -215,6 +220,51 @@ class EventReminderServiceTest {
         assertThat(logs).hasSize(1);
         assertThat(logs.get(0).getEventId()).isEqualTo(following.getEventId());
         assertThat(logs.get(0).getOccurrenceAt()).isEqualTo(IN_WINDOW_START);
+    }
+
+    @Test
+    @DisplayName("시작이 임박한 단일 개인 일정은 생성자 본인에게 CALENDAR 알림으로 발송되고 시작 슬롯 키로 기록된다.")
+    void reminder_sendsForPersonalSingleEventInWindow() throws JsonProcessingException {
+        Long eventId = myEventService
+                .createMyEvent(hostUser, createPersonalEventRequest(IN_WINDOW_START, IN_WINDOW_START.plusHours(1)))
+                .getEventId();
+
+        entityManager.flush();
+        entityManager.clear();
+
+        eventReminderService.sendDueReminders(NOW);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        verify(notificationService, times(1))
+                .createSystemNotifications(
+                        anyList(),
+                        eq("곧 시작하는 일정이 있어요"),
+                        anyString(),
+                        eq(NotificationType.CALENDAR),
+                        eq("/calendar"),
+                        any());
+
+        List<EventReminderLog> logs = eventReminderLogRepository.findAll();
+        assertThat(logs).hasSize(1);
+        assertThat(logs.get(0).getEventId()).isEqualTo(eventId);
+        assertThat(logs.get(0).getOccurrenceAt()).isEqualTo(IN_WINDOW_START);
+    }
+
+    private MyEventCreateRequest createPersonalEventRequest(LocalDateTime startAt, LocalDateTime endAt)
+            throws JsonProcessingException {
+        return objectMapper.readValue("""
+                {
+                  "title": "개인 스터디",
+                  "description": "개인 일정 리마인더 테스트",
+                  "startAt": "%s",
+                  "endAt": "%s",
+                  "isAllDay": false,
+                  "color": "LAVENDER",
+                  "recurrence": null
+                }
+                """.formatted(startAt, endAt), MyEventCreateRequest.class);
     }
 
     private List<Long> participantIds() {
