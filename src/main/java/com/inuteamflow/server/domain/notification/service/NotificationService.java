@@ -157,4 +157,37 @@ public class NotificationService {
         eventPublisher.publishEvent(
                 new ChatFcmEvent(receiverIds, title, content, type, redirectUrl, roomId, "chat-room-" + roomId));
     }
+
+    /**
+     * 시스템이 발생시킨 여러 수신자의 알림을 생성한다.
+     *
+     * <p>스케줄러 등 로그인 사용자가 없는 흐름에서 호출되므로 {@code auditorId}로 작성자 정보를 직접 채운 뒤
+     * 수신자별 알림을 일괄 저장하고, 트랜잭션 커밋 이후 발송할 {@link FcmMultiEvent}를 한 번 발행한다.</p>
+     *
+     * @param receivers 알림 수신자 목록
+     * @param title 알림 제목
+     * @param content 알림 내용
+     * @param type 알림 유형
+     * @param redirectUrl 알림 선택 시 이동할 URL
+     * @param auditorId 작성자 감사 정보로 사용할 사용자 ID
+     */
+    @Transactional
+    public void createSystemNotifications(
+            List<User> receivers,
+            String title,
+            String content,
+            NotificationType type,
+            String redirectUrl,
+            Long auditorId) {
+        List<Notification> notifications = receivers.stream()
+                .map(receiver -> {
+                    Notification notification = Notification.create(receiver, title, content, type, redirectUrl);
+                    notification.assignAuditor(auditorId); // ← created_by/updated_by 수동 채움
+                    return notification;
+                })
+                .toList();
+        notificationRepository.saveAll(notifications);
+        List<Long> receiverIds = receivers.stream().map(User::getUserId).toList();
+        eventPublisher.publishEvent(new FcmMultiEvent(receiverIds, title, content, redirectUrl, type));
+    }
 }

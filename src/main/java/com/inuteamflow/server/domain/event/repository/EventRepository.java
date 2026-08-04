@@ -64,4 +64,17 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Modifying
     @Query("DELETE FROM Event e WHERE e.createdBy = :createdBy AND e.team IS NULL")
     void deleteByCreatedByAndTeamIsNull(@Param("createdBy") Long createdBy);
+
+    @Query("""
+    SELECT e FROM Event e JOIN FETCH e.team
+    WHERE e.team IS NOT NULL AND e.isSingle = true AND e.isFinished = false
+    AND e.startAt > :from AND e.startAt <= :to
+    """)
+    List<Event> findTeamSingleEventsForReminder(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+    SELECT e FROM Event e JOIN FETCH e.team
+    WHERE e.team IS NOT NULL AND e.isSingle = false AND e.isFinished = false
+    """)
+    List<Event> findAllTeamRecurringEvents();
 }
