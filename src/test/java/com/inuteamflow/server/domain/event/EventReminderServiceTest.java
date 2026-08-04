@@ -52,9 +52,9 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link EventReminderService#sendDueReminders}가 조회 창 밖에서 시작한 반복 일정의 회차를
  * 창 안으로 들여 발송 대상으로 잡는지 검증한다.
  *
- * <p>알림 판정 기준: 시간 일정은 시작 {@code LEAD_TIME}(10분) 전이 발송 시각이고, 발송 구간은
+ * <p>알림 판정 기준: 시간 일정은 시작 {@code LEAD_TIME}(30분) 전이 발송 시각이고, 발송 구간은
  * {@code (기준시각 - LOOKBACK(5분), 기준시각]}이다. 따라서 {@code now=15:00}이면 시작 시각이
- * {@code 15:10}인 회차가 발송 대상이 된다.</p>
+ * {@code 15:30}인 회차가 발송 대상이 된다.</p>
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -62,7 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
 class EventReminderServiceTest {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 8, 4, 15, 0);
-    private static final LocalDateTime IN_WINDOW_START = LocalDateTime.of(2026, 8, 4, 15, 10);
+    private static final LocalDateTime IN_WINDOW_START = LocalDateTime.of(2026, 8, 4, 15, 30);
 
     @Autowired
     private EventReminderService eventReminderService;
@@ -176,9 +176,9 @@ class EventReminderServiceTest {
     @Test
     @DisplayName("THIS_AND_FOLLOWING으로 과거에 시작한 시리즈의 회차가 알림 창에 들면, 그 회차에 리마인더가 발송된다.")
     void reminder_sendsForFollowingSeriesOccurrenceInWindow() throws JsonProcessingException {
-        LocalDateTime seriesStart = LocalDateTime.of(2026, 8, 1, 15, 10);
-        // 과거 회차부터 분리 → following 시리즈 시작 시각(8/2)은 과거지만, 그 회차(8/4 15:10)가 알림 창에 든다.
-        LocalDateTime splitTarget = LocalDateTime.of(2026, 8, 2, 15, 10);
+        LocalDateTime seriesStart = LocalDateTime.of(2026, 8, 1, 15, 30);
+        // 과거 회차부터 분리 → following 시리즈 시작 시각(8/2)은 과거지만, 그 회차(8/4 15:30)가 알림 창에 든다.
+        LocalDateTime splitTarget = LocalDateTime.of(2026, 8, 2, 15, 30);
 
         Long originalEventId = teamEventService
                 .createTeamEvent(
