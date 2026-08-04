@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -265,4 +266,73 @@ public interface RecruitmentControllerDocument {
     })
     ResponseEntity<Page<ApplicationSummaryResponse>> getApplicationsByRecruitment(
             @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long recruitmentId, Pageable pageable);
+
+    @Operation(summary = "scrapRecruitment", description = "모집글 스크랩")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "스크랩 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "모집글을 찾을 수 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "409",
+                description = "이미 스크랩한 모집글",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> scrapRecruitment(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long recruitmentId);
+
+    @Operation(summary = "unscrapRecruitment", description = "모집글 스크랩 취소")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "스크랩 취소 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "모집글을 찾을 수 없거나 스크랩하지 않은 모집글",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> unscrapRecruitment(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long recruitmentId);
+
+    @Operation(summary = "getMyRecruitmentScraps", description = "내가 스크랩한 모집글 목록 조회 (스크랩한 시각 최신순)")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "스크랩한 모집글 목록 조회 성공",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = RecruitmentSummaryResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Slice<RecruitmentSummaryResponse>> getMyRecruitmentScraps(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, Pageable pageable);
 }

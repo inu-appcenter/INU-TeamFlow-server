@@ -18,8 +18,6 @@ public class RecruitmentDetailResponse {
     private String description;
     private Integer targetMemberCount;
     private Integer currentMemberCount;
-    //    private Long announcementId;
-    //    private String announcementTitle;
     private Long teamId;
     private String teamName;
     private LocalDateTime endAt;
@@ -27,10 +25,12 @@ public class RecruitmentDetailResponse {
     private String recruiterName;
     private Boolean isRecruiter;
     private Boolean hasApplied;
+    private Boolean isScrap;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static RecruitmentDetailResponse of(Recruitment recruitment, Boolean isRecruiter, Boolean hasApplied) {
+    public static RecruitmentDetailResponse of(
+            Recruitment recruitment, Boolean isRecruiter, Boolean hasApplied, Boolean isScrap) {
         return new RecruitmentDetailResponse(
                 recruitment.getRecruitmentId(),
                 recruitment.getTitle(),
@@ -39,8 +39,6 @@ public class RecruitmentDetailResponse {
                 recruitment.getDescription(),
                 recruitment.getTargetMemberCount(),
                 recruitment.getCurrentMemberCount(),
-                //                recruitment.getAnnouncementId(),
-                //                announcementTitle,
                 recruitment.getTeam().getTeamId(),
                 recruitment.getTeam().getName(),
                 recruitment.getEndAt(),
@@ -48,6 +46,7 @@ public class RecruitmentDetailResponse {
                 recruitment.getRecruiter().getName(),
                 isRecruiter,
                 hasApplied,
+                isScrap,
                 recruitment.getCreatedAt(),
                 recruitment.getUpdatedAt());
     }

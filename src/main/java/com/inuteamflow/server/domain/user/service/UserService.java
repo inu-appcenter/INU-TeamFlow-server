@@ -5,10 +5,12 @@ import com.inuteamflow.server.domain.event.repository.*;
 import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
+import com.inuteamflow.server.domain.infoPost.repository.InfoPostScrapRepository;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
 import com.inuteamflow.server.domain.notification.repository.NotificationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
+import com.inuteamflow.server.domain.recruitment.repository.RecruitmentScrapRepository;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeImageRepository;
@@ -46,8 +48,10 @@ public class UserService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final RecruitmentApplicationRepository recruitmentApplicationRepository;
     private final RecruitmentRepository recruitmentRepository;
+    private final RecruitmentScrapRepository recruitmentScrapRepository;
     private final InfoPostImageRepository infoPostImageRepository;
     private final InfoPostRepository infoPostRepository;
+    private final InfoPostScrapRepository infoPostScrapRepository;
     private final VoteAvailabilityRepository voteAvailabilityRepository;
     private final VoteParticipantRepository voteParticipantRepository;
     private final VoteResultRepository voteResultRepository;
@@ -147,10 +151,18 @@ public class UserService {
             throw new RestApiException(CustomErrorCode.VOTE_IS_OPEN);
         }
 
+        // RecruitmentScrap (본인이 스크랩한 것 + 본인 모집글을 스크랩한 다른 사람의 기록)
+        recruitmentScrapRepository.deleteByUser(user);
+        recruitmentScrapRepository.deleteByRecruitmentRecruiter(user);
+
         // RecruitmentApplication → RecruitmentApplication → Recruitment
         recruitmentApplicationRepository.deleteByCreatedBy(user.getUserId());
         recruitmentApplicationRepository.deleteByRecruitmentCreatedBy(user.getUserId());
         recruitmentRepository.deleteByRecruiter(user);
+
+        // InfoPostScrap (본인이 스크랩한 것 + 본인 정보글을 스크랩한 다른 사람의 기록)
+        infoPostScrapRepository.deleteByUser(user);
+        infoPostScrapRepository.deleteByInfoPostCreatedBy(user.getUserId());
 
         // InfoPostImage → InfoPost
         recruitmentRepository.clearInfoPostByCreatedBy(user.getUserId());

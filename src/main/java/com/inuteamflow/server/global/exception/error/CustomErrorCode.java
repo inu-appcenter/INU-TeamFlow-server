@@ -107,7 +107,13 @@ public enum CustomErrorCode implements ErrorCode {
     FIREBASE_INITIALIZATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Firebase SDK 초기화에 실패하였습니다."),
     FCM_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "FCM 토큰을 찾을 수 없습니다."),
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "알림을 찾을 수 없습니다."),
-    NOTIFICATION_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "알림에 대한 권한이 없습니다.");
+    NOTIFICATION_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "알림에 대한 권한이 없습니다."),
+
+    // 스크랩 관련 에러
+    RECRUITMENT_ALREADY_SCRAPPED(HttpStatus.CONFLICT, 409, "이미 스크랩한 모집글입니다."),
+    RECRUITMENT_SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "스크랩하지 않은 모집글입니다."),
+    INFO_POST_ALREADY_SCRAPPED(HttpStatus.CONFLICT, 409, "이미 스크랩한 정보글입니다."),
+    INFO_POST_SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "스크랩하지 않은 정보글입니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;
