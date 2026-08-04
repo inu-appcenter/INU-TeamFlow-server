@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -95,5 +96,27 @@ public class RecruitmentController implements RecruitmentControllerDocument {
         User user = userDetails.getUser();
         return ResponseEntity.status(HttpStatus.OK)
                 .body(recruitmentApplicationService.getApplicationsByRecruitment(recruitmentId, user, pageable));
+    }
+
+    @PostMapping("/{recruitmentId}/scraps")
+    public ResponseEntity<Void> scrapRecruitment(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long recruitmentId) {
+        recruitmentService.scrapRecruitment(recruitmentId, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @DeleteMapping("/{recruitmentId}/scraps")
+    public ResponseEntity<Void> unscrapRecruitment(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long recruitmentId) {
+        recruitmentService.unscrapRecruitment(recruitmentId, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping("/scraps")
+    public ResponseEntity<Slice<RecruitmentSummaryResponse>> getMyRecruitmentScraps(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentService.getMyRecruitmentScraps(userDetails.getUser(), pageable));
     }
 }

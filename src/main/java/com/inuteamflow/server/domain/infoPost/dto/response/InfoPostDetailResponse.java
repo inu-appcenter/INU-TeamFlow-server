@@ -41,6 +41,9 @@ public class InfoPostDetailResponse {
     @Schema(description = "수정/삭제 버튼 노출 판단용", example = "true")
     private Boolean isAuthor;
 
+    @Schema(description = "스크랩 여부", example = "false")
+    private Boolean isScrap;
+
     @Schema(description = "이 정보글을 참조하는 모집글 수 (공고형만 값, 자유형은 null)", example = "4")
     private Integer recruitmentCount;
 
@@ -57,6 +60,7 @@ public class InfoPostDetailResponse {
             List<InfoPostImage> images,
             Function<String, String> urlResolver,
             Boolean isAuthor,
+            Boolean isScrap,
             Integer recruitmentCount) {
         Author authorInfo = new Author(author.getUserId(), author.getName(), authorProfileUrl);
 
@@ -73,6 +77,7 @@ public class InfoPostDetailResponse {
                 imageList,
                 authorInfo,
                 isAuthor,
+                isScrap,
                 recruitmentCount,
                 infoPost.getCreatedAt(),
                 infoPost.getUpdatedAt());

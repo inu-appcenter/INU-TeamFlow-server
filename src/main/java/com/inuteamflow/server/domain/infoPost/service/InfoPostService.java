@@ -6,10 +6,12 @@ import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostDetailRespons
 import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostSummaryResponse;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
+import com.inuteamflow.server.domain.infoPost.entity.InfoPostScrap;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
+import com.inuteamflow.server.domain.infoPost.repository.InfoPostScrapRepository;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
 import com.inuteamflow.server.domain.user.entity.User;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,7 @@ public class InfoPostService {
     private final UserRepository userRepository;
     private final S3Service s3Service;
     private final RecruitmentRepository recruitmentRepository;
+    private final InfoPostScrapRepository infoPostScrapRepository;
 
     // =========================================================================
     // ============================= 주요 서비스 기능 =============================
@@ -88,10 +92,18 @@ public class InfoPostService {
         User author = getUserById(infoPost.getCreatedBy());
         String authorProfileUrl = s3Service.getImageUrl(author.getImageKey());
         boolean isAuthor = infoPost.isAuthor(user.getUserId());
+        boolean isScrap = infoPostScrapRepository.existsByInfoPostAndUser(infoPost, user);
         Integer recruitmentCount = getRecruitmentCount(infoPost);
 
         return InfoPostDetailResponse.of(
-                infoPost, author, authorProfileUrl, images, s3Service::getImageUrl, isAuthor, recruitmentCount);
+                infoPost,
+                author,
+                authorProfileUrl,
+                images,
+                s3Service::getImageUrl,
+                isAuthor,
+                isScrap,
+                recruitmentCount);
     }
 
     /**
@@ -118,7 +130,14 @@ public class InfoPostService {
         String authorProfileUrl = s3Service.getImageUrl(user.getImageKey());
 
         return InfoPostDetailResponse.of(
-                infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, getRecruitmentCount(infoPost));
+                infoPost,
+                user,
+                authorProfileUrl,
+                images,
+                s3Service::getImageUrl,
+                true,
+                false,
+                getRecruitmentCount(infoPost));
     }
 
     /**
@@ -146,10 +165,11 @@ public class InfoPostService {
         List<InfoPostImage> images = saveImages(infoPost, request.getImageKeys());
 
         String authorProfileUrl = s3Service.getImageUrl(user.getImageKey());
+        boolean isScrap = infoPostScrapRepository.existsByInfoPostAndUser(infoPost, user);
         Integer recruitmentCount = getRecruitmentCount(infoPost);
 
         return InfoPostDetailResponse.of(
-                infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, recruitmentCount);
+                infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, isScrap, recruitmentCount);
     }
 
     /**
@@ -169,6 +189,7 @@ public class InfoPostService {
         List<InfoPostImage> images = infoPostImageRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
         infoPostImageRepository.deleteByInfoPost(infoPost);
         images.forEach(img -> s3Service.deleteImage(img.getImageKey()));
+        infoPostScrapRepository.deleteByInfoPost(infoPost);
         infoPostRepository.delete(infoPost);
     }
 
@@ -183,6 +204,66 @@ public class InfoPostService {
     public Page<RecruitmentSummaryResponse> getRecruitmentsByInfoPost(Long infoPostId, Pageable pageable) {
         InfoPost infoPost = getInfoPostById(infoPostId);
         return recruitmentRepository.findAllByInfoPost(infoPost, pageable).map(RecruitmentSummaryResponse::from);
+    }
+
+    /**
+     * 정보글을 스크랩한다.
+     *
+     * @param infoPostId 스크랩할 정보글 ID
+     * @param user 스크랩을 요청한 사용자
+     * @throws RestApiException 정보글을 찾을 수 없거나 이미 스크랩한 경우
+     */
+    @Transactional
+    public void scrapInfoPost(Long infoPostId, User user) {
+        InfoPost infoPost = getInfoPostById(infoPostId);
+
+        if (infoPostScrapRepository.existsByInfoPostAndUser(infoPost, user)) {
+            throw new RestApiException(CustomErrorCode.INFO_POST_ALREADY_SCRAPPED);
+        }
+
+        infoPostScrapRepository.save(InfoPostScrap.create(infoPost, user));
+    }
+
+    /**
+     * 정보글 스크랩을 취소한다.
+     *
+     * @param infoPostId 스크랩 취소할 정보글 ID
+     * @param user 취소를 요청한 사용자
+     * @throws RestApiException 정보글을 찾을 수 없거나 스크랩하지 않은 경우
+     */
+    @Transactional
+    public void unscrapInfoPost(Long infoPostId, User user) {
+        InfoPost infoPost = getInfoPostById(infoPostId);
+
+        long deleted = infoPostScrapRepository.deleteByInfoPostAndUser(infoPost, user);
+        if (deleted == 0) {
+            throw new RestApiException(CustomErrorCode.INFO_POST_SCRAP_NOT_FOUND);
+        }
+    }
+
+    /**
+     * 사용자가 스크랩한 정보글 목록을 조회한다.
+     *
+     * @param user 조회를 요청한 사용자
+     * @param pageable 페이지 정보
+     * @return 스크랩한 시각 최신순으로 정렬된, 대표 이미지와 모집글 수를 포함한 정보글 목록
+     */
+    public Slice<InfoPostSummaryResponse> getMyInfoPostScraps(User user, Pageable pageable) {
+        Slice<InfoPost> infoPostSlice = infoPostScrapRepository.findInfoPostsByUser(user, pageable);
+        List<InfoPost> infoPosts = infoPostSlice.getContent();
+
+        Map<Long, String> thumbnailKeyByInfoPostId = infoPosts.isEmpty()
+                ? Map.of()
+                : infoPostImageRepository.findAllByInfoPostInAndSortOrder(infoPosts, 0).stream()
+                        .collect(
+                                Collectors.toMap(img -> img.getInfoPost().getInfoPostId(), InfoPostImage::getImageKey));
+
+        return infoPostSlice.map(infoPost -> {
+            String thumbnailKey = thumbnailKeyByInfoPostId.get(infoPost.getInfoPostId());
+            String thumbnailUrl = thumbnailKey != null ? s3Service.getImageUrl(thumbnailKey) : null;
+            Integer recruitmentCount = getRecruitmentCount(infoPost);
+            return InfoPostSummaryResponse.of(infoPost, thumbnailUrl, recruitmentCount);
+        });
     }
 
     // =========================================================================

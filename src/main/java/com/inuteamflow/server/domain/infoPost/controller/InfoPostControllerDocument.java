@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -222,4 +223,73 @@ public interface InfoPostControllerDocument {
     })
     ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitmentsByInfoPost(
             @PathVariable Long infoPostId, Pageable pageable);
+
+    @Operation(summary = "scrapInfoPost", description = "정보글 스크랩")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "스크랩 성공"),
+        @ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "404",
+                description = "정보글을 찾을 수 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "409",
+                description = "이미 스크랩한 정보글",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> scrapInfoPost(
+            @PathVariable Long infoPostId, @AuthenticationPrincipal UserDetailsImpl userDetails);
+
+    @Operation(summary = "unscrapInfoPost", description = "정보글 스크랩 취소")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "스크랩 취소 성공"),
+        @ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "404",
+                description = "정보글을 찾을 수 없거나 스크랩하지 않은 정보글",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> unscrapInfoPost(
+            @PathVariable Long infoPostId, @AuthenticationPrincipal UserDetailsImpl userDetails);
+
+    @Operation(summary = "getMyInfoPostScraps", description = "내가 스크랩한 정보글 목록 조회 (스크랩한 시각 최신순)")
+    @ApiResponses({
+        @ApiResponse(
+                responseCode = "200",
+                description = "스크랩한 정보글 목록 조회 성공",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = InfoPostSummaryResponse.class))),
+        @ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Slice<InfoPostSummaryResponse>> getMyInfoPostScraps(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, Pageable pageable);
 }

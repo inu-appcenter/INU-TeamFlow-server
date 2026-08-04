@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -82,5 +83,27 @@ public class InfoPostController implements InfoPostControllerDocument {
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getRecruitmentsByInfoPost(infoPostId, pageable));
+    }
+
+    @PostMapping("/{infoPostId}/scraps")
+    public ResponseEntity<Void> scrapInfoPost(
+            @PathVariable Long infoPostId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        infoPostService.scrapInfoPost(infoPostId, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @DeleteMapping("/{infoPostId}/scraps")
+    public ResponseEntity<Void> unscrapInfoPost(
+            @PathVariable Long infoPostId, @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        infoPostService.unscrapInfoPost(infoPostId, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping("/scraps")
+    public ResponseEntity<Slice<InfoPostSummaryResponse>> getMyInfoPostScraps(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(infoPostService.getMyInfoPostScraps(userDetails.getUser(), pageable));
     }
 }
