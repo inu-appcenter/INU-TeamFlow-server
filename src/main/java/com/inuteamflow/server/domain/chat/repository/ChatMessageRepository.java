@@ -4,7 +4,6 @@ import com.inuteamflow.server.domain.chat.entity.ChatMessage;
 import com.inuteamflow.server.domain.chat.entity.ChatRoom;
 import java.util.List;
 import java.util.Optional;
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,11 +13,11 @@ import org.springframework.data.repository.query.Param;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
     // 히스토리 조회 - cursor 있음 (과거로 스크롤), 합류 시점 이전은 차단
-    Slice<ChatMessage> findByChatRoomAndChatMessageIdLessThanOrderByChatMessageIdDesc(
+    Slice<ChatMessage> findByChatRoomAndChatMessageIdLessThanAndChatMessageIdGreaterThanOrderByChatMessageIdDesc(
             ChatRoom chatRoom, Long cursor, Long visibleFromMessageId, Pageable pageable);
 
     // 히스토리 조회 - cursor 없음 (최초 호출), 합류 시점 이전은 차단
-    Slice<ChatMessage> findByChatRoomOrderByChatMessageIdDesc(
+    Slice<ChatMessage> findByChatRoomAndChatMessageIdGreaterThanOrderByChatMessageIdDesc(
             ChatRoom chatRoom, Long visibleFromMessageId, Pageable pageable);
 
     // 최초 진입(anchor) - 안읽은 메시지 전체 (경계 이후, 오름차순)
@@ -26,8 +25,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             ChatRoom chatRoom, Long lastReadMessageId);
 
     // 최초 진입(anchor) - 경계 이하 최근 5개, 합류 시점 이전은 차단
-    List<ChatMessage> findTop5ByChatRoomAndChatMessageIdLessThanEqualAndChatMessageIdGreaterThanOrderByChatMessageIdDesc(
-            ChatRoom chatRoom, Long lastReadMessageId, Long visibleFromMessageId);
+    List<ChatMessage>
+            findTop5ByChatRoomAndChatMessageIdLessThanEqualAndChatMessageIdGreaterThanOrderByChatMessageIdDesc(
+                    ChatRoom chatRoom, Long lastReadMessageId, Long visibleFromMessageId);
 
     // 안읽음 개수 계산
     long countByChatRoomAndChatMessageIdGreaterThan(ChatRoom chatRoom, Long lastReadMessageId);
