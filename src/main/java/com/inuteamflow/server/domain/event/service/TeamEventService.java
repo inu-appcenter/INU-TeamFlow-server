@@ -110,7 +110,7 @@ public class TeamEventService {
                 receivers,
                 "[" + team.getName() + "] 팀에 새 일정이 추가됐어요",
                 "'" + event.getTitle() + "' 일정을 확인해보세요",
-                NotificationType.TEAM_SCHEDULE,
+                NotificationType.CALENDAR,
                 "/team/" + team.getTeamId());
 
         return EventDetailResponse.create(event, recurrenceRule, team.getName(), true, participants);
@@ -175,7 +175,7 @@ public class TeamEventService {
                 receivers,
                 "[" + event.getTeam().getName() + "] 팀의 일정이 변경됐어요",
                 updateContent,
-                NotificationType.TEAM_SCHEDULE,
+                NotificationType.CALENDAR,
                 "/team/" + team.getTeamId());
 
         boolean isParticipant = Participant.isParticipant(participants, user);
@@ -228,7 +228,7 @@ public class TeamEventService {
                 receivers,
                 "'" + event.getTitle() + "' 일정이 삭제됐어요",
                 user.getName() + "님이 일정을 삭제했어요",
-                NotificationType.TEAM_SCHEDULE,
+                NotificationType.CALENDAR,
                 "/team/" + team.getTeamId());
 
         if (eventRecurrenceService.deleteEvent(event, recurrenceEditScope, occurrenceAt)) {
