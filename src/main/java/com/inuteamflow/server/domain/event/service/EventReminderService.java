@@ -78,7 +78,7 @@ public class EventReminderService {
         int due = candidates.size();
 
         log.info(
-                "[reminder] baseAt={} team(single={}, recurring={}) personal(single={}, recurring={}) due={}",
+                "[일정 리마인더] 기준 시각={} · 팀 일정(단건={}, 반복={}) · 개인 일정(단건={}, 반복={}) · 발송 대상={}건",
                 baseAt,
                 teamSingle,
                 teamRecurring,

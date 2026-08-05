@@ -113,7 +113,10 @@ public enum CustomErrorCode implements ErrorCode {
     RECRUITMENT_ALREADY_SCRAPPED(HttpStatus.CONFLICT, 409, "이미 스크랩한 모집글입니다."),
     RECRUITMENT_SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "스크랩하지 않은 모집글입니다."),
     INFO_POST_ALREADY_SCRAPPED(HttpStatus.CONFLICT, 409, "이미 스크랩한 정보글입니다."),
-    INFO_POST_SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "스크랩하지 않은 정보글입니다.");
+    INFO_POST_SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "스크랩하지 않은 정보글입니다."),
+
+    // 공통 500 에러 코드
+    COMMON_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 500, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
     private final Integer code;

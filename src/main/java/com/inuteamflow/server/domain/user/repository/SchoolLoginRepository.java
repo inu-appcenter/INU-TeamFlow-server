@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.user.repository;
 
+import com.inuteamflow.server.global.logging.LogMasker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,11 +21,11 @@ public class SchoolLoginRepository {
     private final JdbcTemplate oracleJdbcTemplate;
 
     public String loginCheck(String username, String password) {
-        log.info("학교 로그인 조회 id: {}", username);
+        log.info("학교 로그인 조회 id: {}", LogMasker.maskId(username));
 
         try {
             String result = oracleJdbcTemplate.queryForObject(LOGIN_CHECK_SQL, String.class, username, password);
-            log.info("학교 DB 조회 결과: {}", result);
+            log.info("학교 DB 조회 완료 - 인증 성공 여부: {}", result != null && !"N".equalsIgnoreCase(result.trim()));
             return result;
         } catch (DataAccessException exception) {
             log.warn("학교 DB 연결 실패: {}", exception.getMessage());

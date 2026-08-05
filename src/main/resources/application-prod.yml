@@ -56,3 +56,7 @@ aws:
 fcm:
   file_path: firebase/inu-teamflow-firebase-adminsdk.json
   project_id: ${FCM_PROJECT_ID}
+
+logging:
+  file:
+    path: /var/log/spring

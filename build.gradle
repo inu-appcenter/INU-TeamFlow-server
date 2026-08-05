@@ -63,6 +63,9 @@ dependencies {
     // Flyway (DB 마이그레이션)
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
+
+    // Logback
+    implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
 }
 
 tasks.named('test') {

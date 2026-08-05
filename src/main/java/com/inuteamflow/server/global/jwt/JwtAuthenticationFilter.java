@@ -9,18 +9,18 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     private final JwtTokenProvider jwtTokenProvider;
 
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
@@ -35,12 +35,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             if (userDetails.getUser().getRole() == Role.BANNED) {
-                log.warn("차단된 사용자의 접근 시도 - username: {}, uri: {}", userDetails.getUsername(), request.getRequestURI());
+                log.warn(
+                        "[인증 차단] 정지된 사용자의 접근 시도 - userId: {}",
+                        userDetails.getUser().getUserId());
                 throw new RestApiException(CustomErrorCode.USER_BANNED);
             }
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.debug("인증 성공 - username: {}, uri: {}", userDetails.getUsername(), request.getRequestURI());
+            MDC.put("userId", String.valueOf(userDetails.getUser().getUserId()));
+            log.debug("[인증 성공] userId: {}", userDetails.getUser().getUserId());
         }
 
         filterChain.doFilter(request, response);

@@ -61,3 +61,7 @@ aws:
 fcm:
   file_path: ${FCM_FILE_PATH}
   project_id: ${FCM_PROJECT_ID}
+
+logging:
+  file:
+    path: /var/log/spring

@@ -2,6 +2,7 @@ package com.inuteamflow.server.global.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
+import com.inuteamflow.server.global.exception.error.ErrorCode;
 import com.inuteamflow.server.global.exception.error.ErrorResponse;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import jakarta.servlet.FilterChain;
@@ -9,15 +10,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Slf4j
 @Component
 public class JwtExceptionFilter extends OncePerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtExceptionFilter.class);
     private final ObjectMapper objectMapper;
 
     public JwtExceptionFilter(ObjectMapper objectMapper) {
@@ -32,8 +32,9 @@ public class JwtExceptionFilter extends OncePerRequestFilter {
         try {
             filterChain.doFilter(request, response);
         } catch (RestApiException e) {
-            log.error("JwtExceptionFilter: JWT Exception occurred - {}", e.getMessage());
-            setErrorResponse(response, (CustomErrorCode) e.getErrorCode());
+            ErrorCode errorCode = e.getErrorCode();
+            log.warn("[인증 오류] 토큰 검증 실패 - code={}, 사유: {}", errorCode.getCode(), errorCode.getMessage());
+            setErrorResponse(response, (CustomErrorCode) errorCode);
         }
     }
 

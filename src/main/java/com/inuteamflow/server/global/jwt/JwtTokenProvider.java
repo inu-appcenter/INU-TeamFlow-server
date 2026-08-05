@@ -9,6 +9,7 @@ import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SecurityException;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
