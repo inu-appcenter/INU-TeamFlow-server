@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 테스트에서는 파일 appender를 쓰지 않는다. CI 환경의 /var/log/spring 쓰기 실패로 컨텍스트 로드가 깨지는 것을 방지. -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%X{traceId:-none}] [user:%X{userId:-anonymous}] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
