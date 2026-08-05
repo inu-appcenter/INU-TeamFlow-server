@@ -10,7 +10,7 @@
     <!-- 사람이 터미널에서 읽는 형식 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%clr(%d{HH:mm:ss.SSS}){magenta} %clr(%-5level) %clr([%X{requestId:-none}]){faint} %clr([%X{traceId:-none}]){faint} %msg%n</pattern>
+            <pattern>%clr(%d{HH:mm:ss.SSS}){magenta} %clr(%-5level) %clr([%X{traceId:-none}]){faint} %clr([user:%X{userId:-anonymous}]){faint} %msg%n</pattern>
         </encoder>
     </appender>
 
