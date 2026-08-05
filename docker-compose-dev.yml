@@ -4,6 +4,13 @@ services:
     image: ${DOCKER_USERNAME}/inu-teamflow:dev
     ports:
       - "8152:8080"
+    volumes:
+      - ./logs:/var/log/spring
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       POSTGRESQL_URL: ${POSTGRESQL_URL}

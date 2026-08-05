@@ -7,13 +7,13 @@ import com.inuteamflow.server.global.exception.error.RestApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.support.MethodArgumentTypeMismatchException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 @RestControllerAdvice
@@ -24,7 +24,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RestApiException.class)
     public ResponseEntity<ErrorResponse> handleRestApiException(RestApiException e) {
         ErrorCode errorCode = e.getErrorCode();
-        log.error("RestApiException", e);
+        if (errorCode.getHttpStatus().is5xxServerError()) {
+            log.error(
+                    "RestApiException: code={}, status={}",
+                    errorCode.getCode(),
+                    errorCode.getHttpStatus().value(),
+                    e);
+        } else {
+            log.warn(
+                    "RestApiException: code={}, status={}, message={}",
+                    errorCode.getCode(),
+                    errorCode.getHttpStatus().value(),
+                    errorCode.getMessage());
+        }
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
     }
@@ -32,7 +44,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         ErrorCode errorCode = CustomErrorCode.COMMON_INVALID_REQUEST;
-        log.error("MethodArgumentNotValidException", e);
+        log.warn(
+                "MethodArgumentNotValidException: code={}, status={}, message={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                errorCode.getMessage());
 
         FieldError fieldError = e.getBindingResult().getFieldError();
         String message = fieldError != null ? fieldError.getDefaultMessage() : errorCode.getMessage();
@@ -45,7 +61,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
             MethodArgumentTypeMismatchException e) {
         ErrorCode errorCode = CustomErrorCode.COMMON_INVALID_REQUEST_TYPE;
-        log.error("MethodArgumentTypeMismatchException", e);
+        log.warn(
+                "MethodArgumentTypeMismatchException: code={}, status={}, message={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                errorCode.getMessage());
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
     }
@@ -54,7 +74,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMissingServletRequestParameter(
             MissingServletRequestParameterException e) {
         ErrorCode errorCode = CustomErrorCode.COMMON_INVALID_PARAMETER;
-        log.error("MissingServletRequestParameterException", e);
+        log.warn(
+                "MissingServletRequestParameterException: code={}, status={}, message={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                errorCode.getMessage());
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
     }
@@ -62,14 +86,34 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoHandlerFound(NoHandlerFoundException e) {
         ErrorCode errorCode = CustomErrorCode.COMMON_HANDLER_NOT_FOUND;
-        log.error("NoHandlerFoundException", e);
+        log.warn(
+                "NoHandlerFoundException: code={}, status={}, message={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                errorCode.getMessage());
         return ResponseEntity.status(errorCode.getHttpStatus()).body(ErrorResponse.create(errorCode.getCode(), ""));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException e) {
         ErrorCode errorCode = CustomErrorCode.AUTH_LOGIN_FAILED;
-        log.error("BadCredentialsException", e);
+        log.warn(
+                "BadCredentialsException: code={}, status={}, message={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                errorCode.getMessage());
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception e) {
+        ErrorCode errorCode = CustomErrorCode.COMMON_INTERNAL_SERVER_ERROR;
+        log.error(
+                "UnexpectedException: code={}, status={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                e);
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
     }
