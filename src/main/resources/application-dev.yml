@@ -23,7 +23,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        format_sql: alse
+        format_sql: false
 
   flyway:
     enabled: true
