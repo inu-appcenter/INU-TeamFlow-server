@@ -295,7 +295,8 @@ public class ChatRoomService {
     /**
      * 팀 초대 수락 또는 모집 신청 수락 시 팀 채팅방에 사용자를 추가한다.
      *
-     * <p>팀 채팅방이 없는 경우(레거시 팀 등)는 조용히 건너뛰며, 이미 채팅방 멤버라면 다시 추가하지 않는다.</p>
+     * <p>팀 채팅방이 없는 경우(레거시 팀 등)는 조용히 건너뛰며, 이미 채팅방 멤버라면 다시 추가하지 않는다.
+     * 새로 추가된 경우에는 입장 시스템 메시지를 채팅방에 안내한다.</p>
      *
      * @param team 멤버를 추가할 팀
      * @param user 채팅방에 추가할 사용자
@@ -311,6 +312,8 @@ public class ChatRoomService {
                         .orElse(0L);
                 chatRoomMemberRepository.save(
                         ChatRoomMember.createJoiningExisting(chatRoom, user, visibleFromMessageId));
+
+                chatMessageService.sendSystemMessage(chatRoom, user.getName() + "님이 입장했습니다.", user);
             }
         });
     }
