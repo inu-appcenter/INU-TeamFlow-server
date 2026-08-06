@@ -45,8 +45,15 @@ public class ChatMessageResponse {
     @Schema(description = "이 메시지를 읽은 인원 수 (발신자 본인 제외, 누가 읽었는지는 노출 안 함)", example = "2")
     private int readCount;
 
+    @Schema(description = "이 메시지를 볼 수 있는 인원 수 (발신자 본인 제외, 합류 시점 기준으로 이 메시지 이후 합류한 멤버는 제외)", example = "3")
+    private int visibleMemberCount;
+
     public static ChatMessageResponse of(
-            ChatMessage message, User sender, Function<String, String> imageUrlResolver, int readCount) {
+            ChatMessage message,
+            User sender,
+            Function<String, String> imageUrlResolver,
+            int readCount,
+            int visibleMemberCount) {
         boolean isImage = message.getMessageType() == ChatMessageType.IMAGE;
 
         return new ChatMessageResponse(
@@ -59,6 +66,7 @@ public class ChatMessageResponse {
                 message.getContent(),
                 isImage ? imageUrlResolver.apply(message.getImageKey()) : null,
                 message.getCreatedAt(),
-                readCount);
+                readCount,
+                visibleMemberCount);
     }
 }

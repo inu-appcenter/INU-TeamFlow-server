@@ -72,7 +72,11 @@ public class ChatMessageService {
         message.assignAuditor(sender.getUserId()); // SecurityContextHolder 의존 없이 직접 채움
         chatMessageRepository.save(message);
 
-        broadcast(roomId, ChatMessageResponse.of(message, sender, s3Service::getImageUrl, 0));
+        int visibleMemberCount = (int) chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
+                .filter(m -> !m.getUser().getUserId().equals(sender.getUserId()))
+                .count();
+
+        broadcast(roomId, ChatMessageResponse.of(message, sender, s3Service::getImageUrl, 0, visibleMemberCount));
 
         // 채팅을 구독하지 않은 인원들에게 FCM 전송
         sendChatFcmIfNeeded(chatRoom, sender, roomId, request);
@@ -91,7 +95,13 @@ public class ChatMessageService {
         message.assignAuditor(triggeredBy.getUserId());
         chatMessageRepository.save(message);
 
-        broadcast(chatRoom.getChatRoomId(), ChatMessageResponse.of(message, triggeredBy, s3Service::getImageUrl, 0));
+        int visibleMemberCount = (int) chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
+                .filter(m -> !m.getUser().getUserId().equals(triggeredBy.getUserId()))
+                .count();
+
+        broadcast(
+                chatRoom.getChatRoomId(),
+                ChatMessageResponse.of(message, triggeredBy, s3Service::getImageUrl, 0, visibleMemberCount));
     }
 
     // =========================================================================

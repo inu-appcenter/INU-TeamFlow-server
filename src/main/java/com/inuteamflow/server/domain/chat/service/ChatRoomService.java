@@ -351,7 +351,7 @@ public class ChatRoomService {
                 chatRoomMemberRepository.save(
                         ChatRoomMember.createJoiningExisting(chatRoom, user, visibleFromMessageId));
 
-                chatMessageService.sendSystemMessage(chatRoom, user.getName() + "님이 입장했습니다.", user);
+                chatMessageService.sendSystemMessage(chatRoom, user.getName() + "님이 입장했습니다", user);
             }
         });
     }
@@ -477,7 +477,7 @@ public class ChatRoomService {
 
         if (!newMembers.isEmpty()) {
             String names = newMembers.stream().map(u -> u.getName() + "님").collect(Collectors.joining(", "));
-            chatMessageService.sendSystemMessage(chatRoom, names + "이 초대되었습니다.", user);
+            chatMessageService.sendSystemMessage(chatRoom, names + "이 초대되었습니다", user);
         }
     }
 
@@ -505,7 +505,7 @@ public class ChatRoomService {
             return;
         }
 
-        chatMessageService.sendSystemMessage(chatRoom, user.getName() + "님이 나갔습니다.", user);
+        chatMessageService.sendSystemMessage(chatRoom, user.getName() + "님이 나갔습니다", user);
     }
 
     /**
@@ -541,7 +541,6 @@ public class ChatRoomService {
                         s3Service.getImageUrl(crm.getUser().getImageKey())))
                 .toList();
     }
-    
 
     // =========================================================================
     // ================================ 헬퍼 함수 ================================
@@ -709,12 +708,16 @@ public class ChatRoomService {
         return messages.stream()
                 .map(m -> {
                     User sender = senderById.get(m.getCreatedBy());
-                    int readCount = (int) members.stream()
+                    List<ChatRoomMember> eligibleMembers = members.stream()
                             .filter(member -> !member.getUser().getUserId().equals(m.getCreatedBy())) // 발신자 본인 제외
+                            .filter(member ->
+                                    member.getVisibleFromMessageId() < m.getChatMessageId()) // 이 메시지를 볼 수 있는 멤버만
+                            .toList();
+                    int readCount = (int) eligibleMembers.stream()
                             .filter(member -> member.getLastReadMessageId() != null
                                     && member.getLastReadMessageId() >= m.getChatMessageId())
                             .count();
-                    return ChatMessageResponse.of(m, sender, s3Service::getImageUrl, readCount);
+                    return ChatMessageResponse.of(m, sender, s3Service::getImageUrl, readCount, eligibleMembers.size());
                 })
                 .toList();
     }

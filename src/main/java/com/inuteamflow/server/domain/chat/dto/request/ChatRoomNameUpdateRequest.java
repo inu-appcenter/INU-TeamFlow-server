@@ -9,5 +9,4 @@ import lombok.NoArgsConstructor;
 public class ChatRoomNameUpdateRequest {
 
     private String roomName; // null 이면 공유 기본 이름으로 리셋
-
 }
