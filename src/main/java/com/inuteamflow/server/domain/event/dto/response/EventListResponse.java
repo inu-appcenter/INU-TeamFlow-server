@@ -66,7 +66,7 @@ public class EventListResponse {
     @Schema(description = "반복 일정 규칙")
     private Recurrence recurrence;
 
-    public static EventListResponse createSingle(Event event, boolean isParticipant, List<Participant> participants) {
+    public static EventListResponse of(Event event, boolean isParticipant, List<Participant> participants) {
         return new EventListResponse(
                 event.getEventId(),
                 event.getTeamId(),
@@ -87,7 +87,7 @@ public class EventListResponse {
                 );
     }
 
-    public static EventListResponse createOccurrence(
+    public static EventListResponse of(
             Event event,
             RecurrenceRule recurrenceRule,
             LocalDateTime occurrenceAt,
@@ -111,10 +111,10 @@ public class EventListResponse {
                 false,
                 isParticipant,
                 participants,
-                Recurrence.create(recurrenceRule));
+                Recurrence.from(recurrenceRule));
     }
 
-    public static EventListResponse createModifiedOccurrence(
+    public static EventListResponse of(
             Event event,
             RecurrenceRule recurrenceRule,
             RecurrenceException recurrenceException,
@@ -136,6 +136,6 @@ public class EventListResponse {
                 true,
                 isParticipant,
                 participants,
-                Recurrence.create(recurrenceRule));
+                Recurrence.from(recurrenceRule));
     }
 }

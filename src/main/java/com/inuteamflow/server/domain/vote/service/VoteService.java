@@ -161,7 +161,7 @@ public class VoteService {
         List<EventVoteTimeSlotResponse> responses = new ArrayList<>();
 
         for (VoteTimeSlot voteTimeSlot : voteTimeSlots) {
-            responses.add(EventVoteTimeSlotResponse.create(
+            responses.add(EventVoteTimeSlotResponse.of(
                     voteTimeSlot, participantCountByTimeSlot.getOrDefault(voteTimeSlot.getVoteTimeSlotId(), 0)));
         }
 
@@ -198,7 +198,7 @@ public class VoteService {
         List<EventVoteTimeSlotResponse> responses = new ArrayList<>();
 
         for (VoteTimeSlot voteTimeSlot : voteTimeSlots) {
-            responses.add(EventVoteTimeSlotResponse.create(
+            responses.add(EventVoteTimeSlotResponse.of(
                     voteTimeSlot, countMap.getOrDefault(voteTimeSlot.getVoteTimeSlotId(), 0)));
         }
 
@@ -317,7 +317,7 @@ public class VoteService {
                 .map(VoteDate::getDate)
                 .toList();
 
-        return EventVoteResponse.create(
+        return EventVoteResponse.of(
                 vote,
                 isVoter,
                 isCreator,

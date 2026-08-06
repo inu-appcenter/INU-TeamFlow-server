@@ -27,7 +27,7 @@ public class Participant {
 
     private TeamRole teamRole;
 
-    public static Participant create(TeamMember teamMember) {
+    public static Participant from(TeamMember teamMember) {
         return new Participant(
                 teamMember.getUser().getUserId(),
                 teamMember.getTeamMemberId(),
@@ -35,12 +35,12 @@ public class Participant {
                 teamMember.getTeamRole());
     }
 
-    public static Participant create(EventParticipant eventParticipant) {
-        return create(eventParticipant.getTeamMember());
+    public static Participant from(EventParticipant eventParticipant) {
+        return from(eventParticipant.getTeamMember());
     }
 
-    public static Participant create(RecurrenceExceptionParticipant recurrenceExceptionParticipant) {
-        return create(recurrenceExceptionParticipant.getTeamMember());
+    public static Participant from(RecurrenceExceptionParticipant recurrenceExceptionParticipant) {
+        return from(recurrenceExceptionParticipant.getTeamMember());
     }
 
     public static boolean isParticipant(List<Participant> participants, User user) {

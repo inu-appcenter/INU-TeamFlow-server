@@ -97,11 +97,11 @@ public class VoteParticipantService {
 
         for (VoteParticipant voteParticipant : voteParticipantRepository.findByVote(vote)) {
             if (Boolean.TRUE.equals(voteParticipant.getHasCompleted())) {
-                completedVoters.add(VoterInfoResponse.create(voteParticipant));
+                completedVoters.add(VoterInfoResponse.from(voteParticipant));
                 continue;
             }
 
-            uncompletedVoters.add(VoterInfoResponse.create(voteParticipant));
+            uncompletedVoters.add(VoterInfoResponse.from(voteParticipant));
         }
 
         return new VoteParticipants(completedVoters, uncompletedVoters);

@@ -56,7 +56,7 @@ public class EventVoteResponse {
     @Schema(description = "투표 미완료 유저 목록")
     private List<VoterInfoResponse> uncompletedVoterList;
 
-    public static EventVoteResponse create(
+    public static EventVoteResponse of(
             Vote vote,
             boolean isVoter,
             boolean isCreator,

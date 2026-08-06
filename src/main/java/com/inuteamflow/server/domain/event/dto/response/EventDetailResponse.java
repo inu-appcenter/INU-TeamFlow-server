@@ -66,7 +66,7 @@ public class EventDetailResponse {
     @Schema(description = "반복 일정 규칙")
     private Recurrence recurrence;
 
-    public static EventDetailResponse create(
+    public static EventDetailResponse of(
             Event event,
             RecurrenceRule recurrenceRule,
             String teamName,
@@ -88,10 +88,10 @@ public class EventDetailResponse {
                 false,
                 isParticipant,
                 participants,
-                Recurrence.create(recurrenceRule));
+                Recurrence.from(recurrenceRule));
     }
 
-    public static EventDetailResponse createModifiedOccurrence(
+    public static EventDetailResponse of(
             Event event,
             RecurrenceRule recurrenceRule,
             RecurrenceException recurrenceException,
@@ -114,6 +114,6 @@ public class EventDetailResponse {
                 true,
                 isParticipant,
                 participants,
-                Recurrence.create(recurrenceRule));
+                Recurrence.from(recurrenceRule));
     }
 }

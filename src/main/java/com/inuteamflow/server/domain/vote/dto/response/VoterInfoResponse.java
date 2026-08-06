@@ -21,7 +21,7 @@ public class VoterInfoResponse {
     @Schema(description = "팀 멤버 ID", example = "131")
     private Long teamMemberId;
 
-    public static VoterInfoResponse create(VoteParticipant voteParticipant) {
+    public static VoterInfoResponse from(VoteParticipant voteParticipant) {
         return new VoterInfoResponse(
                 voteParticipant.getTeamMember().getUser().getName(),
                 voteParticipant.getTeamMember().getUser().getDepartment(),

@@ -18,7 +18,7 @@ public class FcmResponse {
     @Schema(description = "토큰이 저장된 일시", example = "2026-07-13T12:00:00")
     private LocalDateTime createdAt;
 
-    public static FcmResponse create(FcmToken token) {
+    public static FcmResponse from(FcmToken token) {
         return new FcmResponse(token.getFcmTokenId(), token.getCreatedAt());
     }
 }
