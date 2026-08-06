@@ -1,10 +1,12 @@
 package com.inuteamflow.server.domain.notification.repository;
 
 import com.inuteamflow.server.domain.notification.entity.NotificationOption;
+import com.inuteamflow.server.domain.user.entity.User;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,4 +20,8 @@ public interface NotificationOptionRepository extends JpaRepository<Notification
 
     @Query("SELECT COUNT(n) > 0 FROM NotificationOption n WHERE n.user.userId = :userId")
     boolean existsByUserId(Long userId);
+
+    @Modifying
+    @Query("DELETE FROM NotificationOption n WHERE n.user = :user")
+    void deleteByUser(@Param("user") User user);
 }

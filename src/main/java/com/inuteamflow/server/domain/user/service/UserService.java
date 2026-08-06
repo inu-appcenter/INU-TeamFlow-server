@@ -7,6 +7,7 @@ import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostScrapRepository;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
+import com.inuteamflow.server.domain.notification.repository.NotificationOptionRepository;
 import com.inuteamflow.server.domain.notification.repository.NotificationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
@@ -71,6 +72,7 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final FcmTokenRepository fcmTokenRepository;
     private final NotificationRepository notificationRepository;
+    private final NotificationOptionRepository notificationOptionRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
 
     // =========================================================================
@@ -207,9 +209,10 @@ public class UserService {
         recurrenceRuleRepository.deleteByEventCreatedByAndTeamIsNull(user.getUserId());
         eventRepository.deleteByCreatedByAndTeamIsNull(user.getUserId());
 
-        // FCM + Notification
+        // FCM + Notification + NotificationOption
         fcmTokenRepository.deleteByCreatedBy(user.getUserId());
         notificationRepository.deleteByReceiver(user);
+        notificationOptionRepository.deleteByUser(user);
 
         // RefreshToken
         refreshTokenRepository.deleteByUserId(user.getUserId());

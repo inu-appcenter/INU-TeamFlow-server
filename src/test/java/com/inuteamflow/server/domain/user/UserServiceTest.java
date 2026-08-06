@@ -33,7 +33,9 @@ import com.inuteamflow.server.domain.infoPost.repository.InfoPostScrapRepository
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
 import com.inuteamflow.server.domain.notification.entity.Notification;
+import com.inuteamflow.server.domain.notification.entity.NotificationOption;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
+import com.inuteamflow.server.domain.notification.repository.NotificationOptionRepository;
 import com.inuteamflow.server.domain.notification.repository.NotificationRepository;
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
@@ -184,6 +186,9 @@ class UserServiceTest {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private NotificationOptionRepository notificationOptionRepository;
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
@@ -625,6 +630,44 @@ class UserServiceTest {
         assertThat(userRepository.findById(targetId)).isEmpty();
         assertThat(recruitmentScrapRepository.count()).isEqualTo(1);
         assertThat(infoPostScrapRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("계정 삭제 시 본인의 알림 활성화 옵션(NotificationOption)도 함께 삭제된다")
+    void deleteUser_deletesNotificationOption() {
+        // ===== given =====
+        User target = createUser("target6", "target6@inu.ac.kr");
+        User other = createUser("other6", "other6@inu.ac.kr");
+
+        notificationOptionRepository.save(notificationOption(target));
+        notificationOptionRepository.save(notificationOption(other));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Long targetId = target.getUserId();
+        Long otherId = other.getUserId();
+
+        // ===== when =====
+        userService.deleteUser(userRepository.getReferenceById(targetId));
+        entityManager.flush();
+        entityManager.clear();
+
+        // ===== then: target의 옵션만 삭제되고 other의 옵션은 유지된다 =====
+        assertThat(userRepository.findById(targetId)).isEmpty();
+        assertThat(notificationOptionRepository.findByUserId(targetId)).isEmpty();
+        assertThat(notificationOptionRepository.findByUserId(otherId)).isPresent();
+    }
+
+    private NotificationOption notificationOption(User user) {
+        return NotificationOption.builder()
+                .user(user)
+                .noticeEnabled(true)
+                .inviteEnabled(true)
+                .applicationEnabled(true)
+                .calendarEnabled(true)
+                .chatEnabled(true)
+                .build();
     }
 
     private User createUser(String username, String email) {
