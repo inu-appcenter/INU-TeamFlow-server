@@ -1,9 +1,6 @@
 package com.inuteamflow.server.domain.chat.controller;
 
-import com.inuteamflow.server.domain.chat.dto.request.ChatReadRequest;
-import com.inuteamflow.server.domain.chat.dto.request.ChatRoomImageUpdateRequest;
-import com.inuteamflow.server.domain.chat.dto.request.DirectChatRoomCreateRequest;
-import com.inuteamflow.server.domain.chat.dto.request.GroupChatRoomCreateRequest;
+import com.inuteamflow.server.domain.chat.dto.request.*;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageAnchorResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatRoomMemberResponse;
@@ -322,4 +319,82 @@ public interface ChatRoomControllerDocument {
     })
     ResponseEntity<Void> leaveGroupChatRoom(
             @PathVariable Long roomId, @AuthenticationPrincipal UserDetailsImpl userDetails);
+
+    @Operation(
+            summary = "updateMyChatRoomName",
+            description = "그룹 채팅방에서 나만 보이는 커스텀 이름 설정 (roomName을 null로 보내면 공유 기본 이름으로 리셋)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "커스텀 이름 설정 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "그룹 채팅방이 아님",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "유효하지 않거나 만료된 토큰",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "채팅방 멤버가 아님",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "채팅방을 찾을 수 없음",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> updateMyChatRoomName(
+            @PathVariable Long roomId,
+            @Valid @RequestBody ChatRoomNameUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails);
+
+    @Operation(
+            summary = "updateMyChatRoomImage",
+            description = "그룹 채팅방에서 나만 보이는 커스텀 이미지 설정 (imageKey를 null로 보내면 공유 기본 이미지로 리셋)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "커스텀 이미지 설정 성공"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "그룹 채팅방이 아님",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "유효하지 않거나 만료된 토큰",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "채팅방 멤버가 아님",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "채팅방을 찾을 수 없음",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> updateMyChatRoomImage(
+            @PathVariable Long roomId,
+            @Valid @RequestBody ChatRoomImageUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails);
 }

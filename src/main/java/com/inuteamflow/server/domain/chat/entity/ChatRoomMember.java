@@ -32,6 +32,12 @@ public class ChatRoomMember extends BaseTimeEntity {
     @Column(name = "visible_from_message_id", nullable = false)
     private Long visibleFromMessageId; // 이 값보다 큰 메시지부터 조회 가능 (중간 합류자 이전 내역 차단)
 
+    @Column(name = "custom_room_name")
+    private String customRoomName; // 이 멤버만 보는 커스텀 방 이름 (GROUP 전용)
+
+    @Column(name = "custom_image_key")
+    private String customImageKey; // 이 멤버만 보는 커스텀 방 이미지 (GROUP 전용)
+
     @Builder
     private ChatRoomMember(ChatRoom chatRoom, User user, Long visibleFromMessageId) {
         this.chatRoom = chatRoom;
@@ -59,5 +65,13 @@ public class ChatRoomMember extends BaseTimeEntity {
 
     public void updateLastReadMessageId(Long messageId) {
         this.lastReadMessageId = messageId;
+    }
+
+    public void updateCustomRoomName(String customRoomName) {
+        this.customRoomName = customRoomName; // null 넘기면 공유 기본 이름으로 리셋
+    }
+
+    public void updateCustomImageKey(String customImageKey) {
+        this.customImageKey = customImageKey; // null 넘기면 공유 기본 이미지로 리셋
     }
 }
