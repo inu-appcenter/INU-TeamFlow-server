@@ -108,6 +108,8 @@ public enum CustomErrorCode implements ErrorCode {
     FCM_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "FCM 토큰을 찾을 수 없습니다."),
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "알림을 찾을 수 없습니다."),
     NOTIFICATION_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "알림에 대한 권한이 없습니다."),
+    NOTIFICATION_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "알림 활성화 옵션을 찾을 수 없습니다."),
+    NOTIFICATION_OPTION_ALREADY_EXISTS(HttpStatus.CONFLICT, 409, "이미 알림 활성화 옵션이 존재합니다."),
 
     // 스크랩 관련 에러
     RECRUITMENT_ALREADY_SCRAPPED(HttpStatus.CONFLICT, 409, "이미 스크랩한 모집글입니다."),
