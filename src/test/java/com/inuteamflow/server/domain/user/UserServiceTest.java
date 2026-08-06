@@ -25,9 +25,11 @@ import com.inuteamflow.server.domain.fcm.entity.FcmToken;
 import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
+import com.inuteamflow.server.domain.infoPost.entity.InfoPostScrap;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
+import com.inuteamflow.server.domain.infoPost.repository.InfoPostScrapRepository;
 import com.inuteamflow.server.domain.invitation.entity.TeamInvitation;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
 import com.inuteamflow.server.domain.notification.entity.Notification;
@@ -35,8 +37,10 @@ import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.repository.NotificationRepository;
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
+import com.inuteamflow.server.domain.recruitment.entity.RecruitmentScrap;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
+import com.inuteamflow.server.domain.recruitment.repository.RecruitmentScrapRepository;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
 import com.inuteamflow.server.domain.team.enums.TeamRole;
@@ -122,10 +126,16 @@ class UserServiceTest {
     private RecruitmentApplicationRepository recruitmentApplicationRepository;
 
     @Autowired
+    private RecruitmentScrapRepository recruitmentScrapRepository;
+
+    @Autowired
     private InfoPostRepository infoPostRepository;
 
     @Autowired
     private InfoPostImageRepository infoPostImageRepository;
+
+    @Autowired
+    private InfoPostScrapRepository infoPostScrapRepository;
 
     @Autowired
     private TeamInvitationRepository teamInvitationRepository;
@@ -545,6 +555,76 @@ class UserServiceTest {
         assertThat(voteAvailabilityRepository.count()).isZero();
         assertThat(voteDateRepository.count()).isZero();
         assertThat(voteTimeSlotRepository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("계정 삭제 시 본인이 스크랩한 기록과 본인이 쓴 글을 남이 스크랩한 기록이 모두 삭제된다")
+    void deleteUser_cleansUpScraps() {
+        // ===== given =====
+        User target = createUser("target5", "target5@inu.ac.kr");
+        User leader = createUser("leader5", "leader5@inu.ac.kr");
+        User other = createUser("other5", "other5@inu.ac.kr");
+
+        actingAs(leader);
+        Team team = teamRepository.save(Team.builder()
+                .name("team5")
+                .description("desc")
+                .category(Category.PROJECT)
+                .build());
+        teamMemberRepository.save(TeamMember.create(team, leader, TeamRole.LEADER));
+
+        // 모집글: target 소유(r1) + leader 소유(r2)
+        actingAs(target);
+        Recruitment r1 = recruitmentRepository.save(Recruitment.builder()
+                .title("target 모집")
+                .description("설명")
+                .category(Category.PROJECT)
+                .targetMemberCount(5)
+                .endAt(LocalDateTime.now().plusDays(7))
+                .team(team)
+                .recruiter(target)
+                .build());
+        actingAs(leader);
+        Recruitment r2 = recruitmentRepository.save(Recruitment.builder()
+                .title("leader 모집")
+                .description("설명")
+                .category(Category.PROJECT)
+                .targetMemberCount(5)
+                .endAt(LocalDateTime.now().plusDays(7))
+                .team(team)
+                .recruiter(leader)
+                .build());
+
+        // 정보글: target 소유 + leader 소유
+        actingAs(target);
+        InfoPost targetInfoPost = infoPostRepository.save(InfoPost.create(InfoPostCategory.CLUB, "target 정보글", "내용"));
+        actingAs(leader);
+        InfoPost leaderInfoPost = infoPostRepository.save(InfoPost.create(InfoPostCategory.CLUB, "leader 정보글", "내용"));
+
+        // 모집글 스크랩
+        recruitmentScrapRepository.save(RecruitmentScrap.create(r2, target)); // 본인이 스크랩 → 삭제
+        recruitmentScrapRepository.save(RecruitmentScrap.create(r1, other)); // 본인 모집글을 남이 스크랩 → 삭제
+        recruitmentScrapRepository.save(RecruitmentScrap.create(r2, leader)); // target과 무관 → 유지
+
+        // 정보글 스크랩
+        infoPostScrapRepository.save(InfoPostScrap.create(leaderInfoPost, target)); // 본인이 스크랩 → 삭제
+        infoPostScrapRepository.save(InfoPostScrap.create(targetInfoPost, other)); // 본인 정보글을 남이 스크랩 → 삭제
+        infoPostScrapRepository.save(InfoPostScrap.create(leaderInfoPost, leader)); // target과 무관 → 유지
+
+        entityManager.flush();
+        entityManager.clear();
+
+        Long targetId = target.getUserId();
+
+        // ===== when =====
+        userService.deleteUser(userRepository.getReferenceById(targetId));
+        entityManager.flush();
+        entityManager.clear();
+
+        // ===== then: target과 얽힌 스크랩만 삭제되고, 무관한 스크랩(leader→r2, leader→leaderInfoPost)은 유지된다 =====
+        assertThat(userRepository.findById(targetId)).isEmpty();
+        assertThat(recruitmentScrapRepository.count()).isEqualTo(1);
+        assertThat(infoPostScrapRepository.count()).isEqualTo(1);
     }
 
     private User createUser(String username, String email) {
