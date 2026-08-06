@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.notification.entity;
 
 import com.inuteamflow.server.domain.notification.dto.req.NotificationOptionRequest;
+import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.user.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -79,5 +80,15 @@ public class NotificationOption {
         this.applicationEnabled = request.getApplicationEnabled();
         this.calendarEnabled = request.getCalendarEnabled();
         this.chatEnabled = request.getChatEnabled();
+    }
+
+    public boolean isEnabled(NotificationType type) {
+        return switch (type) {
+            case NOTICE -> noticeEnabled;
+            case INVITE -> inviteEnabled;
+            case APPLICATION -> applicationEnabled;
+            case CALENDAR -> calendarEnabled;
+            case CHAT -> chatEnabled;
+        };
     }
 }

@@ -31,7 +31,7 @@ public class NotificationOptionService {
      */
     public NotificationOptionResponse getNotificationOption(User user) {
         NotificationOption option = notificationOptionRepository
-                .findByUser(user)
+                .findByUserId(user.getUserId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.NOTIFICATION_OPTION_NOT_FOUND));
         return NotificationOptionResponse.from(option);
     }
@@ -48,7 +48,7 @@ public class NotificationOptionService {
      */
     @Transactional
     public NotificationOptionResponse createNotificationOption(NotificationOptionRequest request, User user) {
-        if (notificationOptionRepository.existsByUser(user)) {
+        if (notificationOptionRepository.existsByUserId(user.getUserId())) {
             throw new RestApiException(CustomErrorCode.NOTIFICATION_OPTION_ALREADY_EXISTS);
         }
         NotificationOption option = NotificationOption.create(request, user);
@@ -67,7 +67,7 @@ public class NotificationOptionService {
     @Transactional
     public NotificationOptionResponse updateNotificationOption(NotificationOptionRequest request, User user) {
         NotificationOption option = notificationOptionRepository
-                .findByUser(user)
+                .findByUserId(user.getUserId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.NOTIFICATION_OPTION_NOT_FOUND));
         option.update(request);
         return NotificationOptionResponse.from(option);
