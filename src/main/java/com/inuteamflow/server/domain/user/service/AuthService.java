@@ -56,7 +56,7 @@ public class AuthService {
         User user = User.create(request, bCryptPasswordEncoder.encode(request.getPassword()));
         String imageUrl = s3Service.getImageUrl(user.getImageKey());
 
-        return MyInfoResponse.create(userRepository.save(user), imageUrl);
+        return MyInfoResponse.of(userRepository.save(user), imageUrl);
     }
 
     /**
@@ -137,6 +137,6 @@ public class AuthService {
         requester.verifySchool(request.getStudentNumber());
 
         String imageUrl = s3Service.getImageUrl(requester.getImageKey());
-        return MyInfoResponse.create(requester, imageUrl);
+        return MyInfoResponse.of(requester, imageUrl);
     }
 }

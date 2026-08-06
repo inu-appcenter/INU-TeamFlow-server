@@ -48,7 +48,7 @@ public class NotificationService {
 
         Integer unreadCount = notificationRepository.countByReceiverAndIsReadFalse(user);
 
-        return NotificationSliceResponse.create(slice, unreadCount);
+        return NotificationSliceResponse.of(slice, unreadCount);
     }
 
     /**

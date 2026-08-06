@@ -78,7 +78,7 @@ public class TeamNoticeService {
         return noticePage.map(notice -> {
             boolean isRead = readNoticeIds.contains(notice.getTeamNoticeId());
             TeamMember authorMember = memberByUserId.get(notice.getCreatedBy());
-            return TeamNoticeSummaryResponse.create(
+            return TeamNoticeSummaryResponse.of(
                     notice, isRead, authorMember.getUser().getName(), authorMember.getTeamRole());
         });
     }
@@ -121,7 +121,7 @@ public class TeamNoticeService {
             TeamMember authorMember = membersByTeamId
                     .getOrDefault(notice.getTeam().getTeamId(), Map.of())
                     .get(notice.getCreatedBy());
-            return TeamNoticeSummaryResponse.create(
+            return TeamNoticeSummaryResponse.of(
                     notice, isRead, authorMember.getUser().getName(), authorMember.getTeamRole());
         });
     }
@@ -147,7 +147,7 @@ public class TeamNoticeService {
         return noticePage.map(notice -> {
             boolean isRead = readNoticeIds.contains(notice.getTeamNoticeId());
             TeamMember authorMember = memberByTeamId.get(notice.getTeam().getTeamId());
-            return TeamNoticeSummaryResponse.create(notice, isRead, user.getName(), authorMember.getTeamRole());
+            return TeamNoticeSummaryResponse.of(notice, isRead, user.getName(), authorMember.getTeamRole());
         });
     }
 
@@ -178,7 +178,7 @@ public class TeamNoticeService {
         String authorProfileUrl = s3Service.getImageUrl(authorMember.getUser().getImageKey());
         boolean isEditable = isEditable(notice, member);
 
-        return TeamNoticeDetailResponse.create(
+        return TeamNoticeDetailResponse.of(
                 notice, authorMember, authorProfileUrl, images, s3Service::getImageUrl, isEditable);
     }
 
@@ -216,7 +216,7 @@ public class TeamNoticeService {
                 NotificationType.NOTICE,
                 "/team/" + team.getTeamId() + "/notice/" + notice.getTeamNoticeId());
 
-        return TeamNoticeDetailResponse.create(notice, member, authorProfileUrl, images, s3Service::getImageUrl, true);
+        return TeamNoticeDetailResponse.of(notice, member, authorProfileUrl, images, s3Service::getImageUrl, true);
     }
 
     /**
@@ -252,7 +252,7 @@ public class TeamNoticeService {
         String authorProfileUrl = s3Service.getImageUrl(authorMember.getUser().getImageKey());
         boolean isEditable = isEditable(notice, member);
 
-        return TeamNoticeDetailResponse.create(
+        return TeamNoticeDetailResponse.of(
                 notice, authorMember, authorProfileUrl, images, s3Service::getImageUrl, isEditable);
     }
 

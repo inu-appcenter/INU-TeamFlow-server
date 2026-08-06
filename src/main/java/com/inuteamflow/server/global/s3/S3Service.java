@@ -43,7 +43,7 @@ public class S3Service {
         String imageKey = createProfileImageKey(request.getFileName());
         String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
 
-        return PresignedUrlResponse.create(uploadUrl, imageKey);
+        return PresignedUrlResponse.of(uploadUrl, imageKey);
     }
 
     public PresignedUrlResponse getTeamBannerPresignedUrl(PresignedUrlRequest request) {
@@ -52,7 +52,7 @@ public class S3Service {
         String imageKey = createTeamBannerImageKey(request.getFileName());
         String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
 
-        return PresignedUrlResponse.create(uploadUrl, imageKey);
+        return PresignedUrlResponse.of(uploadUrl, imageKey);
     }
 
     public List<PresignedUrlResponse> getTeamNoticeImagePresignedUrls(List<PresignedUrlRequest> requests) {
@@ -61,7 +61,7 @@ public class S3Service {
                     validateImageContentType(request.getContentType());
                     String imageKey = createTeamNoticeImageKey(request.getFileName());
                     String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
-                    return PresignedUrlResponse.create(uploadUrl, imageKey);
+                    return PresignedUrlResponse.of(uploadUrl, imageKey);
                 })
                 .toList();
     }
@@ -72,7 +72,7 @@ public class S3Service {
                     validateImageContentType(request.getContentType());
                     String imageKey = createInfoPostImageKey(request.getFileName());
                     String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
-                    return PresignedUrlResponse.create(uploadUrl, imageKey);
+                    return PresignedUrlResponse.of(uploadUrl, imageKey);
                 })
                 .toList();
     }

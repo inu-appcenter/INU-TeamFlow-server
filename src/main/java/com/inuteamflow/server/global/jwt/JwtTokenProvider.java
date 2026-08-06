@@ -56,11 +56,7 @@ public class JwtTokenProvider {
         String refreshToken = createRefreshToken(user.getUsername());
         upsertRefreshToken(user, refreshToken);
 
-        return TokenResponse.builder()
-                .grantType("Bearer")
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .build();
+        return TokenResponse.of(accessToken, refreshToken);
     }
 
     public Authentication getAuthentication(String accessToken) {

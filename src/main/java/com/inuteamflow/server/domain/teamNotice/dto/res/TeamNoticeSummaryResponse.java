@@ -47,7 +47,7 @@ public class TeamNoticeSummaryResponse {
     @Schema(description = "수정일시", example = "2026-06-02T15:30:00")
     private LocalDateTime updatedAt;
 
-    public static TeamNoticeSummaryResponse create(
+    public static TeamNoticeSummaryResponse of(
             TeamNotice notice, boolean isRead, String authorName, TeamRole authorTeamRole) {
         return new TeamNoticeSummaryResponse(
                 notice.getTeamNoticeId(),

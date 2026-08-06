@@ -44,7 +44,7 @@ public class FcmService {
         FcmToken fcmToken = fcmTokenRepository
                 .findByCreatedByAndFcmToken(user.getUserId(), request.getToken())
                 .orElseGet(() -> fcmTokenRepository.save(FcmToken.create(request)));
-        return FcmResponse.create(fcmToken);
+        return FcmResponse.from(fcmToken);
     }
 
     /**

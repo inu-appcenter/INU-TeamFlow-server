@@ -101,7 +101,7 @@ public class TeamEventService {
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
 
         List<Participant> participants = createParticipants(event, team, host, request.getParticipants()).stream()
-                .map(Participant::create)
+                .map(Participant::from)
                 .toList();
 
         List<User> receivers = eventParticipantRepository.findUsersByEventExcluding(event, user.getUserId());
@@ -113,7 +113,7 @@ public class TeamEventService {
                 NotificationType.CALENDAR,
                 "/team/" + team.getTeamId());
 
-        return EventDetailResponse.create(event, recurrenceRule, team.getName(), true, participants);
+        return EventDetailResponse.of(event, recurrenceRule, team.getName(), true, participants);
     }
 
     /**
@@ -154,7 +154,7 @@ public class TeamEventService {
             Event followingEvent = updateResult.event();
             participants =
                     createParticipants(followingEvent, team, followingEventHost, request.getParticipants()).stream()
-                            .map(Participant::create)
+                            .map(Participant::from)
                             .toList();
             receivers = eventParticipantRepository.findUsersByEventExcluding(followingEvent, user.getUserId());
         } else {
@@ -180,7 +180,7 @@ public class TeamEventService {
 
         boolean isParticipant = Participant.isParticipant(participants, user);
         if (isThisInstance) {
-            return EventDetailResponse.createModifiedOccurrence(
+            return EventDetailResponse.of(
                     updateResult.event(),
                     updateResult.recurrenceRule(),
                     updateResult.recurrenceException(),
@@ -189,7 +189,7 @@ public class TeamEventService {
                     participants);
         }
 
-        return EventDetailResponse.create(
+        return EventDetailResponse.of(
                 updateResult.event(), updateResult.recurrenceRule(), team.getName(), isParticipant, participants);
     }
 
@@ -346,7 +346,7 @@ public class TeamEventService {
         eventParticipantRepository.flush();
 
         return createParticipants(targetEvent, team, host, participantIds).stream()
-                .map(Participant::create)
+                .map(Participant::from)
                 .toList();
     }
 
@@ -373,7 +373,7 @@ public class TeamEventService {
         recurrenceExceptionParticipantRepository.flush();
 
         return createExceptionParticipants(recurrenceException, team, host, participantIds).stream()
-                .map(Participant::create)
+                .map(Participant::from)
                 .toList();
     }
 

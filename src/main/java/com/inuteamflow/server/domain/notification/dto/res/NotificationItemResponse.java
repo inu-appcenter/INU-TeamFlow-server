@@ -34,7 +34,7 @@ public class NotificationItemResponse {
     @Schema(description = "알림 생성 일시", example = "2026-07-10T09:00:00")
     private LocalDateTime createdAt;
 
-    public static NotificationItemResponse create(Notification notification) {
+    public static NotificationItemResponse from(Notification notification) {
         return new NotificationItemResponse(
                 notification.getNotificationId(),
                 notification.getTitle(),

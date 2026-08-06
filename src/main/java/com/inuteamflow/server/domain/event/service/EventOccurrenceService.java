@@ -247,7 +247,7 @@ public class EventOccurrenceService {
         singleEvents.stream()
                 .map(event -> {
                     List<Participant> participants = participantsByEventId.getOrDefault(event.getEventId(), List.of());
-                    return EventListResponse.createSingle(
+                    return EventListResponse.of(
                             event, Participant.isParticipant(participants, requester), participants);
                 })
                 .forEach(responses::add);
@@ -322,7 +322,7 @@ public class EventOccurrenceService {
         LocalDateTime endAt = occurrenceAt.plusSeconds(durationSeconds);
         if (isOverlapped(startAt, endAt, dateRange)) {
             List<Participant> participants = participantsByEventId.getOrDefault(event.getEventId(), List.of());
-            responses.add(EventListResponse.createOccurrence(
+            responses.add(EventListResponse.of(
                     event,
                     rule,
                     occurrenceAt,
@@ -371,8 +371,7 @@ public class EventOccurrenceService {
         if (recurrenceException.getExceptionType() == RecurrenceExceptionType.MODIFIED
                 && isOverlapped(
                         recurrenceException.getModifiedStartAt(), recurrenceException.getModifiedEndAt(), dateRange)) {
-            responses.add(EventListResponse.createModifiedOccurrence(
-                    event, rule, recurrenceException, isParticipant, participants));
+            responses.add(EventListResponse.of(event, rule, recurrenceException, isParticipant, participants));
         }
     }
 
@@ -390,7 +389,7 @@ public class EventOccurrenceService {
         return eventParticipantRepository.findByEventInWithMember(events).stream()
                 .collect(Collectors.groupingBy(
                         participant -> participant.getEvent().getEventId(),
-                        Collectors.mapping(Participant::create, Collectors.toList())));
+                        Collectors.mapping(Participant::from, Collectors.toList())));
     }
 
     /**
@@ -410,7 +409,7 @@ public class EventOccurrenceService {
                 .stream()
                 .collect(Collectors.groupingBy(
                         participant -> participant.getRecurrenceException().getRecurrenceExceptionId(),
-                        Collectors.mapping(Participant::create, Collectors.toList())));
+                        Collectors.mapping(Participant::from, Collectors.toList())));
     }
 
     /**

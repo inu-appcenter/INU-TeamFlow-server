@@ -64,7 +64,7 @@ public class Recurrence {
         return byDay != null && !byDay.isEmpty();
     }
 
-    public static Recurrence create(RecurrenceRule recurrenceRule) {
+    public static Recurrence from(RecurrenceRule recurrenceRule) {
         if (recurrenceRule == null) {
             return null;
         }

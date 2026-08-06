@@ -55,13 +55,13 @@ public class VoteResultService {
         Event event =
                 eventRepository.save(Event.create(vote.getTeam(), new VoteResultEventCreateCommand(vote, request)));
         List<Participant> eventParticipants = createEventParticipants(event, host, participants).stream()
-                .map(Participant::create)
+                .map(Participant::from)
                 .toList();
         voteResultRepository.save(VoteResult.create(
                 vote, event, request.getIsAllDay(), request.getSelectedStartAt(), request.getSelectedEndAt()));
         vote.close();
 
-        return EventDetailResponse.create(
+        return EventDetailResponse.of(
                 event,
                 null,
                 vote.getTeam().getName(),

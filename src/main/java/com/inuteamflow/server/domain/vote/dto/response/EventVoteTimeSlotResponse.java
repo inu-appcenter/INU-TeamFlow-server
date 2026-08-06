@@ -28,7 +28,7 @@ public class EventVoteTimeSlotResponse {
     @Schema(description = "참여 인원 수", example = "5")
     private Integer participantCount;
 
-    public static EventVoteTimeSlotResponse create(VoteTimeSlot voteTimeSlot, Integer participantCount) {
+    public static EventVoteTimeSlotResponse of(VoteTimeSlot voteTimeSlot, Integer participantCount) {
         return new EventVoteTimeSlotResponse(
                 voteTimeSlot.getVoteTimeSlotId(),
                 voteTimeSlot.getVoteDate().getDate(),

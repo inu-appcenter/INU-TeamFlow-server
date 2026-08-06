@@ -22,12 +22,10 @@ public class NotificationSliceResponse {
     @Schema(description = "알림 목록")
     private List<NotificationItemResponse> notifications;
 
-    public static NotificationSliceResponse create(Slice<Notification> slice, Integer unreadCount) {
+    public static NotificationSliceResponse of(Slice<Notification> slice, Integer unreadCount) {
         return new NotificationSliceResponse(
                 slice.hasNext(),
                 unreadCount,
-                slice.getContent().stream()
-                        .map(NotificationItemResponse::create)
-                        .toList());
+                slice.getContent().stream().map(NotificationItemResponse::from).toList());
     }
 }

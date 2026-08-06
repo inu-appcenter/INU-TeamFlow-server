@@ -44,7 +44,7 @@ public class TeamNoticeDetailResponse {
     @Schema(description = "수정/삭제 가능 여부", example = "true")
     private Boolean isEditable;
 
-    public static TeamNoticeDetailResponse create(
+    public static TeamNoticeDetailResponse of(
             TeamNotice notice,
             TeamMember authorMember,
             String authorProfileUrl,

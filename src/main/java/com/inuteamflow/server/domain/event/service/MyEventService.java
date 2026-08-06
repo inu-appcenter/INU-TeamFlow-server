@@ -86,7 +86,7 @@ public class MyEventService {
         Event event = eventRepository.save(Event.create(request));
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
 
-        return EventDetailResponse.create(event, recurrenceRule, null, false, List.of());
+        return EventDetailResponse.of(event, recurrenceRule, null, false, List.of());
     }
 
     /**
@@ -108,7 +108,7 @@ public class MyEventService {
                 eventRecurrenceService.updateEvent(event, null, request);
 
         if (updateResult.recurrenceException() != null) {
-            return EventDetailResponse.createModifiedOccurrence(
+            return EventDetailResponse.of(
                     updateResult.event(),
                     updateResult.recurrenceRule(),
                     updateResult.recurrenceException(),
@@ -117,7 +117,7 @@ public class MyEventService {
                     List.of());
         }
 
-        return EventDetailResponse.create(updateResult.event(), updateResult.recurrenceRule(), null, false, List.of());
+        return EventDetailResponse.of(updateResult.event(), updateResult.recurrenceRule(), null, false, List.of());
     }
 
     /**

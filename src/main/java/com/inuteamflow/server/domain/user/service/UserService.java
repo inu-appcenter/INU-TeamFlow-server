@@ -85,7 +85,7 @@ public class UserService {
      */
     public MyInfoResponse getMyInfo(User user) {
         String imageUrl = s3Service.getImageUrl(user.getImageKey());
-        return MyInfoResponse.create(user, imageUrl);
+        return MyInfoResponse.of(user, imageUrl);
     }
 
     /**
@@ -123,7 +123,7 @@ public class UserService {
 
         // 새로운 이미지키 저장
         String imageUrl = s3Service.getImageUrl(newImageKey);
-        return MyInfoResponse.create(requester, imageUrl);
+        return MyInfoResponse.of(requester, imageUrl);
     }
 
     /**
