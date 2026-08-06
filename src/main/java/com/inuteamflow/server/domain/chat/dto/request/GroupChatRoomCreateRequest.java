@@ -26,5 +26,4 @@ public class GroupChatRoomCreateRequest {
     @NotEmpty
     @Schema(description = "초대할 팀 멤버 유저 ID 목록 (본인 제외, 본인은 자동 포함됨)", example = "[3, 7, 12]")
     private List<Long> memberIds;
-
 }
