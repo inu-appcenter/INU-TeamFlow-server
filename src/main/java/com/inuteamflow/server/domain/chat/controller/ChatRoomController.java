@@ -79,6 +79,26 @@ public class ChatRoomController implements ChatRoomControllerDocument {
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
+    // 그룹 채팅방에서 나만 보이는 이름 설정
+    @PatchMapping("/{roomId}/my-name")
+    public ResponseEntity<Void> updateMyChatRoomName(
+            @PathVariable Long roomId,
+            @Valid @RequestBody ChatRoomNameUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        chatRoomService.updateMyChatRoomName(userDetails.getUser(), roomId, request.getRoomName());
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    // 그룹 채팅방에서 나만 보이는 이미지 설정
+    @PatchMapping("/{roomId}/my-image")
+    public ResponseEntity<Void> updateMyChatRoomImage(
+            @PathVariable Long roomId,
+            @Valid @RequestBody ChatRoomImageUpdateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        chatRoomService.updateMyChatRoomImage(userDetails.getUser(), roomId, request.getImageKey());
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
     // 팀 안에서 멤버 선택해 그룹 채팅방 생성
     @PostMapping("/group")
     public ResponseEntity<ChatRoomSummaryResponse> createGroupChatRoom(

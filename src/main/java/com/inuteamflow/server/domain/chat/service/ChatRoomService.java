@@ -278,6 +278,44 @@ public class ChatRoomService {
     }
 
     /**
+     * 그룹 채팅방에서 나만 보이는 커스텀 이름을 설정한다.
+     *
+     * <p>그룹 채팅방에서만 가능하며, 멤버라면 누구나 자신의 표시 이름을 설정할 수 있다.
+     * 다른 멤버에게는 영향을 주지 않는다. {@code customRoomName}이 {@code null}이면 공유 기본 이름으로 리셋된다.</p>
+     *
+     * @param user 커스텀 이름을 설정하는 사용자
+     * @param roomId 설정할 채팅방 ID
+     * @param customRoomName 설정할 커스텀 이름, 리셋할 경우 {@code null}
+     * @throws RestApiException 채팅방을 찾을 수 없거나, 그룹 채팅방이 아니거나, 사용자가 채팅방 멤버가 아닌 경우
+     */
+    @Transactional
+    public void updateMyChatRoomName(User user, Long roomId, String customRoomName) {
+        ChatRoom chatRoom = getChatRoomById(roomId);
+        requireGroupRoom(chatRoom);
+        ChatRoomMember member = getMemberOrThrow(chatRoom, user);
+        member.updateCustomRoomName(customRoomName);
+    }
+
+    /**
+     * 그룹 채팅방에서 나만 보이는 커스텀 이미지를 설정한다.
+     *
+     * <p>그룹 채팅방에서만 가능하며, 멤버라면 누구나 자신의 표시 이미지를 설정할 수 있다.
+     * 다른 멤버에게는 영향을 주지 않는다. {@code customImageKey}가 {@code null}이면 공유 기본 이미지로 리셋된다.</p>
+     *
+     * @param user 커스텀 이미지를 설정하는 사용자
+     * @param roomId 설정할 채팅방 ID
+     * @param customImageKey 설정할 커스텀 이미지 키, 리셋할 경우 {@code null}
+     * @throws RestApiException 채팅방을 찾을 수 없거나, 그룹 채팅방이 아니거나, 사용자가 채팅방 멤버가 아닌 경우
+     */
+    @Transactional
+    public void updateMyChatRoomImage(User user, Long roomId, String customImageKey) {
+        ChatRoom chatRoom = getChatRoomById(roomId);
+        requireGroupRoom(chatRoom);
+        ChatRoomMember member = getMemberOrThrow(chatRoom, user);
+        member.updateCustomImageKey(customImageKey);
+    }
+
+    /**
      * 팀 생성 시 팀 채팅방을 자동으로 생성한다.
      *
      * <p>팀 리더를 채팅방의 첫 멤버로 추가한다.</p>
@@ -382,7 +420,7 @@ public class ChatRoomService {
         List<User> selectedUsers = userRepository.findAllById(memberIds);
         validateTeamMembers(team, selectedUsers, memberIds);
 
-        ChatRoom chatRoom = ChatRoom.createGroupRoom(team, request.getRoomName());
+        ChatRoom chatRoom = ChatRoom.createGroupRoom(team, request.getRoomName(), request.getImageKey());
         chatRoomRepository.save(chatRoom);
 
         List<ChatRoomMember> allMembers = new ArrayList<>();
@@ -503,6 +541,7 @@ public class ChatRoomService {
                         s3Service.getImageUrl(crm.getUser().getImageKey())))
                 .toList();
     }
+    
 
     // =========================================================================
     // ================================ 헬퍼 함수 ================================
@@ -546,25 +585,32 @@ public class ChatRoomService {
             Team team = chatRoom.getTeam();
             teamId = team.getTeamId();
 
+            List<ChatRoomMember> groupMembers = preloadedGroupMembers != null
+                    ? preloadedGroupMembers
+                    : chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
+
             if (chatRoom.getChatRoomType() == ChatRoomType.TEAM) {
                 roomName = team.getName();
             } else {
-                List<ChatRoomMember> groupMembers = preloadedGroupMembers != null
-                        ? preloadedGroupMembers
-                        : chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
-                roomName = resolveGroupRoomName(chatRoom, groupMembers, member.getUser());
+                // GROUP: 나만의 커스텀 이름이 있으면 우선, 없으면 공유 기본 이름/자동 생성 이름
+                roomName = StringUtils.hasText(member.getCustomRoomName())
+                        ? member.getCustomRoomName()
+                        : resolveGroupRoomName(chatRoom, groupMembers, member.getUser());
             }
 
-            if (chatRoom.getImageKey() != null) {
-                // 리더가 커스텀 이미지 설정한 경우
+            String myCustomImageKey =
+                    chatRoom.getChatRoomType() == ChatRoomType.GROUP ? member.getCustomImageKey() : null;
+
+            if (StringUtils.hasText(myCustomImageKey)) {
+                // GROUP: 나만의 커스텀 이미지
+                imageUrl = s3Service.getImageUrl(myCustomImageKey);
+            } else if (chatRoom.getImageKey() != null) {
+                // 공유 기본 이미지 (TEAM: 리더가 설정, GROUP: 생성자가 설정)
                 imageUrl = s3Service.getImageUrl(chatRoom.getImageKey());
             } else {
                 // 기본: 멤버 프로필 콜라주용 URL 목록 제공 (프론트에서 조합)
                 imageUrl = null;
-                List<ChatRoomMember> membersForCollage = preloadedGroupMembers != null
-                        ? preloadedGroupMembers
-                        : chatRoomMemberRepository.findByChatRoomWithUser(chatRoom);
-                memberProfileUrls = membersForCollage.stream()
+                memberProfileUrls = groupMembers.stream()
                         .map(ChatRoomMember::getUser)
                         .limit(COLLAGE_MAX_MEMBERS)
                         .map(u -> s3Service.getImageUrl(u.getImageKey()))

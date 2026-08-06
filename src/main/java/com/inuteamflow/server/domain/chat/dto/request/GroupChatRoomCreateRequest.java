@@ -20,7 +20,11 @@ public class GroupChatRoomCreateRequest {
     @Schema(description = "채팅방 이름 (미입력 시 참여자 이름으로 자동 표시)", example = "디자인팀 회의방")
     private String roomName;
 
+    @Schema(description = "채팅방 이미지 키 (미입력 시 멤버 프로필 콜라주로 자동 표시)")
+    private String imageKey;
+
     @NotEmpty
     @Schema(description = "초대할 팀 멤버 유저 ID 목록 (본인 제외, 본인은 자동 포함됨)", example = "[3, 7, 12]")
     private List<Long> memberIds;
+
 }

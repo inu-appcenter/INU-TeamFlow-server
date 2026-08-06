@@ -35,10 +35,11 @@ public class ChatRoom extends BaseEntity {
     private String roomName; // GROUP 타입 커스텀 방 이름 (없으면 참여자 이름으로 자동 표시)
 
     @Builder
-    private ChatRoom(ChatRoomType chatRoomType, Team team, String roomName) {
+    private ChatRoom(ChatRoomType chatRoomType, Team team, String roomName, String imageKey) {
         this.chatRoomType = chatRoomType;
         this.team = team;
         this.roomName = roomName;
+        this.imageKey = imageKey;
     }
 
     public static ChatRoom createTeamRoom(Team team) {
@@ -49,11 +50,12 @@ public class ChatRoom extends BaseEntity {
         return ChatRoom.builder().chatRoomType(ChatRoomType.DIRECT).build();
     }
 
-    public static ChatRoom createGroupRoom(Team team, String roomName) {
+    public static ChatRoom createGroupRoom(Team team, String roomName, String imageKey) {
         return ChatRoom.builder()
                 .chatRoomType(ChatRoomType.GROUP)
                 .team(team)
                 .roomName(roomName)
+                .imageKey(imageKey)
                 .build();
     }
 
