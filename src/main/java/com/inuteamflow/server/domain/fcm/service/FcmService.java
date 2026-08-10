@@ -6,11 +6,14 @@ import com.inuteamflow.server.domain.fcm.dto.res.FcmResponse;
 import com.inuteamflow.server.domain.fcm.entity.FcmToken;
 import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
+import com.inuteamflow.server.domain.notification.repository.NotificationOptionRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FcmService {
 
     private final FcmTokenRepository fcmTokenRepository;
+    private final NotificationOptionRepository notificationOptionRepository;
 
     private static final int FCM_MAX_BATCH_SIZE = 500;
 
@@ -67,7 +71,8 @@ public class FcmService {
     /**
      * 단일 사용자에게 FCM 알림을 발송한다.
      *
-     * <p>등록된 토큰이 없으면 발송하지 않으며, 발송 후 Firebase에서 등록 해제된 것으로 응답한 토큰을 삭제한다.
+     * <p>수신자의 알림 옵션에서 해당 유형이 비활성화되어 있으면 발송하지 않는다.
+     * 등록된 토큰이 없으면 발송하지 않으며, 발송 후 Firebase에서 등록 해제된 것으로 응답한 토큰을 삭제한다.
      * Firebase 발송 실패는 기록하고 호출자에게 전파하지 않는다.</p>
      *
      * @param receiverId 알림 수신자 ID
@@ -85,6 +90,12 @@ public class FcmService {
             String redirectUrl,
             NotificationType type,
             Long notificationId) {
+        boolean enabled = notificationOptionRepository
+                .findByUserId(receiverId)
+                .map(option -> option.isEnabled(type))
+                .orElse(true);
+        if (!enabled) return;
+
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedBy(receiverId);
         if (tokens.isEmpty()) return;
 
@@ -111,7 +122,8 @@ public class FcmService {
     /**
      * 여러 사용자에게 FCM 알림을 발송한다.
      *
-     * <p>Firebase 멀티캐스트 제한에 맞춰 토큰을 최대 {@value #FCM_MAX_BATCH_SIZE}개씩 나누어 발송하고,
+     * <p>알림 옵션에서 해당 유형이 비활성화된 수신자는 발송 대상에서 제외한다.
+     * Firebase 멀티캐스트 제한에 맞춰 토큰을 최대 {@value #FCM_MAX_BATCH_SIZE}개씩 나누어 발송하고,
      * 각 배치에서 등록 해제된 토큰을 삭제한다.</p>
      *
      * @param receiverIds 알림 수신자 ID 목록
@@ -123,6 +135,9 @@ public class FcmService {
     @Transactional
     public void sendToUsers(
             List<Long> receiverIds, String title, String body, String redirectUrl, NotificationType type) {
+        receiverIds = filterEnabledReceivers(receiverIds, type);
+        if (receiverIds.isEmpty()) return;
+
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
         if (tokens.isEmpty()) return;
 
@@ -151,7 +166,8 @@ public class FcmService {
     /**
      * 여러 사용자에게 채팅 FCM 알림을 발송한다.
      *
-     * <p>Android와 iOS에 동일한 축약 키를 설정하여 같은 채팅방의 미확인 알림이 중복 표시되지 않도록 하고,
+     * <p>알림 옵션에서 해당 유형이 비활성화된 수신자는 발송 대상에서 제외한다.
+     * Android와 iOS에 동일한 축약 키를 설정하여 같은 채팅방의 미확인 알림이 중복 표시되지 않도록 하고,
      * 토큰은 최대 {@value #FCM_MAX_BATCH_SIZE}개씩 나누어 발송한다.</p>
      *
      * @param receiverIds 알림 수신자 ID 목록
@@ -171,6 +187,9 @@ public class FcmService {
             String redirectUrl,
             Long roomId,
             String collapseKey) {
+        receiverIds = filterEnabledReceivers(receiverIds, type);
+        if (receiverIds.isEmpty()) return;
+
         List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
         if (tokens.isEmpty()) return;
 
@@ -243,5 +262,22 @@ public class FcmService {
         if (!invalidTokens.isEmpty()) {
             fcmTokenRepository.deleteByFcmTokenIn(invalidTokens);
         }
+    }
+
+    /**
+     * 알림 옵션에서 해당 유형이 활성화된 수신자만 남긴다.
+     *
+     * <p>옵션이 비활성화된 수신자를 제외하며, 옵션이 없는 수신자는 발송 대상으로 간주한다.</p>
+     *
+     * @param receiverIds 알림 수신자 ID 목록
+     * @param type 알림 유형
+     * @return 해당 유형 알림을 수신할 수신자 ID 목록
+     */
+    private List<Long> filterEnabledReceivers(List<Long> receiverIds, NotificationType type) {
+        Set<Long> disabled = notificationOptionRepository.findByUserIdIn(receiverIds).stream()
+                .filter(option -> !option.isEnabled(type))
+                .map(option -> option.getUser().getUserId())
+                .collect(Collectors.toSet());
+        return receiverIds.stream().filter(id -> !disabled.contains(id)).toList();
     }
 }
