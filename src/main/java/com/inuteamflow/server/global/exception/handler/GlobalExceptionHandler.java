@@ -7,6 +7,7 @@ import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -97,6 +98,18 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = CustomErrorCode.AUTH_LOGIN_FAILED;
         log.warn(
                 "BadCredentialsException: code={}, status={}, message={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                errorCode.getMessage());
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ErrorResponse> handleLockedException(LockedException e) {
+        ErrorCode errorCode = CustomErrorCode.USER_BANNED;
+        log.warn(
+                "LockedException: code={}, status={}, message={}",
                 errorCode.getCode(),
                 errorCode.getHttpStatus().value(),
                 errorCode.getMessage());

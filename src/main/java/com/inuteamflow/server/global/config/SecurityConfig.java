@@ -38,6 +38,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/v1/auth/**")
                         .permitAll() // 로그인 및 회원가입
+                        .requestMatchers("/api/v1/admin/**")
+                        .hasRole("ADMIN")
                         .anyRequest()
                         .authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
