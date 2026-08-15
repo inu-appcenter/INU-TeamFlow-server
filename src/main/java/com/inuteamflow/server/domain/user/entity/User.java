@@ -6,6 +6,7 @@ import com.inuteamflow.server.domain.user.enums.Department;
 import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.global.BaseTimeEntity;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -50,6 +51,9 @@ public class User extends BaseTimeEntity {
 
     @Column(name = "image_key")
     private String imageKey;
+
+    @Column(name = "suspended_until")
+    private LocalDateTime suspendedUntil;
 
     @Builder
     private User(
@@ -100,5 +104,9 @@ public class User extends BaseTimeEntity {
     public void verifySchool(String studentNumber) {
         this.studentNumber = studentNumber;
         this.isSchoolVerified = true;
+    }
+
+    public boolean isSuspended() {
+        return suspendedUntil != null && LocalDateTime.now().isBefore(suspendedUntil);
     }
 }

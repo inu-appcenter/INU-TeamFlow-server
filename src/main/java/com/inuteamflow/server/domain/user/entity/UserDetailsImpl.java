@@ -17,7 +17,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return user.getRole() != Role.BANNED;
+        return user.getRole() != Role.BANNED && !user.isSuspended();
     }
 
     @Override

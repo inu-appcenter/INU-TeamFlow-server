@@ -34,9 +34,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null && jwtTokenProvider.validateToken(token)) {
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            if (userDetails.getUser().isSuspended()) {
+                log.warn(
+                        "[인증 차단] 임시 정지된 사용자의 접근 시도 - userId: {}",
+                        userDetails.getUser().getUserId());
+                throw new RestApiException(CustomErrorCode.USER_SUSPENDED);
+            }
             if (userDetails.getUser().getRole() == Role.BANNED) {
                 log.warn(
-                        "[인증 차단] 정지된 사용자의 접근 시도 - userId: {}",
+                        "[인증 차단] 영구 정지된 사용자의 접근 시도 - userId: {}",
                         userDetails.getUser().getUserId());
                 throw new RestApiException(CustomErrorCode.USER_BANNED);
             }
