@@ -9,6 +9,7 @@ import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,6 +26,8 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Tag(name = "InfoPost Controller", description = "정보글 컨트롤러")
 public interface InfoPostControllerDocument {
@@ -197,32 +200,33 @@ public interface InfoPostControllerDocument {
     ResponseEntity<Void> deleteInfoPost(
             @PathVariable Long infoPostId, @AuthenticationPrincipal UserDetailsImpl userDetails);
 
-    @Operation(summary = "getRecruitmentsByInfoPost", description = "이 정보글을 참조하는 모집글 목록 조회")
+    @Operation(summary = "getRecruitmentsByInfoPost", description = "이 정보글을 참조하는 모집글 전체 목록 조회 (페이징 없음, 최신순)")
     @ApiResponses({
-        @ApiResponse(
-                responseCode = "200",
-                description = "모집글 목록 조회 성공",
-                content =
-                        @Content(
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = RecruitmentSummaryResponse.class))),
-        @ApiResponse(
-                responseCode = "401",
-                description = "유효하지 않거나 만료된 토큰",
-                content =
-                        @Content(
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(
-                responseCode = "404",
-                description = "정보글을 찾을 수 없음",
-                content =
-                        @Content(
-                                mediaType = MediaType.APPLICATION_JSON_VALUE,
-                                schema = @Schema(implementation = ErrorResponse.class)))
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "모집글 목록 조회 성공",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            array =
+                            @ArraySchema(
+                                    schema = @Schema(implementation = RecruitmentSummaryResponse.class)))),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "유효하지 않거나 만료된 토큰",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "정보글을 찾을 수 없음",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitmentsByInfoPost(
-            @PathVariable Long infoPostId, Pageable pageable);
+    ResponseEntity<List<RecruitmentSummaryResponse>> getRecruitmentsByInfoPost(@PathVariable Long infoPostId);
 
     @Operation(summary = "scrapInfoPost", description = "정보글 스크랩")
     @ApiResponses({

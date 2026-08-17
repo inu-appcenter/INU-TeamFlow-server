@@ -194,16 +194,17 @@ public class InfoPostService {
     }
 
     /**
-     * 해당 정보글을 참조하는 모집글 목록을 조회한다.
+     * 해당 정보글을 참조하는 모집글 전체 목록을 조회한다.
      *
      * @param infoPostId 조회 기준이 되는 정보글 ID
-     * @param pageable 페이지 정보
-     * @return 해당 정보글을 참조하는 모집글 목록
+     * @return 해당 정보글을 참조하는 모집글 전체 목록 (최신순)
      * @throws RestApiException 정보글을 찾을 수 없는 경우
      */
-    public Page<RecruitmentSummaryResponse> getRecruitmentsByInfoPost(Long infoPostId, Pageable pageable) {
+    public List<RecruitmentSummaryResponse> getRecruitmentsByInfoPost(Long infoPostId) {
         InfoPost infoPost = getInfoPostById(infoPostId);
-        return recruitmentRepository.findAllByInfoPost(infoPost, pageable).map(RecruitmentSummaryResponse::from);
+        return recruitmentRepository.findAllByInfoPostOrderByCreatedAtDesc(infoPost).stream()
+                .map(RecruitmentSummaryResponse::from)
+                .toList();
     }
 
     /**
