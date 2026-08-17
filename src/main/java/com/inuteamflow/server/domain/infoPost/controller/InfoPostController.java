@@ -22,6 +22,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/info-posts")
@@ -78,11 +80,8 @@ public class InfoPostController implements InfoPostControllerDocument {
     }
 
     @GetMapping("/{infoPostId}/recruitments")
-    public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitmentsByInfoPost(
-            @PathVariable Long infoPostId,
-            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(infoPostService.getRecruitmentsByInfoPost(infoPostId, pageable));
+    public ResponseEntity<List<RecruitmentSummaryResponse>> getRecruitmentsByInfoPost(@PathVariable Long infoPostId) {
+        return ResponseEntity.status(HttpStatus.OK).body(infoPostService.getRecruitmentsByInfoPost(infoPostId));
     }
 
     @PostMapping("/{infoPostId}/scraps")

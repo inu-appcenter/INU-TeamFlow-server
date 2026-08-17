@@ -20,7 +20,7 @@ public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> 
 
     List<Recruitment> findAllByTeam(Team team);
 
-    Page<Recruitment> findAllByInfoPost(InfoPost infoPost, Pageable pageable);
+    List<Recruitment> findAllByInfoPostOrderByCreatedAtDesc(InfoPost infoPost);
 
     long countByInfoPost(InfoPost infoPost);
 
