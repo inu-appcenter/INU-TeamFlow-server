@@ -9,6 +9,7 @@ import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.teamNotice.dto.req.TeamNoticeCreateRequest;
 import com.inuteamflow.server.domain.teamNotice.dto.req.TeamNoticeUpdateRequest;
+import com.inuteamflow.server.domain.teamNotice.dto.res.TeamNoticeAuthorResponse;
 import com.inuteamflow.server.domain.teamNotice.dto.res.TeamNoticeDetailResponse;
 import com.inuteamflow.server.domain.teamNotice.dto.res.TeamNoticeSummaryResponse;
 import com.inuteamflow.server.domain.teamNotice.entity.TeamNotice;
@@ -18,6 +19,7 @@ import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeImageReposi
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadRepository;
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.user.enums.UserConstants;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
@@ -78,8 +80,7 @@ public class TeamNoticeService {
         return noticePage.map(notice -> {
             boolean isRead = readNoticeIds.contains(notice.getTeamNoticeId());
             TeamMember authorMember = memberByUserId.get(notice.getCreatedBy());
-            return TeamNoticeSummaryResponse.of(
-                    notice, isRead, authorMember.getUser().getName(), authorMember.getTeamRole());
+            return TeamNoticeSummaryResponse.of(notice, isRead, resolveAuthor(authorMember));
         });
     }
 
@@ -121,8 +122,7 @@ public class TeamNoticeService {
             TeamMember authorMember = membersByTeamId
                     .getOrDefault(notice.getTeam().getTeamId(), Map.of())
                     .get(notice.getCreatedBy());
-            return TeamNoticeSummaryResponse.of(
-                    notice, isRead, authorMember.getUser().getName(), authorMember.getTeamRole());
+            return TeamNoticeSummaryResponse.of(notice, isRead, resolveAuthor(authorMember));
         });
     }
 
@@ -146,8 +146,12 @@ public class TeamNoticeService {
 
         return noticePage.map(notice -> {
             boolean isRead = readNoticeIds.contains(notice.getTeamNoticeId());
+            // 본인이 작성한 공지 목록이므로 팀을 나갔더라도 작성자는 본인 실명으로 표시한다.
             TeamMember authorMember = memberByTeamId.get(notice.getTeam().getTeamId());
-            return TeamNoticeSummaryResponse.of(notice, isRead, user.getName(), authorMember.getTeamRole());
+            TeamRole authorRole = authorMember != null ? authorMember.getTeamRole() : null;
+            TeamNoticeAuthorResponse author =
+                    new TeamNoticeAuthorResponse(user.getUserId(), authorRole, user.getName(), null);
+            return TeamNoticeSummaryResponse.of(notice, isRead, author);
         });
     }
 
@@ -158,7 +162,7 @@ public class TeamNoticeService {
      * @param noticeId 조회할 공지 ID
      * @param user 공지를 조회하는 사용자
      * @return 공지 내용과 작성자 및 이미지 정보
-     * @throws RestApiException 팀, 팀 멤버, 공지 또는 공지 작성자를 찾을 수 없는 경우
+     * @throws RestApiException 팀, 팀 멤버 또는 공지를 찾을 수 없는 경우
      */
     @Transactional
     public TeamNoticeDetailResponse getTeamNotice(Long teamId, Long noticeId, User user) {
@@ -174,12 +178,13 @@ public class TeamNoticeService {
         // 이미지를 순서에 맞게 정렬하여 List로 조회
         // 작성자 정보를 조회
         List<TeamNoticeImage> images = teamNoticeImageRepository.findByTeamNoticeOrderBySortOrderAsc(notice);
-        TeamMember authorMember = findAuthorMember(team, notice.getCreatedBy());
-        String authorProfileUrl = s3Service.getImageUrl(authorMember.getUser().getImageKey());
+        TeamMember authorMember = teamMemberRepository
+                .findByTeamAndUserUserId(team, notice.getCreatedBy())
+                .orElse(null);
+        TeamNoticeAuthorResponse author = resolveAuthor(authorMember);
         boolean isEditable = isEditable(notice, member);
 
-        return TeamNoticeDetailResponse.of(
-                notice, authorMember, authorProfileUrl, images, s3Service::getImageUrl, isEditable);
+        return TeamNoticeDetailResponse.of(notice, author, images, s3Service::getImageUrl, isEditable);
     }
 
     /**
@@ -204,7 +209,7 @@ public class TeamNoticeService {
 
         // TeamNoticeImage 생성
         List<TeamNoticeImage> images = saveImages(notice, request.getImageKeys());
-        String authorProfileUrl = s3Service.getImageUrl(user.getImageKey());
+        TeamNoticeAuthorResponse author = resolveAuthor(member);
 
         // 팀 멤버의 유저 객체들을 한 번에 조회
         List<User> receivers = teamMemberRepository.findUsersByTeamExcluding(team, user.getUserId());
@@ -216,7 +221,7 @@ public class TeamNoticeService {
                 NotificationType.NOTICE,
                 "/team/" + team.getTeamId() + "/notice/" + notice.getTeamNoticeId());
 
-        return TeamNoticeDetailResponse.of(notice, member, authorProfileUrl, images, s3Service::getImageUrl, true);
+        return TeamNoticeDetailResponse.of(notice, author, images, s3Service::getImageUrl, true);
     }
 
     /**
@@ -229,7 +234,7 @@ public class TeamNoticeService {
      * @param user 공지를 수정하는 사용자
      * @param request 수정할 공지 내용과 첨부 이미지 정보
      * @return 수정된 공지 상세 정보
-     * @throws RestApiException 팀, 팀 멤버, 공지 또는 공지 작성자를 찾을 수 없는 경우,
+     * @throws RestApiException 팀, 팀 멤버 또는 공지를 찾을 수 없는 경우,
      *                          또는 공지 수정 권한이 없는 경우
      */
     @Transactional
@@ -248,12 +253,13 @@ public class TeamNoticeService {
         oldImages.forEach(img -> s3Service.deleteImage(img.getImageKey()));
         List<TeamNoticeImage> images = saveImages(notice, request.getImageKeys());
 
-        TeamMember authorMember = findAuthorMember(team, notice.getCreatedBy());
-        String authorProfileUrl = s3Service.getImageUrl(authorMember.getUser().getImageKey());
+        TeamMember authorMember = teamMemberRepository
+                .findByTeamAndUserUserId(team, notice.getCreatedBy())
+                .orElse(null);
+        TeamNoticeAuthorResponse author = resolveAuthor(authorMember);
         boolean isEditable = isEditable(notice, member);
 
-        return TeamNoticeDetailResponse.of(
-                notice, authorMember, authorProfileUrl, images, s3Service::getImageUrl, isEditable);
+        return TeamNoticeDetailResponse.of(notice, author, images, s3Service::getImageUrl, isEditable);
     }
 
     /**
@@ -332,17 +338,27 @@ public class TeamNoticeService {
     }
 
     /**
-     * 팀에서 공지 작성자를 조회한다.
+     * 팀 멤버 정보로부터 공지 작성자 정보를 조립한다.
      *
-     * @param team 공지가 속한 팀
-     * @param userId 공지 작성자 ID
-     * @return 공지 작성자의 팀 멤버 정보
-     * @throws RestApiException 공지 작성자를 팀 멤버에서 찾을 수 없는 경우
+     * <p>작성자가 팀을 떠난(탈퇴·강퇴) 경우 식별 정보(유저 ID·역할)는 노출하지 않고, 이름은 placeholder,
+     * 프로필은 앱 기본 아바타로 대체한다.</p>
+     *
+     * @param member 작성자의 팀 멤버 정보, 팀을 떠났다면 {@code null}
+     * @return 공지 작성자 정보
      */
-    private TeamMember findAuthorMember(Team team, Long userId) {
-        return teamMemberRepository
-                .findByTeamAndUserUserId(team, userId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND));
+    private TeamNoticeAuthorResponse resolveAuthor(TeamMember member) {
+        if (member == null) {
+            return new TeamNoticeAuthorResponse(
+                    null,
+                    null,
+                    TeamNoticeAuthorResponse.WITHDRAWN_AUTHOR_NAME,
+                    s3Service.getImageUrl(UserConstants.DEFAULT_PROFILE_KEY));
+        }
+        return new TeamNoticeAuthorResponse(
+                member.getUser().getUserId(),
+                member.getTeamRole(),
+                member.getUser().getName(),
+                s3Service.getImageUrl(member.getUser().getImageKey()));
     }
 
     /**

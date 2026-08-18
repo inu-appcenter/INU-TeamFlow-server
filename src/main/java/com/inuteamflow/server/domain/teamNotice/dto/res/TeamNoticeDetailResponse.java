@@ -1,7 +1,5 @@
 package com.inuteamflow.server.domain.teamNotice.dto.res;
 
-import com.inuteamflow.server.domain.team.entity.TeamMember;
-import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.teamNotice.entity.TeamNotice;
 import com.inuteamflow.server.domain.teamNotice.entity.TeamNoticeImage;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -27,7 +25,7 @@ public class TeamNoticeDetailResponse {
     private Boolean isPinned;
 
     @Schema(description = "작성자 정보")
-    private Author author;
+    private TeamNoticeAuthorResponse author;
 
     @Schema(description = "작성일시", example = "2026-06-01T10:00:00")
     private LocalDateTime createdAt;
@@ -46,17 +44,10 @@ public class TeamNoticeDetailResponse {
 
     public static TeamNoticeDetailResponse of(
             TeamNotice notice,
-            TeamMember authorMember,
-            String authorProfileUrl,
+            TeamNoticeAuthorResponse author,
             List<TeamNoticeImage> images,
             Function<String, String> urlResolver,
             boolean isEditable) {
-        Author author = new Author(
-                authorMember.getUser().getUserId(),
-                authorMember.getTeamRole(),
-                authorMember.getUser().getName(),
-                authorProfileUrl);
-
         List<Image> imageList = images.stream()
                 .map(img -> new Image(urlResolver.apply(img.getImageKey()), img.getSortOrder()))
                 .toList();
@@ -72,17 +63,6 @@ public class TeamNoticeDetailResponse {
                 notice.getContent(),
                 isEditable);
     }
-
-    @Schema(description = "작성자 정보")
-    private record Author(
-            @Schema(description = "작성자 유저 ID", example = "1")
-            Long userId,
-
-            @Schema(description = "작성자 팀 역할", example = "LEADER")
-            TeamRole teamRole,
-
-            @Schema(description = "작성자 이름", example = "손동민") String name,
-            @Schema(description = "작성자 프로필 이미지 URL") String profileUrl) {}
 
     @Schema(description = "공지 이미지")
     private record Image(
