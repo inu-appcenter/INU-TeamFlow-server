@@ -66,14 +66,16 @@ class TeamNoticeServiceTest {
     private S3Service s3Service;
 
     private User author;
+    private User other;
+    private Team team;
 
     @BeforeEach
     void setUp() {
         author = createUser("author", "author@inu.ac.kr");
-        User other = createUser("other", "other@inu.ac.kr");
+        other = createUser("other", "other@inu.ac.kr");
 
         actingAs(author);
-        Team team = teamRepository.saveAndFlush(Team.builder()
+        team = teamRepository.saveAndFlush(Team.builder()
                 .name("테스트 팀")
                 .description("테스트 팀 설명")
                 .category(Category.PROJECT)
@@ -146,6 +148,40 @@ class TeamNoticeServiceTest {
         assertThat(result.isFirst()).isTrue();
         assertThat(result.isLast()).isFalse();
         assertThat(result.getContent().get(0).getTitle()).isEqualTo("내가 작성한 공지 2");
+    }
+
+    @Test
+    @DisplayName("작성자가 팀을 나가도 공지 목록 조회는 실패하지 않고 작성자를 '(탈퇴한 사용자)'로 표시한다")
+    void getTeamNotices_whenAuthorLeftTeam_showsPlaceholder() {
+        // author의 팀 멤버십을 제거하여 탈퇴/강퇴 상황을 재현
+        TeamMember authorMembership =
+                teamMemberRepository.findByTeamAndUser(team, author).orElseThrow();
+        teamMemberRepository.delete(authorMembership);
+        teamMemberRepository.flush();
+        entityManager.clear();
+
+        Team reloadedTeam = teamRepository.findById(team.getTeamId()).orElseThrow();
+        User reloadedOther = userRepository.findById(other.getUserId()).orElseThrow();
+
+        Page<TeamNoticeSummaryResponse> result = teamNoticeService.getTeamNotices(
+                reloadedTeam.getTeamId(),
+                reloadedOther,
+                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")));
+
+        // author가 작성한 공지는 placeholder 로, 역할은 null 로 표시된다
+        assertThat(result.getContent())
+                .filteredOn(notice -> notice.getTitle().startsWith("내가 작성한"))
+                .allSatisfy(notice -> {
+                    assertThat(notice.getAuthorName()).isEqualTo("(탈퇴한 사용자)");
+                    assertThat(notice.getTeamRole()).isNull();
+                });
+        // 남아 있는 작성자(other)의 공지는 정상적으로 표시된다
+        assertThat(result.getContent())
+                .filteredOn(notice -> notice.getTitle().startsWith("다른 사용자가 작성한"))
+                .allSatisfy(notice -> {
+                    assertThat(notice.getAuthorName()).isEqualTo(other.getName());
+                    assertThat(notice.getTeamRole()).isEqualTo(TeamRole.MEMBER);
+                });
     }
 
     private User createUser(String username, String email) {
