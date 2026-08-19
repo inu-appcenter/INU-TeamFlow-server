@@ -56,10 +56,11 @@ public class VoteService {
      * @param user 투표 목록을 조회하는 사용자
      * @param teamId 조회할 팀 ID
      * @return 팀에 생성된 투표 목록
-     * @throws RestApiException 팀을 찾을 수 없는 경우
+     * @throws RestApiException 팀을 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우
      */
     public List<EventVoteResponse> getVotes(User user, Long teamId) {
         Team team = getTeamById(teamId);
+        validateTeamMember(team, user);
         List<EventVoteResponse> responses = new ArrayList<>();
 
         for (Vote vote : voteRepository.findByTeam(team)) {
@@ -122,10 +123,11 @@ public class VoteService {
      * @param user 투표를 조회하는 사용자
      * @param voteId 조회할 투표 ID
      * @return 투표 상세 정보
-     * @throws RestApiException 투표를 찾을 수 없는 경우
+     * @throws RestApiException 투표를 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우
      */
     public EventVoteResponse getVote(User user, Long voteId) {
         Vote vote = getVoteById(voteId);
+        validateTeamMember(vote.getTeam(), user);
         boolean isVoter = voteParticipantService.isVoter(vote, user);
 
         return createEventVoteResponse(vote, isVoter, vote.getCreatedBy().equals(user.getUserId()));
@@ -150,12 +152,14 @@ public class VoteService {
     /**
      * 투표의 후보 시간 슬롯과 슬롯별 선택 인원 수를 조회한다.
      *
+     * @param user 시간 슬롯을 조회하는 사용자
      * @param voteId 조회할 투표 ID
      * @return 후보 시간 슬롯과 각 슬롯을 선택한 인원 수
-     * @throws RestApiException 투표를 찾을 수 없는 경우
+     * @throws RestApiException 투표를 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우
      */
-    public List<EventVoteTimeSlotResponse> getTimeSlot(Long voteId) {
+    public List<EventVoteTimeSlotResponse> getTimeSlot(User user, Long voteId) {
         Vote vote = getVoteById(voteId);
+        validateTeamMember(vote.getTeam(), user);
         List<VoteTimeSlot> voteTimeSlots = voteTimeService.getVoteTimeSlots(vote);
         Map<Long, Integer> participantCountByTimeSlot = voteAvailabilityService.countParticipantsByTimeSlot(vote);
         List<EventVoteTimeSlotResponse> responses = new ArrayList<>();

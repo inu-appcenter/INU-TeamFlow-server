@@ -164,13 +164,14 @@ public interface VoteControllerDocument {
                                 schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(
                 responseCode = "404",
-                description = "투표를 찾을 수 없음",
+                description = "투표 또는 팀 멤버를 찾을 수 없음",
                 content =
                         @Content(
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<List<EventVoteTimeSlotResponse>> getTimeSlot(@PathVariable("voteId") Long voteId);
+    ResponseEntity<List<EventVoteTimeSlotResponse>> getTimeSlot(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable("voteId") Long voteId);
 
     @Operation(summary = "selectTimeSlot", description = "투표 시간 슬롯 선택")
     @ApiResponses({

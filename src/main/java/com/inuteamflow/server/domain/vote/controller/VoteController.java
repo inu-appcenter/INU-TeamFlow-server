@@ -45,8 +45,9 @@ public class VoteController implements VoteControllerDocument {
     }
 
     @GetMapping("/votes/{voteId}/slots")
-    public ResponseEntity<List<EventVoteTimeSlotResponse>> getTimeSlot(@PathVariable("voteId") Long voteId) {
-        return ResponseEntity.status(HttpStatus.OK).body(voteService.getTimeSlot(voteId));
+    public ResponseEntity<List<EventVoteTimeSlotResponse>> getTimeSlot(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable("voteId") Long voteId) {
+        return ResponseEntity.status(HttpStatus.OK).body(voteService.getTimeSlot(userDetails.getUser(), voteId));
     }
 
     @PutMapping("/votes/{voteId}/slots")
