@@ -38,9 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 사용자가 투표 ID를 열거해 참가자 이름·투표 여부·팀 일정을 조회할 수 있다.</p>
  *
  * <ul>
- *   <li>{@code getVotes}, {@code getVote}: 비멤버 요청이 거부되어야 함을 검증한다.</li>
- *   <li>{@code getTimeSlot}: 현재 {@code user} 파라미터를 받지 않아(VoteController.java:48) 멤버십 검증 자체가
- *       불가능하다. 컨트롤러/서비스 시그니처 변경이 선행되어야 하므로 본 테스트에서는 다루지 않는다.</li>
+ *   <li>{@code getVotes}, {@code getVote}, {@code getTimeSlot}: 비멤버 요청이 거부되어야 함을 검증한다.</li>
  * </ul>
  *
  * <p>담당 개발자의 프로덕션 수정 대기 상태이며, 수정 전에는 테스트가 실패(red)한다.</p>
@@ -115,6 +113,16 @@ class VoteAuthorizationTest {
     void getVote_byNonTeamMember_isRejected() {
         actingAs(outsider);
         assertThatThrownBy(() -> voteService.getVote(outsider, vote.getVoteId()))
+                .isInstanceOf(RestApiException.class)
+                .extracting(exception -> ((RestApiException) exception).getErrorCode())
+                .isEqualTo(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("팀에 속하지 않은 사용자는 투표 시간 슬롯을 조회할 수 없다")
+    void getTimeSlot_byNonTeamMember_isRejected() {
+        actingAs(outsider);
+        assertThatThrownBy(() -> voteService.getTimeSlot(outsider, vote.getVoteId()))
                 .isInstanceOf(RestApiException.class)
                 .extracting(exception -> ((RestApiException) exception).getErrorCode())
                 .isEqualTo(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
