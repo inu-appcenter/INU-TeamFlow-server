@@ -55,13 +55,14 @@ public class ChatMessageResponse {
             int readCount,
             int visibleMemberCount) {
         boolean isImage = message.getMessageType() == ChatMessageType.IMAGE;
+        boolean isWithdrawn = sender == null; // 발신자가 회원 탈퇴한 경우
 
         return new ChatMessageResponse(
                 message.getChatMessageId(),
                 message.getChatRoom().getChatRoomId(),
-                sender.getUserId(),
-                sender.getName(),
-                imageUrlResolver.apply(sender.getImageKey()),
+                isWithdrawn ? message.getCreatedBy() : sender.getUserId(),
+                isWithdrawn ? "(탈퇴한 사용자)" : sender.getName(),
+                isWithdrawn ? null : imageUrlResolver.apply(sender.getImageKey()),
                 message.getMessageType(),
                 message.getContent(),
                 isImage ? imageUrlResolver.apply(message.getImageKey()) : null,
