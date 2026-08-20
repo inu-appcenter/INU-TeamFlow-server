@@ -250,6 +250,10 @@ public class RecruitmentApplicationService {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
         }
 
+        if (!teamMemberRepository.existsByTeamAndUser(recruitment.getTeam(), user)) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+        }
+
         User applicant = userRepository
                 .findById(recruitmentApplication.getCreatedBy())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
