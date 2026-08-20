@@ -12,6 +12,7 @@ import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicati
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentScrapRepository;
 import com.inuteamflow.server.domain.team.entity.Team;
+import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
@@ -34,6 +35,7 @@ public class RecruitmentService {
     private final RecruitmentScrapRepository recruitmentScrapRepository;
     private final TeamRepository teamRepository;
     private final InfoPostRepository infoPostRepository;
+    private final TeamMemberRepository teamMemberRepository;
 
     // =========================================================================
     // ============================= 주요 서비스 기능 =============================
@@ -96,6 +98,10 @@ public class RecruitmentService {
         Team team = teamRepository
                 .findById(request.getTeamId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.TEAM_NOT_FOUND));
+
+        if (!teamMemberRepository.existsByTeamAndUser(team, user)) {
+            throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
+        }
 
         InfoPost infoPost = null;
         if (request.getInfoPostId() != null) {
