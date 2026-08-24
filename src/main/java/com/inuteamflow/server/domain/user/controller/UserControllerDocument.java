@@ -1,5 +1,7 @@
 package com.inuteamflow.server.domain.user.controller;
 
+import com.inuteamflow.server.domain.report.dto.request.ReportRequest;
+import com.inuteamflow.server.domain.report.dto.response.ReportResponse;
 import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
@@ -14,6 +16,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "User Controller", description = "유저 컨트롤러")
@@ -98,4 +101,40 @@ public interface UserControllerDocument {
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Void> deleteUser(@AuthenticationPrincipal UserDetailsImpl userDetails);
+
+    @Operation(summary = "reportUser", description = "사용자 신고")
+    @ApiResponses({
+        @ApiResponse(
+                responseCode = "201",
+                description = "신고 접수 성공",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ReportResponse.class))),
+        @ApiResponse(
+                responseCode = "400",
+                description = "잘못된 요청 값",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "401",
+                description = "인증 실패 또는 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "404",
+                description = "대상 사용자를 찾을 수 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ReportResponse> reportUser(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long userId,
+            @Valid @RequestBody ReportRequest request);
 }

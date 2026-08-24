@@ -6,6 +6,8 @@ import com.inuteamflow.server.domain.recruitment.dto.request.RecruitmentUpdateRe
 import com.inuteamflow.server.domain.recruitment.dto.response.ApplicationSummaryResponse;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentDetailResponse;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
+import com.inuteamflow.server.domain.report.dto.request.ReportRequest;
+import com.inuteamflow.server.domain.report.dto.response.ReportResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -335,4 +337,40 @@ public interface RecruitmentControllerDocument {
     })
     ResponseEntity<Slice<RecruitmentSummaryResponse>> getMyRecruitmentScraps(
             @AuthenticationPrincipal UserDetailsImpl userDetails, Pageable pageable);
+
+    @Operation(summary = "reportRecruitment", description = "모집글 신고")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "201",
+                description = "신고 접수 성공",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ReportResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "잘못된 요청 값",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "모집글을 찾을 수 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ReportResponse> reportRecruitment(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long recruitmentId,
+            @Valid @RequestBody ReportRequest request);
 }
