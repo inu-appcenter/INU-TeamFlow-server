@@ -8,6 +8,9 @@ import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentDetailR
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
 import com.inuteamflow.server.domain.recruitment.service.RecruitmentApplicationService;
 import com.inuteamflow.server.domain.recruitment.service.RecruitmentService;
+import com.inuteamflow.server.domain.report.dto.request.ReportRequest;
+import com.inuteamflow.server.domain.report.dto.response.ReportResponse;
+import com.inuteamflow.server.domain.report.service.ReportService;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
@@ -30,6 +33,7 @@ public class RecruitmentController implements RecruitmentControllerDocument {
 
     private final RecruitmentService recruitmentService;
     private final RecruitmentApplicationService recruitmentApplicationService;
+    private final ReportService reportService;
 
     @GetMapping
     public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(
@@ -118,5 +122,14 @@ public class RecruitmentController implements RecruitmentControllerDocument {
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(recruitmentService.getMyRecruitmentScraps(userDetails.getUser(), pageable));
+    }
+
+    @PostMapping("/{recruitmentId}/reports")
+    public ResponseEntity<ReportResponse> reportRecruitment(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @PathVariable Long recruitmentId,
+            @Valid @RequestBody ReportRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(reportService.reportRecruitment(recruitmentId, request, userDetails.getUser()));
     }
 }

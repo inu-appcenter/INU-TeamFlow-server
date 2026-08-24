@@ -7,6 +7,8 @@ import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostSummaryRespon
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
+import com.inuteamflow.server.domain.report.dto.request.ReportRequest;
+import com.inuteamflow.server.domain.report.dto.response.ReportResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -296,4 +298,40 @@ public interface InfoPostControllerDocument {
     })
     ResponseEntity<Slice<InfoPostSummaryResponse>> getMyInfoPostScraps(
             @AuthenticationPrincipal UserDetailsImpl userDetails, Pageable pageable);
+
+    @Operation(summary = "reportInfoPost", description = "정보글 신고")
+    @ApiResponses({
+        @ApiResponse(
+                responseCode = "201",
+                description = "신고 접수 성공",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ReportResponse.class))),
+        @ApiResponse(
+                responseCode = "400",
+                description = "잘못된 요청 값",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "404",
+                description = "정보글을 찾을 수 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ReportResponse> reportInfoPost(
+            @PathVariable Long infoPostId,
+            @Valid @RequestBody ReportRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails);
 }

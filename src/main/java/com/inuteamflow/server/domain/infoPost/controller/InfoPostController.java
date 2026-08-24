@@ -8,6 +8,9 @@ import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
 import com.inuteamflow.server.domain.infoPost.service.InfoPostService;
 import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummaryResponse;
+import com.inuteamflow.server.domain.report.dto.request.ReportRequest;
+import com.inuteamflow.server.domain.report.dto.response.ReportResponse;
+import com.inuteamflow.server.domain.report.service.ReportService;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ import java.util.List;
 public class InfoPostController implements InfoPostControllerDocument {
 
     private final InfoPostService infoPostService;
+    private final ReportService reportService;
 
     @GetMapping
     public ResponseEntity<Page<InfoPostSummaryResponse>> getInfoPosts(
@@ -104,5 +108,14 @@ public class InfoPostController implements InfoPostControllerDocument {
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(infoPostService.getMyInfoPostScraps(userDetails.getUser(), pageable));
+    }
+
+    @PostMapping("/{infoPostId}/reports")
+    public ResponseEntity<ReportResponse> reportInfoPost(
+            @PathVariable Long infoPostId,
+            @Valid @RequestBody ReportRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(reportService.reportInfoPost(infoPostId, request, userDetails.getUser()));
     }
 }
