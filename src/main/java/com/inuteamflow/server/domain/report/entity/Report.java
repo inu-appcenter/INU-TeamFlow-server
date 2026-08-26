@@ -99,5 +99,4 @@ public class Report extends BaseTimeEntity {
                 .detail(detail)
                 .build();
     }
-
 }
