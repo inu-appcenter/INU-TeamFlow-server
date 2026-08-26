@@ -48,7 +48,7 @@ public class ReportService {
         Report report = Report.create(
                 reporter.getUserId(),
                 reporter.getName(),
-                ReportTargetType.RECRUITMENT,
+                ReportTargetType.RECRUITMENT_POST,
                 recruitment.getRecruitmentId(),
                 recruitment.getTitle(),
                 recruitment.getRecruiter().getUserId(),
@@ -77,8 +77,10 @@ public class ReportService {
                 .findById(infoPostId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.INFO_POST_NOT_FOUND));
 
-        String authorName =
-                userRepository.findById(infoPost.getCreatedBy()).map(User::getName).orElse(null);
+        String authorName = userRepository
+                .findById(infoPost.getCreatedBy())
+                .map(User::getName)
+                .orElse(null);
 
         Report report = Report.create(
                 reporter.getUserId(),
@@ -107,9 +109,8 @@ public class ReportService {
      */
     @Transactional
     public ReportResponse reportUser(Long userId, ReportRequest request, User reporter) {
-        User target = userRepository
-                .findById(userId)
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
+        User target =
+                userRepository.findById(userId).orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
 
         Report report = Report.create(
                 reporter.getUserId(),
@@ -124,5 +125,4 @@ public class ReportService {
 
         return ReportResponse.from(reportRepository.save(report));
     }
-
 }

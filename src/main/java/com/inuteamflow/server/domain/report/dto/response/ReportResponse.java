@@ -4,11 +4,10 @@ import com.inuteamflow.server.domain.report.entity.Report;
 import com.inuteamflow.server.domain.report.enums.ReportReason;
 import com.inuteamflow.server.domain.report.enums.ReportStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

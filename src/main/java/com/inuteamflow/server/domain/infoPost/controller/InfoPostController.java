@@ -13,6 +13,7 @@ import com.inuteamflow.server.domain.report.dto.response.ReportResponse;
 import com.inuteamflow.server.domain.report.service.ReportService;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -24,8 +25,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor

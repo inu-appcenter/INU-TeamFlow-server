@@ -15,5 +15,4 @@ public class ReportRequest {
 
     @Size(max = 1000)
     private String detail;
-
 }
