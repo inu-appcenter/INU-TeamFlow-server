@@ -118,9 +118,15 @@ public enum CustomErrorCode implements ErrorCode {
     INFO_POST_ALREADY_SCRAPPED(HttpStatus.CONFLICT, 409, "이미 스크랩한 정보글입니다."),
     INFO_POST_SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "스크랩하지 않은 정보글입니다."),
 
+    // 신고 관련 에러
+    REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "신고를 찾을 수 없습니다."),
+    REPORT_ALREADY_HANDLED(HttpStatus.CONFLICT, 409, "이미 처리된 신고입니다."),
+    REPORT_HANDLE_INVALID(HttpStatus.BAD_REQUEST, 400, "신고 처리 요청이 올바르지 않습니다."),
+
     // 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "문의를 찾을 수 없습니다."),
     INQUIRY_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "본인의 문의만 조회/삭제할 수 있습니다."),
+    INQUIRY_ALREADY_ANSWERED(HttpStatus.CONFLICT, 409, "이미 답변된 문의입니다."),
 
     // 공통 500 에러 코드
     COMMON_INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, 500, "서버 내부 오류가 발생했습니다.");

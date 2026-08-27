@@ -186,11 +186,20 @@ public class InfoPostService {
         InfoPost infoPost = getInfoPostById(infoPostId);
         validateAuthor(infoPost, user);
 
-        List<InfoPostImage> images = infoPostImageRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
-        infoPostImageRepository.deleteByInfoPost(infoPost);
-        images.forEach(img -> s3Service.deleteImage(img.getImageKey()));
-        infoPostScrapRepository.deleteByInfoPost(infoPost);
-        infoPostRepository.delete(infoPost);
+        deleteWithRelations(infoPost);
+    }
+
+    /**
+     * 신고 처리에 따라 정보글을 강제 삭제한다.
+     *
+     * <p>관리자 권한으로 수행되므로 작성자 검증을 하지 않는다. 연관 데이터 정리는 일반 삭제와 동일하다.</p>
+     *
+     * @param infoPostId 삭제할 정보글 ID
+     * @throws RestApiException 정보글을 찾을 수 없는 경우
+     */
+    @Transactional
+    public void deleteInfoPostByAdmin(Long infoPostId) {
+        deleteWithRelations(getInfoPostById(infoPostId));
     }
 
     /**
@@ -270,6 +279,21 @@ public class InfoPostService {
     // =========================================================================
     // ================================ 헬퍼 함수 ================================
     // =========================================================================
+
+    /**
+     * 정보글과 연관 데이터를 함께 삭제한다.
+     *
+     * <p>정보글에 속한 이미지를 DB와 S3에서 삭제하고, 스크랩 기록을 정리한 후 정보글을 삭제한다.</p>
+     *
+     * @param infoPost 삭제할 정보글
+     */
+    private void deleteWithRelations(InfoPost infoPost) {
+        List<InfoPostImage> images = infoPostImageRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
+        infoPostImageRepository.deleteByInfoPost(infoPost);
+        images.forEach(img -> s3Service.deleteImage(img.getImageKey()));
+        infoPostScrapRepository.deleteByInfoPost(infoPost);
+        infoPostRepository.delete(infoPost);
+    }
 
     /**
      * 정보글 페이지를 대표 이미지와 모집글 수를 포함한 요약 응답 페이지로 변환한다.

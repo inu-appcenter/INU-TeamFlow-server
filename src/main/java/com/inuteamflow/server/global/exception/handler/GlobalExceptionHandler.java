@@ -6,6 +6,7 @@ import com.inuteamflow.server.global.exception.error.ErrorResponse;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.FieldError;
@@ -65,6 +66,18 @@ public class GlobalExceptionHandler {
                 errorCode.getCode(),
                 errorCode.getHttpStatus().value(),
                 errorCode.getMessage());
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        ErrorCode errorCode = CustomErrorCode.COMMON_INVALID_REQUEST_TYPE;
+        log.warn(
+                "HttpMessageNotReadableException: code={}, status={}, message={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                e.getMessage());
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
     }

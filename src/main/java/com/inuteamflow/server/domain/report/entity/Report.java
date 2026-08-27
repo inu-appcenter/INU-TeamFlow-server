@@ -99,4 +99,8 @@ public class Report extends BaseTimeEntity {
                 .detail(detail)
                 .build();
     }
+
+    public void resolve() {
+        this.status = ReportStatus.RESOLVED;
+    }
 }

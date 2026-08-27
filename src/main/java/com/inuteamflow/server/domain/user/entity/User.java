@@ -109,4 +109,12 @@ public class User extends BaseTimeEntity {
     public boolean isSuspended() {
         return suspendedUntil != null && LocalDateTime.now().isBefore(suspendedUntil);
     }
+
+    public void suspend(LocalDateTime suspendedUntil) {
+        this.suspendedUntil = suspendedUntil;
+    }
+
+    public void ban() {
+        this.role = Role.BANNED;
+    }
 }
