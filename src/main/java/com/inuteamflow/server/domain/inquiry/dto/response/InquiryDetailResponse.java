@@ -3,6 +3,7 @@ package com.inuteamflow.server.domain.inquiry.dto.response;
 import com.inuteamflow.server.domain.inquiry.entity.Inquiry;
 import com.inuteamflow.server.domain.inquiry.enums.InquiryStatus;
 import com.inuteamflow.server.domain.inquiry.enums.InquiryType;
+import com.inuteamflow.server.global.dto.UserRef;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;

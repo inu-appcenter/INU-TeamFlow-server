@@ -1,4 +1,4 @@
-package com.inuteamflow.server.domain.inquiry.dto.response;
+package com.inuteamflow.server.global.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AccessLevel;
