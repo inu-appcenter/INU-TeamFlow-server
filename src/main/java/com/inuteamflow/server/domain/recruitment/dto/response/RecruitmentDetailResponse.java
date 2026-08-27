@@ -26,11 +26,15 @@ public class RecruitmentDetailResponse {
     private Boolean isRecruiter;
     private Boolean hasApplied;
     private Boolean isScrap;
+    private Long infoPostId;
+    private String infoPostTitle;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public static RecruitmentDetailResponse of(
             Recruitment recruitment, Boolean isRecruiter, Boolean hasApplied, Boolean isScrap) {
+        boolean hasInfoPost = recruitment.getInfoPost() != null;
+
         return new RecruitmentDetailResponse(
                 recruitment.getRecruitmentId(),
                 recruitment.getTitle(),
@@ -47,6 +51,8 @@ public class RecruitmentDetailResponse {
                 isRecruiter,
                 hasApplied,
                 isScrap,
+                hasInfoPost ? recruitment.getInfoPost().getInfoPostId() : null,
+                hasInfoPost ? recruitment.getInfoPost().getTitle() : null,
                 recruitment.getCreatedAt(),
                 recruitment.getUpdatedAt());
     }
