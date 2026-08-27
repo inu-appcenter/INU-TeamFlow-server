@@ -19,5 +19,4 @@ public class UserRef {
     public static UserRef of(Long userId, String name) {
         return new UserRef(userId, name);
     }
-
 }

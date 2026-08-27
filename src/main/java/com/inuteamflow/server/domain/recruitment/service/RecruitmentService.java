@@ -175,9 +175,24 @@ public class RecruitmentService {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_FORBIDDEN);
         }
 
-        recruitmentApplicationRepository.deleteAllByRecruitmentIn(List.of(recruitment));
-        recruitmentScrapRepository.deleteByRecruitment(recruitment);
-        recruitmentRepository.delete(recruitment);
+        deleteWithRelations(recruitment);
+    }
+
+    /**
+     * 신고 처리에 따라 모집글을 강제 삭제한다.
+     *
+     * <p>관리자 권한으로 수행되므로 모집자 검증을 하지 않는다. 연관 데이터 정리는 일반 삭제와 동일하다.</p>
+     *
+     * @param recruitmentId 삭제할 모집글 ID
+     * @throws RestApiException 모집글을 찾을 수 없는 경우
+     */
+    @Transactional
+    public void deleteRecruitmentByAdmin(Long recruitmentId) {
+        Recruitment recruitment = recruitmentRepository
+                .findById(recruitmentId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
+
+        deleteWithRelations(recruitment);
     }
 
     /**
@@ -228,5 +243,22 @@ public class RecruitmentService {
      */
     public Slice<RecruitmentSummaryResponse> getMyRecruitmentScraps(User user, Pageable pageable) {
         return recruitmentScrapRepository.findRecruitmentsByUser(user, pageable).map(RecruitmentSummaryResponse::from);
+    }
+
+    // =========================================================================
+    // ================================ 헬퍼 함수 ================================
+    // =========================================================================
+
+    /**
+     * 모집글과 연관 데이터를 함께 삭제한다.
+     *
+     * <p>FK 제약을 해소하기 위해 신청서와 스크랩 기록을 먼저 삭제한 후 모집글을 삭제한다.</p>
+     *
+     * @param recruitment 삭제할 모집글
+     */
+    private void deleteWithRelations(Recruitment recruitment) {
+        recruitmentApplicationRepository.deleteAllByRecruitmentIn(List.of(recruitment));
+        recruitmentScrapRepository.deleteByRecruitment(recruitment);
+        recruitmentRepository.delete(recruitment);
     }
 }

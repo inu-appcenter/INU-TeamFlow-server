@@ -4,12 +4,11 @@ import com.inuteamflow.server.domain.inquiry.enums.InquiryStatus;
 import com.inuteamflow.server.domain.inquiry.enums.InquiryType;
 import com.inuteamflow.server.global.BaseTimeEntity;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -71,5 +70,13 @@ public class Inquiry extends BaseTimeEntity {
 
     public boolean isOwnedBy(Long userId) {
         return this.inquirerId.equals(userId);
+    }
+
+    public void answer(String answer, Long answererId, String answererName, LocalDateTime answeredAt) {
+        this.answer = answer;
+        this.answererId = answererId;
+        this.answererName = answererName;
+        this.answeredAt = answeredAt;
+        this.status = InquiryStatus.RESOLVED;
     }
 }

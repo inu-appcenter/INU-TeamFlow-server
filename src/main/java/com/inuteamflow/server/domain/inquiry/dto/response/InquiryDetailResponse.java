@@ -55,6 +55,5 @@ public class InquiryDetailResponse {
                 isAnswered ? UserRef.of(inquiry.getAnswererId(), inquiry.getAnswererName()) : null,
                 isAnswered ? inquiry.getAnsweredAt() : null,
                 inquiry.getCreatedAt());
-
     }
 }
