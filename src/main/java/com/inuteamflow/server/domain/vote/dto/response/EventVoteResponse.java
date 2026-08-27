@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.vote.dto.response;
 
 import com.inuteamflow.server.domain.vote.entity.Vote;
+import com.inuteamflow.server.global.enums.Category;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -19,6 +20,9 @@ public class EventVoteResponse {
 
     @Schema(description = "팀 ID", example = "10")
     private Long teamId;
+
+    @Schema(description = "팀 카테고리", example = "STUDY")
+    private Category teamCategory;
 
     @Schema(description = "투표 제목", example = "스터디 일정 조율")
     private String title;
@@ -66,6 +70,7 @@ public class EventVoteResponse {
         return new EventVoteResponse(
                 vote.getVoteId(),
                 vote.getTeam().getTeamId(),
+                vote.getTeam().getCategory(),
                 vote.getTitle(),
                 vote.getDescription(),
                 vote.getCreatedAt().toLocalDate(),
