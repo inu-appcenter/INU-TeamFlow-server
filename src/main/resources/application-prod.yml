@@ -57,6 +57,17 @@ fcm:
   file_path: firebase/inu-teamflow-firebase-adminsdk.json
   project_id: ${FCM_PROJECT_ID}
 
+intip:
+  base-url: https://portal.inuappcenter.kr
+
+ai:
+  base-url: https://moimi-ai.inuappcenter.kr
+  api-key: ${AI_SERVER_API_KEY:}
+  model: moimi
+
+moimi:
+  system-user-id: ${SYSTEM_USER_ID:0} # 시스템 계정 미생성 상태 - 임시 기본값, 계정 만들면 실제 id로 교체 필요
+
 logging:
   file:
     path: /var/log/spring

@@ -27,6 +27,7 @@ services:
       FCM_FILE_PATH: ${FCM_FILE_PATH}
       FCM_PROJECT_ID: ${FCM_PROJECT_ID}
       TZ: ${TZ}
+      AI_SERVER_API_KEY: ${AI_SERVER_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
