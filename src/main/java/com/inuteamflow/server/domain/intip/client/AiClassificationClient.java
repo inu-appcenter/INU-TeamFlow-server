@@ -18,8 +18,7 @@ import org.springframework.web.client.RestClientException;
 @Component
 public class AiClassificationClient {
 
-    private static final String SYSTEM_PROMPT =
-            """
+    private static final String SYSTEM_PROMPT = """
             너는 인천대학교 공지사항을 학생 팀플 서비스 "모이미"에 필요한 데이터인지 분류하는 분류기다.
             아래 기준에 따라 이 공지가 모이미에 노출할 가치가 있는지, 있다면 어떤 카테고리인지 판단하라.
 
@@ -73,8 +72,7 @@ public class AiClassificationClient {
 
         AiChatCompletionRequest request = AiChatCompletionRequest.builder()
                 .model(model)
-                .messages(List.of(
-                        new AiChatMessage("system", SYSTEM_PROMPT), new AiChatMessage("user", userContent)))
+                .messages(List.of(new AiChatMessage("system", SYSTEM_PROMPT), new AiChatMessage("user", userContent)))
                 .temperature(0)
                 .chatTemplateKwargs(Map.of("enable_thinking", false))
                 .build();

@@ -30,3 +30,14 @@ aws:
     bucket: test-bucket
   cloudfront:
     domain: test.cloudfront.net
+
+ai:
+  base-url: http://localhost:9999
+  api-key: test-api-key
+  model: test-model
+
+moimi:
+  system-user-id: 0
+
+intip:
+  base-url: http://localhost:9999
