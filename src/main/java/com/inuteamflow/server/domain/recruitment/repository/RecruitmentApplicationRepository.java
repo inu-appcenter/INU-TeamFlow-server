@@ -14,10 +14,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RecruitmentApplicationRepository extends JpaRepository<RecruitmentApplication, Long> {
 
-    // CANCELED 제외
+    // CANCELLED 제외
     @Query("SELECT COUNT(ra) > 0 FROM RecruitmentApplication ra " + "WHERE ra.recruitment = :recruitment "
             + "AND ra.createdBy = :userId "
-            + "AND ra.applicationStatus != 'CANCELED'")
+            + "AND ra.applicationStatus != 'CANCELLED'")
     boolean existsByRecruitmentAndCreatedBy(Recruitment recruitment, Long userId);
 
     Page<RecruitmentApplication> findAllByRecruitment(Recruitment recruitment, Pageable pageable);

@@ -54,7 +54,7 @@ public class TeamInvitation extends BaseEntity {
                 .build();
     }
 
-    // DECLINED/CANCELED 상태에서 재초대 시, 기존 레코드를 WAITING으로 초기화
+    // DECLINED/CANCELLED 상태에서 재초대 시, 기존 레코드를 WAITING으로 초기화
     public void reinvite() {
         this.invitationStatus = Status.WAITING;
         this.respondedAt = null;
@@ -74,7 +74,7 @@ public class TeamInvitation extends BaseEntity {
         if (this.invitationStatus != Status.WAITING) {
             throw new RestApiException(CustomErrorCode.INVITATION_STATUS_INVALID);
         }
-        this.invitationStatus = Status.CANCELED;
+        this.invitationStatus = Status.CANCELLED;
     }
 
     public Long getTeamId() {

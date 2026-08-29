@@ -104,7 +104,7 @@ class TeamInvitationServiceTest {
         saveInvitation(currentMember, Status.ACCEPTED);
         saveInvitation(pendingCandidate, Status.WAITING);
         saveInvitation(declinedCandidate, Status.DECLINED);
-        saveInvitation(canceledCandidate, Status.CANCELED);
+        saveInvitation(canceledCandidate, Status.CANCELLED);
         saveInvitation(acceptedFormerMember, Status.ACCEPTED);
 
         teamMemberRepository.flush();
@@ -191,7 +191,7 @@ class TeamInvitationServiceTest {
         switch (status) {
             case ACCEPTED -> invitation.accept();
             case DECLINED -> invitation.decline();
-            case CANCELED -> invitation.cancel();
+            case CANCELLED -> invitation.cancel();
             case WAITING -> {
                 // 생성 상태를 유지한다.
             }
