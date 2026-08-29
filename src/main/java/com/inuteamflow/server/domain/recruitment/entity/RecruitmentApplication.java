@@ -63,6 +63,6 @@ public class RecruitmentApplication extends BaseEntity {
         if (this.applicationStatus != Status.WAITING) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_STATUS_INVALID);
         }
-        this.applicationStatus = Status.CANCELED;
+        this.applicationStatus = Status.CANCELLED;
     }
 }
