@@ -110,9 +110,7 @@ public class IntipSyncService {
         InfoPostCategory category = toValidCategory(result.getCategory());
         if (category == null) {
             log.warn(
-                    "[INTIP 동기화] AI가 유효하지 않은 카테고리 반환, notice id={}, category={}",
-                    notice.getId(),
-                    result.getCategory());
+                    "[INTIP 동기화] AI가 유효하지 않은 카테고리 반환, notice id={}, category={}", notice.getId(), result.getCategory());
             return;
         }
 
