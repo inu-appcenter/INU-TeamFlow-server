@@ -114,7 +114,7 @@ public class IntipSyncService {
             return;
         }
 
-        InfoPost infoPost = InfoPost.create(category, notice.getTitle(), notice.getContentText());
+        InfoPost infoPost = InfoPost.createFromIntip(category, notice.getTitle(), notice.getContentText(), notice.getUrl());
         infoPost.assignAuditor(systemUserId); // 스케줄러 컨텍스트엔 로그인 사용자가 없어 수동 지정
         infoPostRepository.save(infoPost);
     }
