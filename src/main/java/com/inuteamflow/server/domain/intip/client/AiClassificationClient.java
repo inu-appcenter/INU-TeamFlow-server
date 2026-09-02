@@ -34,7 +34,7 @@ public class AiClassificationClient {
             - 특정 학과 성적/수강 관련 공지
             - 위 4개 카테고리 중 어디에도 명확히 속하지 않는 공지
 
-            다른 설명 없이 반드시 아래 JSON 형식으로만 답하라. 코드블럭이나 다른 텍스트를 덧붙이지 마라.
+            아래 JSON 형식으로 답하라.
             {"isRelevant": true, "category": "CONTEST", "reason": "분류 근거"}
             isRelevant가 false면 category와 reason은 null로 채워라.
             """;
@@ -61,10 +61,10 @@ public class AiClassificationClient {
     /**
      * 공지 1건을 AI 서버에 분류 요청한다.
      *
-     * <p>AI 서버가 JSON 강제 출력(structured output/function calling)을 지원하지 않는다는 전제 하에,
-     * 프롬프트로만 JSON 형식을 강제하고 응답 텍스트에서 JSON 부분만 추출해 파싱한다.</p>
+     * <p>AI 서버가 response_format(json_object)을 통한 JSON 강제 출력을 지원하므로,
+     * 응답 전체가 곧바로 유효한 JSON이라고 가정하고 파싱한다.</p>
      *
-     * @throws AiClassificationParseException 응답에서 유효한 JSON을 파싱하지 못한 경우 (재시도 대상 아님, 호출부에서 스킵 처리)
+     * @throws AiClassificationParseException 응답 JSON 파싱에 실패한 경우 (재시도 대상 아님, 호출부에서 스킵 처리)
      * @throws RestClientException AI 서버 호출 자체가 실패한 경우 (호출부에서 재시도)
      */
     public AiClassificationResult classify(IntipNoticeResponse notice) {
@@ -75,6 +75,7 @@ public class AiClassificationClient {
                 .messages(List.of(new AiChatMessage("system", SYSTEM_PROMPT), new AiChatMessage("user", userContent)))
                 .temperature(0)
                 .chatTemplateKwargs(Map.of("enable_thinking", false))
+                .responseFormat(Map.of("type", "json_object"))
                 .build();
 
         String rawContent = callWithRetry(request);
@@ -116,17 +117,10 @@ public class AiClassificationClient {
             throw new AiClassificationParseException("AI 응답이 비어있음", null);
         }
 
-        int start = rawContent.indexOf('{');
-        int end = rawContent.lastIndexOf('}');
-        if (start == -1 || end == -1 || start > end) {
-            throw new AiClassificationParseException("AI 응답에서 JSON을 찾을 수 없음: " + rawContent, null);
-        }
-
-        String jsonPart = rawContent.substring(start, end + 1);
         try {
-            return objectMapper.readValue(jsonPart, AiClassificationResult.class);
+            return objectMapper.readValue(rawContent, AiClassificationResult.class);
         } catch (Exception e) {
-            throw new AiClassificationParseException("AI 응답 JSON 파싱 실패: " + jsonPart, e);
+            throw new AiClassificationParseException("AI 응답 JSON 파싱 실패: " + rawContent, e);
         }
     }
 }

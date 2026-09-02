@@ -15,4 +15,7 @@ public class AiChatCompletionRequest {
 
     @JsonProperty("chat_template_kwargs")
     private Map<String, Object> chatTemplateKwargs;
+
+    @JsonProperty("response_format")
+    private Map<String, Object> responseFormat;
 }
