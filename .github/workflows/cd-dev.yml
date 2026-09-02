@@ -95,6 +95,7 @@ jobs:
             S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
             CLOUDFRONT_DOMAIN=${{ secrets.CLOUDFRONT_DOMAIN }}
             FCM_PROJECT_ID=${{ secrets.FCM_PROJECT_ID }}
+            AI_SERVER_API_KEY=${{ secrets.AI_SERVER_API_KEY }}
             TZ=Asia/Seoul
             EOF
             
