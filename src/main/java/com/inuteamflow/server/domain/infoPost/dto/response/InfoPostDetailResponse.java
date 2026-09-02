@@ -32,6 +32,9 @@ public class InfoPostDetailResponse {
     @Schema(description = "내용", example = "어쩌구 저쩌구")
     private String content;
 
+    @Schema(description = "원문 링크 (INTIP에서 수집된 공지만 값 있음, 직접 작성한 정보글은 null)")
+    private String sourceUrl;
+
     @Schema(description = "이미지 목록")
     private List<Image> images;
 
@@ -74,6 +77,7 @@ public class InfoPostDetailResponse {
                 infoPost.isLinkable(),
                 infoPost.getTitle(),
                 infoPost.getContent(),
+                infoPost.getSourceUrl(),
                 imageList,
                 authorInfo,
                 isAuthor,

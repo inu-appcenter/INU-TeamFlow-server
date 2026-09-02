@@ -30,11 +30,15 @@ public class InfoPost extends BaseEntity {
     @Column(nullable = false)
     private String content;
 
+    @Column(name = "source_url")
+    private String sourceUrl;
+
     @Builder
-    private InfoPost(InfoPostCategory category, String title, String content) {
+    private InfoPost(InfoPostCategory category, String title, String content, String sourceUrl) {
         this.category = category;
         this.title = title;
         this.content = content;
+        this.sourceUrl = sourceUrl;
     }
 
     public static InfoPost create(InfoPostCategory category, String title, String content) {
@@ -42,6 +46,16 @@ public class InfoPost extends BaseEntity {
                 .category(category)
                 .title(title)
                 .content(content)
+                .build();
+    }
+
+    public static InfoPost createFromIntip(
+            InfoPostCategory category, String title, String content, String sourceUrl) {
+        return InfoPost.builder()
+                .category(category)
+                .title(title)
+                .content(content)
+                .sourceUrl(sourceUrl)
                 .build();
     }
 
