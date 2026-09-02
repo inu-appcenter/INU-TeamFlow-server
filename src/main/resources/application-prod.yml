@@ -11,6 +11,8 @@ spring:
     username: ${POSTGRESQL_USERNAME}
     password: ${POSTGRESQL_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
 
   data:
     web:
@@ -20,6 +22,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+    open-in-view: false
     show-sql: false
     properties:
       hibernate:
@@ -28,7 +31,7 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-    baseline-version: 1
+    baseline-version: 13
     locations: classpath:db/migration
 
 oracle:

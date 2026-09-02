@@ -83,8 +83,8 @@ jobs:
             DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
             SPRING_PROFILES_ACTIVE=prod
             POSTGRESQL_URL=${{ secrets.PROD_POSTGRESQL_URL }}
-            POSTGRESQL_USERNAME=${{ secrets.POSTGRESQL_USERNAME }}
-            POSTGRESQL_PASSWORD=${{ secrets.POSTGRESQL_PASSWORD }}
+            POSTGRESQL_USERNAME=${{ secrets.PROD_POSTGRESQL_USERNAME }}
+            POSTGRESQL_PASSWORD=${{ secrets.PROD_POSTGRESQL_PASSWORD }}
             ORACLE_URL=${{ secrets.ORACLE_URL }}
             ORACLE_USERNAME=${{ secrets.ORACLE_USERNAME }}
             ORACLE_PASSWORD=${{ secrets.ORACLE_PASSWORD }}
