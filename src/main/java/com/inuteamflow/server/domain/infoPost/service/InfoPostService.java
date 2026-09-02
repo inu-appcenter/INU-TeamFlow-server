@@ -245,7 +245,7 @@ public class InfoPostService {
     public void unscrapInfoPost(Long infoPostId, User user) {
         InfoPost infoPost = getInfoPostById(infoPostId);
 
-        long deleted = infoPostScrapRepository.deleteByInfoPostAndUser(infoPost, user);
+        int deleted = infoPostScrapRepository.deleteByInfoPostAndUser(infoPost, user);
         if (deleted == 0) {
             throw new RestApiException(CustomErrorCode.INFO_POST_SCRAP_NOT_FOUND);
         }

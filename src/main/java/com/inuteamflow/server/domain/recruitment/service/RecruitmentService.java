@@ -228,7 +228,7 @@ public class RecruitmentService {
                 .findById(recruitmentId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.RECRUITMENT_NOT_FOUND));
 
-        long deleted = recruitmentScrapRepository.deleteByRecruitmentAndUser(recruitment, user);
+        int deleted = recruitmentScrapRepository.deleteByRecruitmentAndUser(recruitment, user);
         if (deleted == 0) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_SCRAP_NOT_FOUND);
         }
