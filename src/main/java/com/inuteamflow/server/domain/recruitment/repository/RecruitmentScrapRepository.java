@@ -27,7 +27,7 @@ public interface RecruitmentScrapRepository extends JpaRepository<RecruitmentScr
     // 스크랩 취소 (없으면 0건 삭제)
     @Modifying
     @Query("DELETE FROM RecruitmentScrap rs WHERE rs.recruitment = :recruitment AND rs.user = :user")
-    long deleteByRecruitmentAndUser(@Param("recruitment") Recruitment recruitment, @Param("user") User user);
+    int deleteByRecruitmentAndUser(@Param("recruitment") Recruitment recruitment, @Param("user") User user);
 
     // 모집글 삭제 시 그 모집글의 스크랩 전체 삭제
     @Modifying

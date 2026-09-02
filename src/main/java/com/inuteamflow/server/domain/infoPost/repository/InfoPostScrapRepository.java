@@ -21,7 +21,7 @@ public interface InfoPostScrapRepository extends JpaRepository<InfoPostScrap, Lo
     // 스크랩 취소 (없으면 0건 삭제)
     @Modifying
     @Query("DELETE FROM InfoPostScrap ips WHERE ips.infoPost = :infoPost AND ips.user = :user")
-    long deleteByInfoPostAndUser(@Param("infoPost") InfoPost infoPost, @Param("user") User user);
+    int deleteByInfoPostAndUser(@Param("infoPost") InfoPost infoPost, @Param("user") User user);
 
     // 정보글 삭제 시 그 정보글의 스크랩 전체 삭제
     @Modifying
