@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -72,7 +73,8 @@ public class Recurrence {
         return new Recurrence(
                 recurrenceRule.getFreq(),
                 recurrenceRule.getIntervalValue(),
-                recurrenceRule.getByDay(),
+                // LAZY @ElementCollection을 트랜잭션 내에서 초기화하여 직렬화 시 LazyInitializationException을 방지
+                new ArrayList<>(recurrenceRule.getByDay()),
                 recurrenceRule.getByMonthDay(),
                 recurrenceRule.getSeriesStartAt(),
                 recurrenceRule.getUntilAt(),
