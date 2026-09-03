@@ -26,5 +26,6 @@ services:
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       CLOUDFRONT_DOMAIN: ${CLOUDFRONT_DOMAIN}
       FCM_PROJECT_ID: ${FCM_PROJECT_ID}
+      AI_SERVER_API_KEY: ${AI_SERVER_API_KEY}
       TZ: ${TZ}
     restart: unless-stopped
