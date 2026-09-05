@@ -36,9 +36,11 @@ public class AdminController implements AdminControllerDocument {
 
     @GetMapping("/reports")
     public ResponseEntity<ReportSummaryResponse> getReports(
+            @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(adminService.getReports(pageable, userDetails.getUser()));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(adminService.getReports(pageable, userDetails.getUser(), keyword));
     }
 
     @GetMapping("/reports/{reportId}")
@@ -58,9 +60,11 @@ public class AdminController implements AdminControllerDocument {
 
     @GetMapping("/inquiries")
     public ResponseEntity<InquirySummaryResponse> getInquiries(
+            @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(adminService.getInquiries(pageable, userDetails.getUser()));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(adminService.getInquiries(pageable, userDetails.getUser(), keyword));
     }
 
     @GetMapping("/inquiries/{inquiryId}")

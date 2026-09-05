@@ -58,17 +58,18 @@ public class TeamNoticeService {
      * <p>각 공지에는 요청자의 읽음 여부와 작성자의 이름 및 팀 역할이 포함된다.</p>
      *
      * @param teamId 공지를 조회할 팀 ID
+     * @param keyword 제목/내용 검색 키워드
      * @param user 공지 목록을 조회하는 사용자
      * @param pageable 페이지 요청 정보
      * @return 팀 공지 요약 정보 페이지
      * @throws RestApiException 팀을 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우
      */
-    public Page<TeamNoticeSummaryResponse> getTeamNotices(Long teamId, User user, Pageable pageable) {
+    public Page<TeamNoticeSummaryResponse> getTeamNotices(Long teamId, String keyword, User user, Pageable pageable) {
         Team team = getTeamById(teamId);
         getTeamMember(team, user);
 
         // TeamNotice 엔티티를 Page로 조회
-        Page<TeamNotice> noticePage = teamNoticeRepository.findByTeam(team, pageable);
+        Page<TeamNotice> noticePage = teamNoticeRepository.findByTeam(team, keyword, pageable);
         List<TeamNotice> notices = noticePage.getContent();
 
         // N+1 방지: 읽음 여부와 작성자 정보를 각각 1번의 쿼리로 일괄 조회

@@ -28,10 +28,11 @@ public class TeamNoticeController implements TeamNoticeControllerDocument {
     @GetMapping("/teams/{teamId}/notices")
     public ResponseEntity<Page<TeamNoticeSummaryResponse>> getTeamNotices(
             @PathVariable Long teamId,
+            @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.status(HttpStatus.OK)
-                .body(teamNoticeService.getTeamNotices(teamId, userDetails.getUser(), pageable));
+                .body(teamNoticeService.getTeamNotices(teamId, keyword, userDetails.getUser(), pageable));
     }
 
     @GetMapping("/teams/{teamId}/notices/{noticeId}")

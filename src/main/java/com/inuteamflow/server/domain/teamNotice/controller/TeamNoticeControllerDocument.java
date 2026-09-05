@@ -20,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "TeamNotice Controller", description = "팀 공지 컨트롤러")
 public interface TeamNoticeControllerDocument {
@@ -49,7 +50,10 @@ public interface TeamNoticeControllerDocument {
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Page<TeamNoticeSummaryResponse>> getTeamNotices(
-            @PathVariable Long teamId, @AuthenticationPrincipal UserDetailsImpl userDetails, Pageable pageable);
+            @PathVariable Long teamId,
+            @RequestParam(required = false) String keyword,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            Pageable pageable);
 
     @Operation(summary = "getTeamNotice", description = "팀 공지 상세 조회 (읽음 처리 포함)")
     @ApiResponses({
