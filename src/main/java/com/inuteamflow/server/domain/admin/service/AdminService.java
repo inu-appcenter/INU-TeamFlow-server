@@ -85,15 +85,18 @@ public class AdminService {
      *
      * @param pageable 신고 목록의 페이지 정보
      * @param admin 조회를 요청한 관리자
+     * @param keyword 대상명/신고자명 검색 키워드
      * @return 신고 처리 상태 집계와 신고 목록
      */
-    public ReportSummaryResponse getReports(Pageable pageable, User admin) {
+    public ReportSummaryResponse getReports(Pageable pageable, User admin, String keyword) {
         StatusSummary summary = StatusSummary.of(
                 reportRepository.count(),
                 reportRepository.countByStatus(ReportStatus.PENDING),
                 reportRepository.countByStatus(ReportStatus.RESOLVED));
 
-        Page<ReportSummaryItem> reports = reportRepository.findAll(pageable).map(ReportSummaryItem::from);
+        Page<ReportSummaryItem> reports = reportRepository
+                .search(keyword, ReportTargetType.USER, pageable)
+                .map(ReportSummaryItem::from);
 
         return ReportSummaryResponse.of(summary, reports);
     }
@@ -165,15 +168,17 @@ public class AdminService {
      *
      * @param pageable 문의 목록의 페이지 정보
      * @param admin 조회를 요청한 관리자
+     * @param keyword 문의 내용/문의자명 검색 키워드
      * @return 문의 처리 상태 집계와 문의 목록
      */
-    public InquirySummaryResponse getInquiries(Pageable pageable, User admin) {
+    public InquirySummaryResponse getInquiries(Pageable pageable, User admin, String keyword) {
         StatusSummary summary = StatusSummary.of(
                 inquiryRepository.count(),
                 inquiryRepository.countByStatus(InquiryStatus.PENDING),
                 inquiryRepository.countByStatus(InquiryStatus.RESOLVED));
 
-        Page<InquirySummaryItem> inquiries = inquiryRepository.findAll(pageable).map(InquirySummaryItem::from);
+        Page<InquirySummaryItem> inquiries =
+                inquiryRepository.search(keyword, pageable).map(InquirySummaryItem::from);
 
         return InquirySummaryResponse.of(summary, inquiries);
     }

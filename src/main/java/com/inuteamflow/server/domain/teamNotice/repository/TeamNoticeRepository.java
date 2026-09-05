@@ -18,10 +18,12 @@ public interface TeamNoticeRepository extends JpaRepository<TeamNotice, Long> {
     Optional<TeamNotice> findByTeamNoticeIdAndTeam(Long teamNoticeId, Team team);
 
     @Query(
-            value =
-                    "SELECT n FROM TeamNotice n JOIN FETCH n.team WHERE n.team = :team ORDER BY n.isPinned DESC, n.createdAt DESC",
-            countQuery = "SELECT COUNT(n) FROM TeamNotice n WHERE n.team = :team")
-    Page<TeamNotice> findByTeam(@Param("team") Team team, Pageable pageable);
+            value = "SELECT n FROM TeamNotice n JOIN FETCH n.team WHERE n.team = :team "
+                    + "AND (:keyword IS NULL OR n.title LIKE %:keyword% OR n.content LIKE %:keyword%) "
+                    + "ORDER BY n.isPinned DESC, n.createdAt DESC",
+            countQuery = "SELECT COUNT(n) FROM TeamNotice n WHERE n.team = :team "
+                    + "AND (:keyword IS NULL OR n.title LIKE %:keyword% OR n.content LIKE %:keyword%)")
+    Page<TeamNotice> findByTeam(@Param("team") Team team, @Param("keyword") String keyword, Pageable pageable);
 
     @Query(
             value = "SELECT n FROM TeamNotice n JOIN FETCH n.team WHERE n.team IN :teams ORDER BY n.createdAt DESC",

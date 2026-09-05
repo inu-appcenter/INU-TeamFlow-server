@@ -20,6 +20,7 @@ import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.s3.S3Service;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -165,6 +166,7 @@ class TeamNoticeServiceTest {
 
         Page<TeamNoticeSummaryResponse> result = teamNoticeService.getTeamNotices(
                 reloadedTeam.getTeamId(),
+                null,
                 reloadedOther,
                 PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")));
 
@@ -182,6 +184,51 @@ class TeamNoticeServiceTest {
                     assertThat(notice.getAuthorName()).isEqualTo(other.getName());
                     assertThat(notice.getTeamRole()).isEqualTo(TeamRole.MEMBER);
                 });
+    }
+
+    @Test
+    @DisplayName("팀 공지를 제목 또는 내용으로 검색한다")
+    void getTeamNotices_withKeyword_matchesTitleOrContent() {
+        // 제목 매칭
+        assertThat(getTeamNotices("다른 사용자가"))
+                .extracting(TeamNoticeSummaryResponse::getTitle)
+                .containsExactlyInAnyOrder("다른 사용자가 작성한 공지 1", "다른 사용자가 작성한 공지 2");
+
+        // 내용 매칭: '내용'은 본문에만 있고 어떤 제목에도 없다
+        assertThat(getTeamNotices("내용")).hasSize(4);
+
+        assertThat(getTeamNotices("없는키워드")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("공지 검색 범위는 현재 페이지가 아니라 팀 공지 전체다")
+    void getTeamNotices_withKeyword_searchesAcrossAllPages() {
+        Page<TeamNoticeSummaryResponse> result = teamNoticeService.getTeamNotices(
+                team.getTeamId(),
+                "내가 작성한 공지 1",
+                author,
+                PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "createdAt")));
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent())
+                .extracting(TeamNoticeSummaryResponse::getTitle)
+                .containsExactly("내가 작성한 공지 1");
+    }
+
+    @Test
+    @DisplayName("키워드가 없으면 팀 공지 전체를 조회한다")
+    void getTeamNotices_withoutKeyword_returnsAllNotices() {
+        assertThat(getTeamNotices(null)).hasSize(4);
+    }
+
+    private List<TeamNoticeSummaryResponse> getTeamNotices(String keyword) {
+        return teamNoticeService
+                .getTeamNotices(
+                        team.getTeamId(),
+                        keyword,
+                        author,
+                        PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")))
+                .getContent();
     }
 
     private User createUser(String username, String email) {

@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Admin Controller", description = "관리자 컨트롤러 (ROLE_ADMIN 전용)")
 public interface AdminControllerDocument {
@@ -78,7 +79,9 @@ public interface AdminControllerDocument {
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<ReportSummaryResponse> getReports(
-            @AuthenticationPrincipal UserDetailsImpl userDetails, Pageable pageable);
+            @RequestParam(required = false) String keyword,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            Pageable pageable);
 
     @Operation(summary = "getReport", description = "신고 상세 조회 (처리 완료된 신고는 조치 내역 포함)")
     @ApiResponses({
@@ -183,7 +186,9 @@ public interface AdminControllerDocument {
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<InquirySummaryResponse> getInquiries(
-            @AuthenticationPrincipal UserDetailsImpl userDetails, Pageable pageable);
+            @RequestParam(required = false) String keyword,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            Pageable pageable);
 
     @Operation(summary = "getInquiry", description = "문의 상세 조회 (문의자 본인 여부와 무관하게 조회 가능)")
     @ApiResponses({
