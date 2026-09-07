@@ -15,9 +15,9 @@ public class SwaggerConfig {
 
     private static final List<Server> SERVER_LIST = List.of(
             createServer("http://localhost:8080", "Local Server"),
-            createServer("https://teamflow-dev.inuappcenter.kr", "Development Server")
+            createServer("https://api-moimi-dev.inuappcenter.kr", "Development Server")
             // Production 서버 배포 시 주석 해제
-            // createServer("https://teamflow.inuappcenter.kr", "Production Server")
+            // createServer("https://api-moimi.inuappcenter.kr", "Production Server")
             );
 
     @Bean
@@ -37,8 +37,8 @@ public class SwaggerConfig {
 
     private Info apiInfo() {
         return new Info()
-                .title("INU-TeamFlow API Documentation")
-                .description("인천대학교 팀 프로젝트 협업 및 일정 관리 서비스 INU-TeamFlow의 API 문서입니다.")
+                .title("Moimi API Documentation")
+                .description("인천대학교 팀 프로젝트 협업 및 일정 관리 서비스 Moimi의 API 문서입니다.")
                 .version("1.0.0");
     }
 
