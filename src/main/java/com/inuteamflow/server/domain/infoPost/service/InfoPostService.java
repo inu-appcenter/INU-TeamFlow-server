@@ -89,15 +89,29 @@ public class InfoPostService {
     public InfoPostDetailResponse getInfoPost(Long infoPostId, User user) {
         InfoPost infoPost = getInfoPostById(infoPostId);
         List<InfoPostImage> images = infoPostImageRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
-        User author = getUserById(infoPost.getCreatedBy());
-        String authorProfileUrl = s3Service.getImageUrl(author.getImageKey());
+
+        Long authorId;
+        String authorName;
+        String authorProfileUrl;
+        if (infoPost.isSystemAuthor()) {
+            authorId = InfoPost.SYSTEM_AUTHOR_ID;
+            authorName = InfoPost.SYSTEM_AUTHOR_NAME;
+            authorProfileUrl = null;
+        } else {
+            User author = getUserById(infoPost.getCreatedBy());
+            authorId = author.getUserId();
+            authorName = author.getName();
+            authorProfileUrl = s3Service.getImageUrl(author.getImageKey());
+        }
+
         boolean isAuthor = infoPost.isAuthor(user.getUserId());
         boolean isScrap = infoPostScrapRepository.existsByInfoPostAndUser(infoPost, user);
         Integer recruitmentCount = getRecruitmentCount(infoPost);
 
         return InfoPostDetailResponse.of(
                 infoPost,
-                author,
+                authorId,
+                authorName,
                 authorProfileUrl,
                 images,
                 s3Service::getImageUrl,
@@ -131,7 +145,8 @@ public class InfoPostService {
 
         return InfoPostDetailResponse.of(
                 infoPost,
-                user,
+                user.getUserId(),
+                user.getName(),
                 authorProfileUrl,
                 images,
                 s3Service::getImageUrl,
@@ -169,7 +184,15 @@ public class InfoPostService {
         Integer recruitmentCount = getRecruitmentCount(infoPost);
 
         return InfoPostDetailResponse.of(
-                infoPost, user, authorProfileUrl, images, s3Service::getImageUrl, true, isScrap, recruitmentCount);
+                infoPost,
+                user.getUserId(),
+                user.getName(),
+                authorProfileUrl,
+                images,
+                s3Service::getImageUrl,
+                true,
+                isScrap,
+                recruitmentCount);
     }
 
     /**

@@ -36,8 +36,5 @@ ai:
   api-key: test-api-key
   model: test-model
 
-moimi:
-  system-user-id: 0
-
 intip:
   base-url: http://localhost:9999
