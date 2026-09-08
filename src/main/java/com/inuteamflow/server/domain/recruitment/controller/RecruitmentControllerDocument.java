@@ -45,7 +45,7 @@ public interface RecruitmentControllerDocument {
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(Pageable pageable);
+    ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(String keyword, Pageable pageable);
 
     @Operation(summary = "getMyRecruitments", description = "내가 작성한 모집글 목록 조회")
     @ApiResponses({
