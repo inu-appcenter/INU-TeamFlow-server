@@ -47,8 +47,8 @@ public class RecruitmentService {
      * @param pageable 페이지 정보
      * @return 모집글 요약 목록
      */
-    public Page<RecruitmentSummaryResponse> getRecruitments(Pageable pageable) {
-        return recruitmentRepository.findAll(pageable).map(RecruitmentSummaryResponse::from);
+    public Page<RecruitmentSummaryResponse> getRecruitments(String keyword, Pageable pageable) {
+        return recruitmentRepository.search(keyword, pageable).map(RecruitmentSummaryResponse::from);
     }
 
     /**

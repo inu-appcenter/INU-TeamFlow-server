@@ -37,8 +37,9 @@ public class RecruitmentController implements RecruitmentControllerDocument {
 
     @GetMapping
     public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(
+            @RequestParam(required = false) String keyword,
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(recruitmentService.getRecruitments(pageable));
+        return ResponseEntity.status(HttpStatus.OK).body(recruitmentService.getRecruitments(keyword, pageable));
     }
 
     @GetMapping("/me")

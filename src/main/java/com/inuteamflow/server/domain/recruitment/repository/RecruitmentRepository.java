@@ -18,6 +18,13 @@ public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> 
 
     Page<Recruitment> findAllByRecruiter(User user, Pageable pageable);
 
+    @Query(
+            value = "SELECT r FROM Recruitment r LEFT JOIN r.infoPost ip "
+                    + "WHERE (:keyword IS NULL OR r.title LIKE %:keyword% OR ip.title LIKE %:keyword%)",
+            countQuery = "SELECT COUNT(r) FROM Recruitment r LEFT JOIN r.infoPost ip "
+                    + "WHERE (:keyword IS NULL OR r.title LIKE %:keyword% OR ip.title LIKE %:keyword%)")
+    Page<Recruitment> search(@Param("keyword") String keyword, Pageable pageable);
+
     List<Recruitment> findAllByTeam(Team team);
 
     List<Recruitment> findAllByInfoPostOrderByCreatedAtDesc(InfoPost infoPost);
