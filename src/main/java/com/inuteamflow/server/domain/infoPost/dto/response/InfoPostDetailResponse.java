@@ -58,14 +58,15 @@ public class InfoPostDetailResponse {
 
     public static InfoPostDetailResponse of(
             InfoPost infoPost,
-            User author,
+            Long authorId,
+            String authorName,
             String authorProfileUrl,
             List<InfoPostImage> images,
             Function<String, String> urlResolver,
             Boolean isAuthor,
             Boolean isScrap,
             Integer recruitmentCount) {
-        Author authorInfo = new Author(author.getUserId(), author.getName(), authorProfileUrl);
+        Author authorInfo = new Author(authorId, authorName, authorProfileUrl);
 
         List<Image> imageList = images.stream()
                 .map(img -> new Image(urlResolver.apply(img.getImageKey()), img.getSortOrder()))

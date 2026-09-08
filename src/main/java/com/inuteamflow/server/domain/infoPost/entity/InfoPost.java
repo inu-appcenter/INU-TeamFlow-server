@@ -15,6 +15,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class InfoPost extends BaseEntity {
 
+    public static final Long SYSTEM_AUTHOR_ID = -1L;
+    public static final String SYSTEM_AUTHOR_NAME = "모이미";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "info_post_id")
@@ -71,5 +74,9 @@ public class InfoPost extends BaseEntity {
     // 모집글 연결 가능 여부 — DB에 저장하지 않고 카테고리 대분류로 그때그때 계산
     public boolean isLinkable() {
         return this.category.getType() == InfoPostType.NOTICE;
+    }
+
+    public boolean isSystemAuthor() {
+        return SYSTEM_AUTHOR_ID.equals(this.getCreatedBy());
     }
 }

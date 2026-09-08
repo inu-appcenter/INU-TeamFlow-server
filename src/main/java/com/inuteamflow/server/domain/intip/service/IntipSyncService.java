@@ -16,7 +16,6 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,9 +30,6 @@ public class IntipSyncService {
     private final AiClassificationClient aiClassificationClient;
     private final IntipSyncCursorRepository cursorRepository;
     private final InfoPostRepository infoPostRepository;
-
-    @Value("${moimi.system-user-id}")
-    private Long systemUserId;
 
     @Transactional
     public void sync() {
@@ -115,7 +111,7 @@ public class IntipSyncService {
         }
 
         InfoPost infoPost = InfoPost.createFromIntip(category, notice.getTitle(), notice.getContentText(), notice.getUrl());
-        infoPost.assignAuditor(systemUserId); // 스케줄러 컨텍스트엔 로그인 사용자가 없어 수동 지정
+        infoPost.assignAuditor(InfoPost.SYSTEM_AUTHOR_ID); // 스케줄러 컨텍스트엔 로그인 사용자가 없어 예약 ID 로 지정
         infoPostRepository.save(infoPost);
     }
 
