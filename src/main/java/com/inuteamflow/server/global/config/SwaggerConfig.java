@@ -15,10 +15,8 @@ public class SwaggerConfig {
 
     private static final List<Server> SERVER_LIST = List.of(
             createServer("http://localhost:8080", "Local Server"),
-            createServer("https://api-moimi-dev.inuappcenter.kr", "Development Server")
-            // Production 서버 배포 시 주석 해제
-            // createServer("https://api-moimi.inuappcenter.kr", "Production Server")
-            );
+            createServer("https://api-moimi-dev.inuappcenter.kr", "Development Server"),
+            createServer("https://api-moimi.inuappcenter.kr", "Production Server"));
 
     @Bean
     public OpenAPI openAPI() {
