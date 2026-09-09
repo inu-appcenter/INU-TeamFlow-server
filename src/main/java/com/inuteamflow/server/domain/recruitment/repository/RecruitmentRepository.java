@@ -16,10 +16,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> {
 
-    Page<Recruitment> findAllByRecruiter(User user, Pageable pageable);
+    @Query(
+            value = "SELECT r FROM Recruitment r LEFT JOIN FETCH r.infoPost WHERE r.recruiter = :user",
+            countQuery = "SELECT COUNT(r) FROM Recruitment r WHERE r.recruiter = :user")
+    Page<Recruitment> findAllByRecruiter(@Param("user") User user, Pageable pageable);
 
     @Query(
-            value = "SELECT r FROM Recruitment r LEFT JOIN r.infoPost ip "
+            value = "SELECT r FROM Recruitment r LEFT JOIN FETCH r.infoPost ip "
                     + "WHERE (:keyword IS NULL OR r.title LIKE %:keyword% OR ip.title LIKE %:keyword%)",
             countQuery = "SELECT COUNT(r) FROM Recruitment r LEFT JOIN r.infoPost ip "
                     + "WHERE (:keyword IS NULL OR r.title LIKE %:keyword% OR ip.title LIKE %:keyword%)")
