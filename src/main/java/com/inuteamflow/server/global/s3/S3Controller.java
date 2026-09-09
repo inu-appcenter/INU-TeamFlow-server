@@ -41,4 +41,10 @@ public class S3Controller implements S3ControllerDocument {
             @Valid @RequestBody List<PresignedUrlRequest> request) {
         return ResponseEntity.status(HttpStatus.OK).body(s3Service.getInfoPostImagePresignedUrls(request));
     }
+
+    @PostMapping("/chat-rooms/images/presigned-url")
+    public ResponseEntity<PresignedUrlResponse> getChatImagePresignedUrl(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody PresignedUrlRequest request) {
+        return ResponseEntity.status(HttpStatus.OK).body(s3Service.getChatImagePresignedUrl(request));
+    }
 }
