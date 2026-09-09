@@ -15,7 +15,7 @@ public class RecruitmentSummaryResponse {
     private String title;
     private Boolean isOpened;
     private Category category;
-    //    private String announcementTitle;
+    private String infoPostTitle;
     private String recruiterName;
     private LocalDateTime createdAt;
     private LocalDateTime endAt;
@@ -26,7 +26,7 @@ public class RecruitmentSummaryResponse {
                 recruitment.getTitle(),
                 recruitment.getIsOpened(),
                 recruitment.getCategory(),
-                //                announcementTitle,
+                recruitment.getInfoPost() != null ? recruitment.getInfoPost().getTitle() : null,
                 recruitment.getRecruiter().getName(),
                 recruitment.getCreatedAt(),
                 recruitment.getEndAt());
