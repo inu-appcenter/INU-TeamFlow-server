@@ -203,6 +203,11 @@ public class TeamInvitationService {
     @Transactional
     public TeamInvitationResponse updateStatus(
             User receiver, Long invitationId, TeamInvitationStatusUpdateRequest request) {
+        // receiver는 인증 필터에서 로드된 detached 상태라, 이 트랜잭션의 영속성 컨텍스트에서 다시 조회해 managed 상태로 만든다.
+        receiver = userRepository
+                .findById(receiver.getUserId())
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
+
         TeamInvitation invitation = teamInvitationRepository
                 .findById(invitationId)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.INVITATION_NOT_FOUND));
