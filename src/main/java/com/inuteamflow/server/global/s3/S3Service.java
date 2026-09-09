@@ -77,6 +77,15 @@ public class S3Service {
                 .toList();
     }
 
+    public PresignedUrlResponse getChatImagePresignedUrl(PresignedUrlRequest request) {
+        validateImageContentType(request.getContentType());
+
+        String imageKey = createChatImageKey(request.getFileName());
+        String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
+
+        return PresignedUrlResponse.of(uploadUrl, imageKey);
+    }
+
     public String getImageUrl(String imageKey) {
         if (!StringUtils.hasText(imageKey)) {
             return null;
@@ -150,5 +159,9 @@ public class S3Service {
 
     private String createInfoPostImageKey(String fileName) {
         return "info-posts/image/" + UUID.randomUUID() + getFileExtension(fileName);
+    }
+
+    private String createChatImageKey(String fileName) {
+        return "chat/image/" + UUID.randomUUID() + getFileExtension(fileName);
     }
 }

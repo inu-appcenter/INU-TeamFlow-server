@@ -607,13 +607,24 @@ public class ChatRoomService {
                 // 공유 기본 이미지 (TEAM: 리더가 설정, GROUP: 생성자가 설정)
                 imageUrl = s3Service.getImageUrl(chatRoom.getImageKey());
             } else {
-                // 기본: 멤버 프로필 콜라주용 URL 목록 제공 (프론트에서 조합)
-                imageUrl = null;
-                memberProfileUrls = groupMembers.stream()
+                List<User> membersWithProfile = groupMembers.stream()
                         .map(ChatRoomMember::getUser)
-                        .limit(COLLAGE_MAX_MEMBERS)
-                        .map(u -> s3Service.getImageUrl(u.getImageKey()))
-                        .toList();
+                        .filter(u -> StringUtils.hasText(u.getImageKey()))
+                        .collect(Collectors.toList());
+
+                if (membersWithProfile.size() >= COLLAGE_MAX_MEMBERS) {
+                    // 프로필 있는 멤버가 충분하면 그 중 무작위로 콜라주용 URL 목록 제공 (프론트에서 조합)
+                    Collections.shuffle(membersWithProfile);
+                    imageUrl = null;
+                    memberProfileUrls = membersWithProfile.stream()
+                            .limit(COLLAGE_MAX_MEMBERS)
+                            .map(u -> s3Service.getImageUrl(u.getImageKey()))
+                            .toList();
+                } else {
+                    // 콜라주할 프로필이 부족하면 팀 카테고리별 기본 이미지 사용
+                    imageUrl = s3Service.getTeamImageUrl(null, team.getCategory());
+                    memberProfileUrls = null;
+                }
             }
 
         } else {
