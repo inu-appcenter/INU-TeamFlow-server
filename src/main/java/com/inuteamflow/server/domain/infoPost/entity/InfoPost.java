@@ -52,8 +52,7 @@ public class InfoPost extends BaseEntity {
                 .build();
     }
 
-    public static InfoPost createFromIntip(
-            InfoPostCategory category, String title, String content, String sourceUrl) {
+    public static InfoPost createFromIntip(InfoPostCategory category, String title, String content, String sourceUrl) {
         return InfoPost.builder()
                 .category(category)
                 .title(title)

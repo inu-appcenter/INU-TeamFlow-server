@@ -3,7 +3,6 @@ package com.inuteamflow.server.domain.infoPost.dto.response;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
-import com.inuteamflow.server.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
