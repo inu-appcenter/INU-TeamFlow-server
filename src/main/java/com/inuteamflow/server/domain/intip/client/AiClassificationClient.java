@@ -74,7 +74,7 @@ public class AiClassificationClient {
                 .model(model)
                 .messages(List.of(new AiChatMessage("system", SYSTEM_PROMPT), new AiChatMessage("user", userContent)))
                 .temperature(0)
-                .chatTemplateKwargs(Map.of("enable_thinking", false))
+                // .chatTemplateKwargs(Map.of("enable_thinking", false))
                 .responseFormat(Map.of("type", "json_object"))
                 .build();
 
@@ -89,7 +89,7 @@ public class AiClassificationClient {
             try {
                 AiChatCompletionResponse response = restClient
                         .post()
-                        .uri("/v1/chat/completions")
+                        .uri("/chat/completions/")
                         .body(request)
                         .retrieve()
                         .body(AiChatCompletionResponse.class);
