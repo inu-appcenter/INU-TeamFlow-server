@@ -66,9 +66,9 @@ intip:
   base-url: https://portal.inuappcenter.kr
 
 ai:
-  base-url: https://moimi-ai.inuappcenter.kr
+  base-url: https://factchat-cloud.mindlogic.ai/v1/gateway
   api-key: ${AI_SERVER_API_KEY:}
-  model: moimi
+  model: gemini-3.5-flash-lite
 
 logging:
   file:
