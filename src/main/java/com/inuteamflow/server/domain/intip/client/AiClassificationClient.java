@@ -8,6 +8,7 @@ import com.inuteamflow.server.domain.intip.dto.AiClassificationResult;
 import com.inuteamflow.server.domain.intip.dto.IntipNoticeResponse;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,10 @@ public class AiClassificationClient {
 
     private static final int MAX_RETRY = 3;
 
+    // AI 게이트웨이가 전화번호가 포함된 요청을 content policy 위반으로 차단하므로, 분류에 불필요한 전화번호는 마스킹해서 보낸다.
+    // 구분자(-, ., 공백) 유무와 무관하게 걸러지므로 0으로 시작하는 국내 전화번호 형태를 모두 잡는다.
+    private static final Pattern PHONE_PATTERN = Pattern.compile("0\\d{1,2}[-.\\s]?\\d{3,4}[-.\\s]?\\d{4}");
+
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String model;
@@ -68,7 +73,8 @@ public class AiClassificationClient {
      * @throws RestClientException AI 서버 호출 자체가 실패한 경우 (호출부에서 재시도)
      */
     public AiClassificationResult classify(IntipNoticeResponse notice) {
-        String userContent = "제목: " + notice.getTitle() + "\n본문: " + notice.getContentText();
+        String userContent =
+                "제목: " + maskPhoneNumbers(notice.getTitle()) + "\n본문: " + maskPhoneNumbers(notice.getContentText());
 
         AiChatCompletionRequest request = AiChatCompletionRequest.builder()
                 .model(model)
@@ -78,11 +84,18 @@ public class AiClassificationClient {
                 .responseFormat(Map.of("type", "json_object"))
                 .build();
 
-        String rawContent = callWithRetry(request);
+        String rawContent = callWithRetry(request, notice.getId());
         return parseJson(rawContent);
     }
 
-    private String callWithRetry(AiChatCompletionRequest request) {
+    private static String maskPhoneNumbers(String text) {
+        if (text == null) {
+            return null;
+        }
+        return PHONE_PATTERN.matcher(text).replaceAll("[전화번호]");
+    }
+
+    private String callWithRetry(AiChatCompletionRequest request, Long noticeId) {
         RestClientException lastError = null;
 
         for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
@@ -97,7 +110,7 @@ public class AiClassificationClient {
                 return response == null ? null : response.getFirstMessageContent();
             } catch (RestClientException e) {
                 lastError = e;
-                log.warn("[AI 분류] 호출 실패 (시도 {}/{})", attempt, MAX_RETRY, e);
+                log.warn("[AI 분류] 호출 실패 (notice id={}, 시도 {}/{})", noticeId, attempt, MAX_RETRY, e);
                 sleep(attempt);
             }
         }
