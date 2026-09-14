@@ -42,9 +42,9 @@ public class AiClassificationClient {
 
     private static final int MAX_RETRY = 3;
 
-    // AI 게이트웨이가 전화번호가 포함된 요청을 content policy 위반으로 차단하므로, 분류에 불필요한 전화번호는 마스킹해서 보낸다.
-    // 구분자(-, ., 공백) 유무와 무관하게 걸러지므로 0으로 시작하는 국내 전화번호 형태를 모두 잡는다.
+    // AI 게이트웨이가 전화번호와 이메일이 포함된 요청을 400 content policy 위반으로 차단하므로, 해당 데이터를 마스킹해서 보낸다.
     private static final Pattern PHONE_PATTERN = Pattern.compile("0\\d{1,2}[-.\\s]?\\d{3,4}[-.\\s]?\\d{4}");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}");
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -73,8 +73,7 @@ public class AiClassificationClient {
      * @throws RestClientException AI 서버 호출 자체가 실패한 경우 (호출부에서 재시도)
      */
     public AiClassificationResult classify(IntipNoticeResponse notice) {
-        String userContent =
-                "제목: " + maskPhoneNumbers(notice.getTitle()) + "\n본문: " + maskPhoneNumbers(notice.getContentText());
+        String userContent = "제목: " + maskText(notice.getTitle()) + "\n본문: " + maskText(notice.getContentText());
 
         AiChatCompletionRequest request = AiChatCompletionRequest.builder()
                 .model(model)
@@ -88,11 +87,14 @@ public class AiClassificationClient {
         return parseJson(rawContent);
     }
 
-    private static String maskPhoneNumbers(String text) {
+    static String maskText(String text) {
         if (text == null) {
             return null;
         }
-        return PHONE_PATTERN.matcher(text).replaceAll("[전화번호]");
+        String masked = text;
+        masked = PHONE_PATTERN.matcher(masked).replaceAll("[전화번호]");
+        masked = EMAIL_PATTERN.matcher(masked).replaceAll("[이메일]");
+        return masked;
     }
 
     private String callWithRetry(AiChatCompletionRequest request, Long noticeId) {
