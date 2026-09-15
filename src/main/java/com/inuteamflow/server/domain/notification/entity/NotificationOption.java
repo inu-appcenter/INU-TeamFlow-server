@@ -89,6 +89,7 @@ public class NotificationOption {
             case APPLICATION -> applicationEnabled;
             case CALENDAR -> calendarEnabled;
             case CHAT -> chatEnabled;
+            case REPORT -> true; // 신고 처리(제재) 알림은 끌 수 없는 필수 알림으로 취급
         };
     }
 }
