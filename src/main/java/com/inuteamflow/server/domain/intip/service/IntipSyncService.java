@@ -113,7 +113,16 @@ public class IntipSyncService {
         InfoPost infoPost =
                 InfoPost.createFromIntip(category, notice.getTitle(), notice.getContentText(), notice.getUrl());
         infoPost.assignAuditor(InfoPost.SYSTEM_AUTHOR_ID); // 스케줄러 컨텍스트엔 로그인 사용자가 없어 예약 ID 로 지정
-        infoPostRepository.save(infoPost);
+        log.info(
+                "[INTIP 동기화] 저장 직전, notice id={}, category={}, title={}",
+                notice.getId(),
+                category,
+                notice.getTitle()); // 임시 디버그용, 확인 후 제거
+        InfoPost saved = infoPostRepository.save(infoPost);
+        log.info(
+                "[INTIP 동기화] 저장 완료, notice id={}, savedId={}",
+                notice.getId(),
+                saved.getInfoPostId()); // 임시 디버그용, 확인 후 제거
     }
 
     private InfoPostCategory toValidCategory(String category) {
