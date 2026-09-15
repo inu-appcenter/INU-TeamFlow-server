@@ -84,6 +84,7 @@ public class AiClassificationClient {
                 .build();
 
         String rawContent = callWithRetry(request, notice.getId());
+        log.info("[AI 분류] 원본 응답: {}", rawContent); // 임시 디버그용, 확인 후 제거
         return parseJson(rawContent);
     }
 
