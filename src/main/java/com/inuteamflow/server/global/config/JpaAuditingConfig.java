@@ -18,11 +18,11 @@ public class JpaAuditingConfig {
         return () -> {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication == null || !authentication.isAuthenticated()) {
-                return Optional.empty();
+                return Optional.of(-1L); // 인증 컨텍스트 없는 배치/스케줄러는 시스템 사용자로 처리
             }
 
             if (!(authentication.getPrincipal() instanceof UserDetailsImpl userDetails)) {
-                return Optional.empty();
+                return Optional.of(-1L);
             }
 
             return Optional.ofNullable(userDetails.getUser().getUserId());
