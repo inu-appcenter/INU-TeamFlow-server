@@ -4,10 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+@Slf4j
 @Getter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
@@ -29,11 +31,20 @@ public abstract class BaseEntity extends BaseTimeEntity {
         this.createdBy = userId;
         this.updatedBy = userId;
         MANUAL_AUDITOR.set(userId);
+        log.info(
+                "[AUDIT 디버그] assignAuditor 세팅 thread={} userId={} entity={}",
+                Thread.currentThread().getName(),
+                userId,
+                this.getClass().getSimpleName()); // 임시 디버그용, 확인 후 제거
     }
 
     public static Long consumeManualAuditor() {
         Long value = MANUAL_AUDITOR.get();
         MANUAL_AUDITOR.remove();
+        log.info(
+                "[AUDIT 디버그] consumeManualAuditor 소비 thread={} value={}",
+                Thread.currentThread().getName(),
+                value); // 임시 디버그용, 확인 후 제거
         return value;
     }
 }
