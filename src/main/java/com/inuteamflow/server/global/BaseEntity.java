@@ -13,6 +13,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity extends BaseTimeEntity {
 
+    // assignAuditor()로 지정한 값을 JPA Auditing이 덮어쓰지 않도록 잠깐 전달하는 스레드 로컬.
+    private static final ThreadLocal<Long> MANUAL_AUDITOR = new ThreadLocal<>();
+
     @CreatedBy
     @Column(name = "created_by", nullable = false, updatable = false)
     private Long createdBy;
@@ -25,5 +28,11 @@ public abstract class BaseEntity extends BaseTimeEntity {
     public void assignAuditor(Long userId) {
         this.createdBy = userId;
         this.updatedBy = userId;
+    }
+
+    public static Long consumeManualAuditor() {
+        Long value = MANUAL_AUDITOR.get();
+        MANUAL_AUDITOR.remove();
+        return value;
     }
 }
