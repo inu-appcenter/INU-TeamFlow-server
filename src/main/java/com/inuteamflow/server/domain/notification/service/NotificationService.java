@@ -179,14 +179,11 @@ public class NotificationService {
             NotificationType type,
             String redirectUrl,
             Long auditorId) {
-        List<Notification> notifications = receivers.stream()
-                .map(receiver -> {
-                    Notification notification = Notification.create(receiver, title, content, type, redirectUrl);
-                    notification.assignAuditor(auditorId); // ← created_by/updated_by 수동 채움
-                    return notification;
-                })
-                .toList();
-        notificationRepository.saveAll(notifications);
+        for (User receiver : receivers) {
+            Notification notification = Notification.create(receiver, title, content, type, redirectUrl);
+            notification.assignAuditor(auditorId); // ← created_by/updated_by 수동 채움
+            notificationRepository.save(notification);
+        }
         List<Long> receiverIds = receivers.stream().map(User::getUserId).toList();
         eventPublisher.publishEvent(new FcmMultiEvent(receiverIds, title, content, redirectUrl, type));
     }

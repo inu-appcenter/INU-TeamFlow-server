@@ -28,6 +28,7 @@ public abstract class BaseEntity extends BaseTimeEntity {
     public void assignAuditor(Long userId) {
         this.createdBy = userId;
         this.updatedBy = userId;
+        MANUAL_AUDITOR.set(userId);
     }
 
     public static Long consumeManualAuditor() {
