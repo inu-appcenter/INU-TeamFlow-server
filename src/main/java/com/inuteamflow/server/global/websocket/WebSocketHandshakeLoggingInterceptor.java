@@ -21,6 +21,8 @@ public class WebSocketHandshakeLoggingInterceptor implements HandshakeIntercepto
     static final String USER_AGENT_ATTRIBUTE = "wsUserAgent";
     static final String SUB_PROTOCOL_ATTRIBUTE = "wsSubProtocol";
     static final String EXTENSIONS_ATTRIBUTE = "wsExtensions";
+    static final String STOMP_CONNECT_RECEIVED_ATTRIBUTE = "wsStompConnectReceived";
+    static final String RAW_INBOUND_MESSAGE_COUNT_ATTRIBUTE = "wsRawInboundMessageCount";
 
     private static final int MAX_HEADER_LENGTH = 256;
 

@@ -19,6 +19,9 @@ public class WebSocketSessionEventLogger {
     public void handleSessionConnect(SessionConnectEvent event) {
         StompHeaderAccessor accessor = accessor(event.getMessage());
         Map<String, Object> attributes = sessionAttributes(accessor);
+        if (attributes != null) {
+            attributes.put(WebSocketHandshakeLoggingInterceptor.STOMP_CONNECT_RECEIVED_ATTRIBUTE, true);
+        }
 
         log.info(
                 "[WS 디버그] STOMP CONNECT 수신 sessionId={} traceId={} acceptVersion={} heartBeat={} cfRay={} cfConnectingIp={} userAgent={} subProtocol={} extensions={}",
@@ -64,7 +67,8 @@ public class WebSocketSessionEventLogger {
     }
 
     private static StompHeaderAccessor accessor(org.springframework.messaging.Message<byte[]> message) {
-        return MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+        return accessor != null ? accessor : StompHeaderAccessor.wrap(message);
     }
 
     private static Map<String, Object> sessionAttributes(StompHeaderAccessor accessor) {

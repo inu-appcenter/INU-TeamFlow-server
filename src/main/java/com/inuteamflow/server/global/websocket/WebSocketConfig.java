@@ -21,6 +21,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final WebSocketHandshakeLoggingInterceptor webSocketHandshakeLoggingInterceptor;
     private final WebSocketTransportLoggingDecoratorFactory webSocketTransportLoggingDecoratorFactory;
     private final StompLoggingErrorHandler stompLoggingErrorHandler;
+    private final StompOutboundFrameLoggingInterceptor stompOutboundFrameLoggingInterceptor;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -41,6 +42,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(stompAuthChannelInterceptor);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        registration.interceptors(stompOutboundFrameLoggingInterceptor);
     }
 
     @Override
