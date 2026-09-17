@@ -8,6 +8,7 @@ import com.inuteamflow.server.domain.intip.dto.AiClassificationResult;
 import com.inuteamflow.server.domain.intip.dto.IntipNoticeResponse;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,10 @@ public class AiClassificationClient {
 
     private static final int MAX_RETRY = 3;
 
+    // AI 게이트웨이가 전화번호와 이메일이 포함된 요청을 400 content policy 위반으로 차단하므로, 해당 데이터를 마스킹해서 보낸다.
+    private static final Pattern PHONE_PATTERN = Pattern.compile("0\\d{1,2}[-.\\s]?\\d{3,4}[-.\\s]?\\d{4}");
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}");
+
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String model;
@@ -68,28 +73,39 @@ public class AiClassificationClient {
      * @throws RestClientException AI 서버 호출 자체가 실패한 경우 (호출부에서 재시도)
      */
     public AiClassificationResult classify(IntipNoticeResponse notice) {
-        String userContent = "제목: " + notice.getTitle() + "\n본문: " + notice.getContentText();
+        String userContent = "제목: " + maskText(notice.getTitle()) + "\n본문: " + maskText(notice.getContentText());
 
         AiChatCompletionRequest request = AiChatCompletionRequest.builder()
                 .model(model)
                 .messages(List.of(new AiChatMessage("system", SYSTEM_PROMPT), new AiChatMessage("user", userContent)))
                 .temperature(0)
-                .chatTemplateKwargs(Map.of("enable_thinking", false))
+                // .chatTemplateKwargs(Map.of("enable_thinking", false))
                 .responseFormat(Map.of("type", "json_object"))
                 .build();
 
-        String rawContent = callWithRetry(request);
+        String rawContent = callWithRetry(request, notice.getId());
+        log.info("[AI 분류] 원본 응답: {}", rawContent); // 임시 디버그용, 확인 후 제거
         return parseJson(rawContent);
     }
 
-    private String callWithRetry(AiChatCompletionRequest request) {
+    static String maskText(String text) {
+        if (text == null) {
+            return null;
+        }
+        String masked = text;
+        masked = PHONE_PATTERN.matcher(masked).replaceAll("[전화번호]");
+        masked = EMAIL_PATTERN.matcher(masked).replaceAll("[이메일]");
+        return masked;
+    }
+
+    private String callWithRetry(AiChatCompletionRequest request, Long noticeId) {
         RestClientException lastError = null;
 
         for (int attempt = 1; attempt <= MAX_RETRY; attempt++) {
             try {
                 AiChatCompletionResponse response = restClient
                         .post()
-                        .uri("/v1/chat/completions")
+                        .uri("/chat/completions/")
                         .body(request)
                         .retrieve()
                         .body(AiChatCompletionResponse.class);
@@ -97,7 +113,7 @@ public class AiClassificationClient {
                 return response == null ? null : response.getFirstMessageContent();
             } catch (RestClientException e) {
                 lastError = e;
-                log.warn("[AI 분류] 호출 실패 (시도 {}/{})", attempt, MAX_RETRY, e);
+                log.warn("[AI 분류] 호출 실패 (notice id={}, 시도 {}/{})", noticeId, attempt, MAX_RETRY, e);
                 sleep(attempt);
             }
         }

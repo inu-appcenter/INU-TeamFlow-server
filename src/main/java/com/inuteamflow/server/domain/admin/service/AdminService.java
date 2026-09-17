@@ -10,6 +10,8 @@ import com.inuteamflow.server.domain.inquiry.dto.response.InquirySummaryResponse
 import com.inuteamflow.server.domain.inquiry.entity.Inquiry;
 import com.inuteamflow.server.domain.inquiry.enums.InquiryStatus;
 import com.inuteamflow.server.domain.inquiry.repository.InquiryRepository;
+import com.inuteamflow.server.domain.notification.enums.NotificationType;
+import com.inuteamflow.server.domain.notification.service.NotificationService;
 import com.inuteamflow.server.domain.recruitment.service.RecruitmentService;
 import com.inuteamflow.server.domain.report.dto.request.ReportHandleRequest;
 import com.inuteamflow.server.domain.report.dto.request.ReportHandleRequest.PostActionCommand;
@@ -55,6 +57,7 @@ public class AdminService {
     private final ReportHandleRepository reportHandleRepository;
     private final RecruitmentService recruitmentService;
     private final InfoPostService infoPostService;
+    private final NotificationService notificationService;
 
     // =========================================================================
     // ============================= 주요 서비스 기능 =============================
@@ -161,6 +164,8 @@ public class AdminService {
                 userAction.getDetail()));
 
         report.resolve();
+
+        notifyReportedUser(report, postAction, userAction);
     }
 
     /**
@@ -326,5 +331,62 @@ public class AdminService {
                 target.ban();
             }
         });
+    }
+
+    /**
+     * 신고 처리 결과를 피신고자(조치 대상자)에게 알림으로 전송한다.
+     *
+     * <p>게시글 삭제, 경고, 정지, 영구정지 조치가 있으면 각각에 맞는 문구로 알림을 보낸다.
+     * 조치가 없거나(NONE) 대상 사용자가 이미 탈퇴한 경우에는 알림을 보내지 않는다.</p>
+     *
+     * @param report 처리된 신고
+     * @param postAction 게시글 조치 요청, 없으면 {@code null}
+     * @param userAction 사용자 조치 요청
+     */
+    private void notifyReportedUser(Report report, PostActionCommand postAction, UserActionCommand userAction) {
+        if (report.getTargetUserId() == null) {
+            return;
+        }
+
+        User target = userRepository.findById(report.getTargetUserId()).orElse(null);
+        if (target == null) {
+            return;
+        }
+
+        if (postAction != null && postAction.getAction() == PostActionType.DELETE) {
+            notificationService.createNotification(
+                    target,
+                    "신고 처리 안내",
+                    "\"" + report.getTargetPostTitle() + "\"이(가) 신고 조치를 받아 삭제 처리되었습니다. (사유: " + postAction.getDetail()
+                            + ")",
+                    NotificationType.REPORT,
+                    "");
+        }
+
+        switch (userAction.getAction()) {
+            case WARN ->
+                notificationService.createNotification(
+                        target,
+                        "신고 처리 안내",
+                        "신고 접수로 경고 조치를 받았습니다. (사유: " + userAction.getDetail() + ")",
+                        NotificationType.REPORT,
+                        "");
+            case SUSPEND ->
+                notificationService.createNotification(
+                        target,
+                        "신고 처리 안내",
+                        "신고 접수로 이용 정지(" + userAction.getDurationDays() + "일) 조치를 받았습니다. (사유: " + userAction.getDetail()
+                                + ")",
+                        NotificationType.REPORT,
+                        "");
+            case BAN ->
+                notificationService.createNotification(
+                        target,
+                        "신고 처리 안내",
+                        "신고 접수로 영구 이용 정지 조치를 받았습니다. (사유: " + userAction.getDetail() + ")",
+                        NotificationType.REPORT,
+                        "");
+            default -> {}
+        }
     }
 }

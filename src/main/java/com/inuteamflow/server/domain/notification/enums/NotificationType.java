@@ -5,5 +5,6 @@ public enum NotificationType {
     INVITE,
     APPLICATION,
     CALENDAR,
-    CHAT
+    CHAT,
+    REPORT
 }
