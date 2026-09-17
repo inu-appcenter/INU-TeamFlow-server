@@ -10,7 +10,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
-import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -18,17 +17,10 @@ import org.springframework.web.socket.config.annotation.WebSocketTransportRegist
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final StompAuthChannelInterceptor stompAuthChannelInterceptor;
-    private final WebSocketHandshakeLoggingInterceptor webSocketHandshakeLoggingInterceptor;
-    private final WebSocketTransportLoggingDecoratorFactory webSocketTransportLoggingDecoratorFactory;
-    private final StompLoggingErrorHandler stompLoggingErrorHandler;
-    private final StompOutboundFrameLoggingInterceptor stompOutboundFrameLoggingInterceptor;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.setErrorHandler(stompLoggingErrorHandler);
-        registry.addEndpoint("/ws-chat")
-                .addInterceptors(webSocketHandshakeLoggingInterceptor)
-                .setAllowedOriginPatterns("*"); // 추후에 실제 프론트 도메인으로 제한 필요
+        registry.addEndpoint("/ws-chat").setAllowedOriginPatterns("*"); // 추후에 실제 프론트 도메인으로 제한 필요
     }
 
     @Override
@@ -42,16 +34,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(stompAuthChannelInterceptor);
-    }
-
-    @Override
-    public void configureClientOutboundChannel(ChannelRegistration registration) {
-        registration.interceptors(stompOutboundFrameLoggingInterceptor);
-    }
-
-    @Override
-    public void configureWebSocketTransport(WebSocketTransportRegistration registration) {
-        registration.addDecoratorFactory(webSocketTransportLoggingDecoratorFactory);
     }
 
     @Bean
