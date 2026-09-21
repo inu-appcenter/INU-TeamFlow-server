@@ -7,6 +7,7 @@ import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.global.BaseTimeEntity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -107,7 +108,8 @@ public class User extends BaseTimeEntity {
     }
 
     public boolean isSuspended() {
-        return suspendedUntil != null && LocalDateTime.now().isBefore(suspendedUntil);
+        return suspendedUntil != null
+                && LocalDateTime.now(ZoneId.systemDefault()).isBefore(suspendedUntil);
     }
 
     public void suspend(LocalDateTime suspendedUntil) {
