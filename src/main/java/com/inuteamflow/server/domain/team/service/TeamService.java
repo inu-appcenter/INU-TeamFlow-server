@@ -22,7 +22,6 @@ import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeImageReposi
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadRepository;
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.user.entity.User;
-import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteAvailabilityRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
@@ -44,7 +43,6 @@ public class TeamService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final S3Service s3Service;
-    private final UserRepository userRepository;
     private final RecruitmentRepository recruitmentRepository;
     private final RecruitmentApplicationRepository recruitmentApplicationRepository;
     private final TeamInvitationRepository teamInvitationRepository;
@@ -130,7 +128,8 @@ public class TeamService {
             throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
 
         return teamMemberRepository.findByTeam(team).stream()
-                .map(tm -> TeamMemberResponse.create(tm, tm.getUser(), s3Service.getImageUrl(tm.getUser().getImageKey())))
+                .map(tm -> TeamMemberResponse.create(
+                        tm, tm.getUser(), s3Service.getImageUrl(tm.getUser().getImageKey())))
                 .toList();
     }
 
