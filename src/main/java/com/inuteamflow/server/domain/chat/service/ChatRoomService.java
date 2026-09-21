@@ -248,6 +248,37 @@ public class ChatRoomService {
     }
 
     /**
+     * 채팅방 목록 화면 실시간 갱신을 위해 특정 유저에게 채팅방 상태 변경을 push한다.
+     *
+     * <p>{@code /sub/users/{userId}/chat-rooms}를 구독 중인 클라이언트에게 전달된다.
+     * 실제 호출 시점(새 메시지 발생, 안읽음 수 변경 등)은 다음 단계에서 연결한다.</p>
+     *
+     * @param userId push 대상 유저 ID
+     * @param payload 채팅방 목록에 반영할 갱신 정보
+     */
+    private void pushChatRoomListUpdate(Long userId, ChatRoomListUpdateResponse payload) {
+        messagingTemplate.convertAndSend("/sub/users/" + userId + "/chat-rooms", payload);
+    }
+
+    /**
+     * 채팅방 마지막 메시지를 목록 push용 정보로 변환한다. 발신자 이름 조회를 위해 유저를 조회한다.
+     *
+     * @param lastMessage 채팅방의 마지막 메시지, 없으면 {@code null}
+     * @return 변환된 마지막 메시지 정보, {@code lastMessage}가 {@code null}이면 {@code null}
+     */
+    private ChatRoomListUpdateResponse.LastMessage toLastMessageInfo(ChatMessage lastMessage) {
+        if (lastMessage == null) {
+            return null;
+        }
+        String senderName = userRepository
+                .findById(lastMessage.getCreatedBy())
+                .map(User::getName)
+                .orElse(null);
+        return ChatRoomListUpdateResponse.LastMessage.of(
+                previewOf(lastMessage), lastMessage.getCreatedBy(), senderName, lastMessage.getCreatedAt());
+    }
+
+    /**
      * 팀 채팅방의 이미지를 설정한다.
      *
      * <p>팀 리더만 변경할 수 있으며, {@code imageKey}가 {@code null}이면 기본 멤버 콜라주 이미지로 초기화된다.</p>

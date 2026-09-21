@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.chat.service;
 
 import com.inuteamflow.server.domain.chat.dto.request.ChatMessageSendRequest;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageResponse;
+import com.inuteamflow.server.domain.chat.dto.response.ChatRoomListUpdateResponse;
 import com.inuteamflow.server.domain.chat.entity.ChatMessage;
 import com.inuteamflow.server.domain.chat.entity.ChatRoom;
 import com.inuteamflow.server.domain.chat.entity.ChatRoomMember;
@@ -28,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ChatMessageService {
 
+    private static final int PREVIEW_MAX_LENGTH = 30;
+
     private final ChatRoomRepository chatRoomRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -45,7 +48,8 @@ public class ChatMessageService {
      *
      * <p>WebSocket 컨트롤러에서 호출되며, STOMP는 URL 기반 인가가 자동으로 걸리지 않으므로 방 멤버 여부를
      * 직접 검증한다. {@link ChatMessageType#SYSTEM}은 클라이언트가 직접 보낼 수 없다. 저장 후 방 구독자에게
-     * 브로드캐스트하고, 방을 구독하지 않은 멤버에게는 FCM 알림을 보낸다.</p>
+     * 브로드캐스트하고, 방을 구독하지 않은 멤버에게는 FCM 알림을 보낸다. 채팅방 목록 화면 갱신을 위해 방 멤버
+     * 전원에게 개인 topic으로도 push한다.</p>
      *
      * @param roomId 메시지를 전송할 채팅방 ID
      * @param request 전송할 메시지 정보
@@ -77,6 +81,7 @@ public class ChatMessageService {
                 .count();
 
         broadcast(roomId, ChatMessageResponse.of(message, sender, s3Service::getImageUrl, 0, visibleMemberCount));
+        notifyChatRoomListUpdate(chatRoom, message, sender);
 
         // 채팅을 구독하지 않은 인원들에게 FCM 전송
         sendChatFcmIfNeeded(chatRoom, sender, roomId, request);
@@ -102,6 +107,7 @@ public class ChatMessageService {
         broadcast(
                 chatRoom.getChatRoomId(),
                 ChatMessageResponse.of(message, triggeredBy, s3Service::getImageUrl, 0, visibleMemberCount));
+        notifyChatRoomListUpdate(chatRoom, message, triggeredBy);
     }
 
     // =========================================================================
@@ -116,6 +122,71 @@ public class ChatMessageService {
      */
     private void broadcast(Long roomId, ChatMessageResponse response) {
         messagingTemplate.convertAndSend("/sub/chat-rooms/" + roomId, response);
+    }
+
+    /**
+     * 채팅방 목록 화면 실시간 갱신을 위해, 방 멤버 전원에게 각자의 안읽음 수를 반영한 갱신 정보를 push한다.
+     *
+     * @param chatRoom 상태가 변경된 채팅방
+     * @param message 목록에 표시할 마지막 메시지
+     * @param sender 마지막 메시지의 발신자 (시스템 메시지는 이를 유발한 사용자)
+     */
+    private void notifyChatRoomListUpdate(ChatRoom chatRoom, ChatMessage message, User sender) {
+        ChatRoomListUpdateResponse.LastMessage lastMessage = ChatRoomListUpdateResponse.LastMessage.of(
+                previewOf(message), sender.getUserId(), sender.getName(), message.getCreatedAt());
+
+        for (ChatRoomMember member : chatRoomMemberRepository.findByChatRoomWithUser(chatRoom)) {
+            long unreadCount = chatMessageRepository.countByChatRoomAndChatMessageIdGreaterThan(
+                    chatRoom, member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L);
+
+            pushChatRoomListUpdate(
+                    member.getUser().getUserId(),
+                    ChatRoomListUpdateResponse.of(
+                            chatRoom.getChatRoomId(),
+                            lastMessage,
+                            message.getCreatedAt(),
+                            (int) unreadCount,
+                            chatRoom.getChatRoomType()));
+        }
+    }
+
+    /**
+     * 채팅방 목록용 미리보기 텍스트를 만든다. 이미지 메시지는 고정 안내 문구로 대체한다.
+     *
+     * @param message 미리보기를 만들 메시지
+     * @return 미리보기 텍스트
+     */
+    private String previewOf(ChatMessage message) {
+        return switch (message.getMessageType()) {
+            case TEXT, SYSTEM -> truncate(message.getContent());
+            case IMAGE -> "사진을 보냈습니다";
+        };
+    }
+
+    /**
+     * 미리보기 텍스트를 최대 길이로 자른다.
+     *
+     * @param text 자를 대상 텍스트
+     * @return 최대 {@value #PREVIEW_MAX_LENGTH}자로 자르고 초과분은 말줄임표로 대체한 텍스트, {@code text}가 {@code null}이면 {@code null}
+     */
+    private String truncate(String text) {
+        if (text == null) {
+            return null;
+        }
+        if (text.length() <= PREVIEW_MAX_LENGTH) {
+            return text;
+        }
+        return text.substring(0, PREVIEW_MAX_LENGTH) + "...";
+    }
+
+    /**
+     * 특정 유저에게 채팅방 목록 갱신 정보를 push한다.
+     *
+     * @param userId push 대상 유저 ID
+     * @param payload 채팅방 목록에 반영할 갱신 정보
+     */
+    private void pushChatRoomListUpdate(Long userId, ChatRoomListUpdateResponse payload) {
+        messagingTemplate.convertAndSend("/sub/users/" + userId + "/chat-rooms", payload);
     }
 
     /**
