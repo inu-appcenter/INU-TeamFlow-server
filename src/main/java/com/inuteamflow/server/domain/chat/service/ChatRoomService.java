@@ -540,6 +540,38 @@ public class ChatRoomService {
     }
 
     /**
+     * 그룹 채팅방에 초대 가능한 팀원을 이름으로 검색한다.
+     *
+     * <p>채팅방이 속한 팀의 멤버 중 이미 이 채팅방에 참여 중인 사람은 제외하고, 이름에 검색어가
+     * 포함된 사용자만 반환한다. 그룹 채팅방에서만 가능하다.</p>
+     *
+     * @param user 검색을 요청한 사용자
+     * @param roomId 검색 대상 채팅방 ID
+     * @param keyword 검색할 이름 키워드 (빈 문자열이면 전체 반환)
+     * @return 초대 가능한 팀원 목록
+     * @throws RestApiException 채팅방을 찾을 수 없거나, 그룹 채팅방이 아니거나, 사용자가 채팅방 멤버가 아닌 경우
+     */
+    public List<ChatRoomMemberResponse> getAvailableMembers(User user, Long roomId, String keyword) {
+        ChatRoom chatRoom = getChatRoomById(roomId);
+        requireGroupRoom(chatRoom);
+        getMemberOrThrow(chatRoom, user);
+
+        Set<Long> existingMemberIds = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
+                .map(crm -> crm.getUser().getUserId())
+                .collect(Collectors.toSet());
+
+        return teamMemberRepository.findByTeamWithUser(chatRoom.getTeam()).stream()
+                .filter(tm -> !existingMemberIds.contains(tm.getUser().getUserId()))
+                .filter(tm ->
+                        tm.getUser().getName() != null && tm.getUser().getName().contains(keyword))
+                .map(tm -> ChatRoomMemberResponse.create(
+                        tm.getUser(),
+                        tm.getTeamRole(),
+                        s3Service.getImageUrl(tm.getUser().getImageKey())))
+                .toList();
+    }
+
+    /**
      * 채팅방의 현재 멤버 목록을 조회한다.
      *
      * <p>TEAM/GROUP 채팅방은 각 멤버의 팀 내 권한을 함께 조회하고, DIRECT 채팅방은 팀이 없으므로
