@@ -3,6 +3,7 @@ package com.inuteamflow.server.domain.chat.controller;
 import com.inuteamflow.server.domain.chat.dto.request.*;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageAnchorResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatMessageResponse;
+import com.inuteamflow.server.domain.chat.dto.response.ChatRoomAvailableMemberResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatRoomMemberResponse;
 import com.inuteamflow.server.domain.chat.dto.response.ChatRoomSummaryResponse;
 import com.inuteamflow.server.domain.chat.enums.ChatRoomType;
@@ -136,7 +137,7 @@ public class ChatRoomController implements ChatRoomControllerDocument {
 
     // 그룹 채팅방에 초대 가능한 팀원 검색 (이미 방에 있는 사람 제외)
     @GetMapping("/{roomId}/available-members")
-    public ResponseEntity<List<ChatRoomMemberResponse>> getAvailableMembers(
+    public ResponseEntity<List<ChatRoomAvailableMemberResponse>> getAvailableMembers(
             @PathVariable Long roomId,
             @RequestParam(required = false, defaultValue = "") String keyword,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
