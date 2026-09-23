@@ -122,6 +122,9 @@ public enum CustomErrorCode implements ErrorCode {
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "신고를 찾을 수 없습니다."),
     REPORT_ALREADY_HANDLED(HttpStatus.CONFLICT, 409, "이미 처리된 신고입니다."),
     REPORT_HANDLE_INVALID(HttpStatus.BAD_REQUEST, 400, "신고 처리 요청이 올바르지 않습니다."),
+    REPORT_NOT_HANDLED(HttpStatus.BAD_REQUEST, 400, "아직 처리되지 않은 신고입니다."),
+    REPORT_RELEASE_NOT_APPLICABLE(HttpStatus.BAD_REQUEST, 400, "해제할 수 있는 제재가 없습니다."),
+    REPORT_ALREADY_RELEASED(HttpStatus.CONFLICT, 409, "이미 해제된 제재입니다."),
 
     // 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "문의를 찾을 수 없습니다."),

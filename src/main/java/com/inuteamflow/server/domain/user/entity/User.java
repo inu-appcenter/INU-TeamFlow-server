@@ -116,7 +116,15 @@ public class User extends BaseTimeEntity {
         this.suspendedUntil = suspendedUntil;
     }
 
+    public void unsuspend() {
+        this.suspendedUntil = null;
+    }
+
     public void ban() {
         this.role = Role.BANNED;
+    }
+
+    public void unban() {
+        this.role = Role.USER;
     }
 }
