@@ -115,12 +115,26 @@ public class ReportDetailResponse {
         @Schema(description = "조치 사유")
         private String detail;
 
+        @Schema(description = "제재 해제 여부")
+        private boolean released;
+
+        @Schema(description = "제재 해제 시각 (해제 전이면 null)")
+        private LocalDateTime releasedAt;
+
+        @Schema(description = "제재를 해제한 관리자 (해제 전이면 null)")
+        private UserRef releasedBy;
+
         private static UserActionView from(ReportHandle handle) {
             if (handle.getUserAction() == null) {
                 return null;
             }
             return new UserActionView(
-                    handle.getUserAction(), handle.getUserActionDurationDays(), handle.getUserActionDetail());
+                    handle.getUserAction(),
+                    handle.getUserActionDurationDays(),
+                    handle.getUserActionDetail(),
+                    handle.isReleased(),
+                    handle.getReleasedAt(),
+                    handle.isReleased() ? UserRef.of(handle.getReleasedById(), handle.getReleasedByName()) : null);
         }
     }
 }

@@ -2,6 +2,7 @@ package com.inuteamflow.server.domain.admin.service;
 
 import com.inuteamflow.server.domain.admin.dto.response.DashboardResponse;
 import com.inuteamflow.server.domain.admin.dto.response.DashboardResponse.DashboardItem;
+import com.inuteamflow.server.domain.admin.dto.response.SuspendedUserResponse;
 import com.inuteamflow.server.domain.infoPost.service.InfoPostService;
 import com.inuteamflow.server.domain.inquiry.dto.request.InquiryHandleRequest;
 import com.inuteamflow.server.domain.inquiry.dto.response.InquiryDetailResponse;
@@ -28,6 +29,7 @@ import com.inuteamflow.server.domain.report.enums.UserActionType;
 import com.inuteamflow.server.domain.report.repository.ReportHandleRepository;
 import com.inuteamflow.server.domain.report.repository.ReportRepository;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.dto.StatusSummary;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
@@ -166,6 +168,81 @@ public class AdminService {
         report.resolve();
 
         notifyReportedUser(report, postAction, userAction);
+    }
+
+    /**
+     * 신고 처리로 부과된 사용자 제재(정지/영구정지)를 해제한다.
+     *
+     * <p>{@code SUSPEND}는 정지 만료 시각을 초기화하고, {@code BAN}은 권한을 일반 사용자로 되돌린다.
+     * {@code WARN}·{@code NONE}처럼 사용자 상태를 바꾸지 않은 조치는 해제할 대상이 없으므로 거부한다.</p>
+     *
+     * @param reportId 해제할 신고 ID
+     * @param admin 해제를 수행한 관리자
+     * @throws RestApiException 신고를 찾을 수 없거나, 아직 처리되지 않았거나, 이미 해제되었거나, 해제할 제재가 없는 경우
+     */
+    @Transactional
+    public void releaseUserAction(Long reportId, User admin) {
+        Report report = reportRepository
+                .findById(reportId)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.REPORT_NOT_FOUND));
+
+        if (report.getStatus() != ReportStatus.RESOLVED) {
+            throw new RestApiException(CustomErrorCode.REPORT_NOT_HANDLED);
+        }
+
+        ReportHandle handle = reportHandleRepository
+                .findByReport(report)
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.REPORT_NOT_HANDLED));
+
+        if (handle.isReleased()) {
+            throw new RestApiException(CustomErrorCode.REPORT_ALREADY_RELEASED);
+        }
+
+        UserActionType userAction = handle.getUserAction();
+        if (userAction != UserActionType.SUSPEND && userAction != UserActionType.BAN) {
+            throw new RestApiException(CustomErrorCode.REPORT_RELEASE_NOT_APPLICABLE);
+        }
+
+        User target = report.getTargetUserId() == null
+                ? null
+                : userRepository.findById(report.getTargetUserId()).orElse(null);
+
+        if (target != null) {
+            if (userAction == UserActionType.SUSPEND) {
+                target.unsuspend();
+            } else {
+                target.unban();
+            }
+        }
+
+        handle.release(admin.getUserId(), admin.getName());
+
+        if (target != null) {
+            notificationService.createNotification(
+                    target, "신고 처리 안내", "신고 처리에 따른 제재가 해제되었습니다.", NotificationType.REPORT, "");
+        }
+    }
+
+    /**
+     * 정지 또는 영구정지된 계정 목록을 조회한다.
+     *
+     * <p>정지 만료 시각이 지나지 않은 정지 계정과 영구정지 계정만 포함한다. 각 계정마다 아직 해제되지 않은
+     * 가장 최근의 정지/영구정지 조치 내역을 함께 반환해, 해당 신고 ID로 바로 제재를 해제할 수 있게 한다.</p>
+     *
+     * @param pageable 목록의 페이지 정보
+     * @param admin 조회를 요청한 관리자
+     * @return 정지/영구정지 계정 목록
+     */
+    public Page<SuspendedUserResponse> getSuspendedUsers(Pageable pageable, User admin) {
+        Page<User> users =
+                userRepository.findSuspendedOrBanned(Role.BANNED, LocalDateTime.now(ZoneId.systemDefault()), pageable);
+
+        return users.map(user -> SuspendedUserResponse.of(
+                user,
+                reportHandleRepository
+                        .findFirstByReport_TargetUserIdAndUserActionInAndReleasedAtIsNullOrderByCreatedAtDesc(
+                                user.getUserId(), List.of(UserActionType.SUSPEND, UserActionType.BAN))
+                        .orElse(null)));
     }
 
     /**
