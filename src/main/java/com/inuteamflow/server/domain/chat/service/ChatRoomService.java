@@ -551,7 +551,7 @@ public class ChatRoomService {
      * @return 초대 가능한 팀원 목록
      * @throws RestApiException 채팅방을 찾을 수 없거나, 그룹 채팅방이 아니거나, 사용자가 채팅방 멤버가 아닌 경우
      */
-    public List<ChatRoomMemberResponse> getAvailableMembers(User user, Long roomId, String keyword) {
+    public List<ChatRoomAvailableMemberResponse> getAvailableMembers(User user, Long roomId, String keyword) {
         ChatRoom chatRoom = getChatRoomById(roomId);
         requireGroupRoom(chatRoom);
         getMemberOrThrow(chatRoom, user);
@@ -561,13 +561,10 @@ public class ChatRoomService {
                 .collect(Collectors.toSet());
 
         return teamMemberRepository.findByTeamWithUser(chatRoom.getTeam()).stream()
-                .filter(tm -> !existingMemberIds.contains(tm.getUser().getUserId()))
-                .filter(tm ->
-                        tm.getUser().getName() != null && tm.getUser().getName().contains(keyword))
-                .map(tm -> ChatRoomMemberResponse.create(
-                        tm.getUser(),
-                        tm.getTeamRole(),
-                        s3Service.getImageUrl(tm.getUser().getImageKey())))
+                .map(TeamMember::getUser)
+                .filter(u -> !existingMemberIds.contains(u.getUserId()))
+                .filter(u -> u.getName() != null && u.getName().contains(keyword))
+                .map(ChatRoomAvailableMemberResponse::from)
                 .toList();
     }
 
