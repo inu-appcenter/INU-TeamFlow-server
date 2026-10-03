@@ -22,11 +22,11 @@ public class EventVoteTimeSelectRequest {
     private Boolean isAllDay;
 
     @NotNull
-    @Schema(description = "선택된 시작 일시", example = "2026-05-20T18:00:00")
+    @Schema(description = "선택된 시작 일시 (종일 투표는 당일 00:00:00)", example = "2026-05-20T18:00:00")
     private LocalDateTime selectedStartAt;
 
     @NotNull
-    @Schema(description = "선택된 종료 일시", example = "2026-05-20T20:00:00")
+    @Schema(description = "선택된 종료 일시 (종일 투표는 당일 23:59:59)", example = "2026-05-20T20:00:00")
     private LocalDateTime selectedEndAt;
 
     @JsonIgnore

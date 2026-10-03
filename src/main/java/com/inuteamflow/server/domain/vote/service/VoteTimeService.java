@@ -22,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class VoteTimeService {
 
+    // LocalTime.MAX는 DB 저장 시 00:00:00으로 넘어가므로 초 단위 값을 사용한다.
+    private static final LocalTime ALL_DAY_SLOT_END_AT = LocalTime.of(23, 59, 59);
+
     private final VoteDateRepository voteDateRepository;
     private final VoteTimeSlotRepository voteTimeSlotRepository;
 
@@ -80,7 +83,7 @@ public class VoteTimeService {
      */
     private List<VoteTimeSlot> createVoteTimeSlots(VoteDate voteDate, EventVoteCreateRequest request) {
         if (Boolean.TRUE.equals(request.getIsAllDay())) {
-            return List.of(VoteTimeSlot.create(voteDate, LocalTime.MIN, LocalTime.MAX));
+            return List.of(VoteTimeSlot.create(voteDate, LocalTime.MIN, ALL_DAY_SLOT_END_AT));
         }
 
         List<VoteTimeSlot> voteTimeSlots = new ArrayList<>();
