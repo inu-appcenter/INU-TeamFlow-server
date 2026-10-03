@@ -7,8 +7,10 @@ import static org.mockito.Mockito.doThrow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.enums.EventColor;
+import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.EventRepository;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.entity.TeamMember;
@@ -41,6 +43,7 @@ import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,6 +83,9 @@ class VoteServiceTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private EventParticipantRepository eventParticipantRepository;
 
     @Autowired
     private VoteRepository voteRepository;
@@ -194,6 +200,7 @@ class VoteServiceTest {
             voteTimeSlotRepository.deleteAllInBatch();
             voteDateRepository.deleteAllInBatch();
             voteRepository.deleteAllInBatch();
+            eventParticipantRepository.deleteAllInBatch();
             eventRepository.deleteAllInBatch();
             teamMemberRepository.deleteAllInBatch();
             teamRepository.deleteAllInBatch();
@@ -310,6 +317,58 @@ class VoteServiceTest {
                 .isInstanceOf(RestApiException.class)
                 .extracting(exception -> ((RestApiException) exception).getErrorCode())
                 .isEqualTo(CustomErrorCode.VOTE_NOT_CREATOR);
+    }
+
+    @Test
+    @DisplayName("종일 투표를 생성하면 날짜마다 00:00:00 ~ 23:59:59 시간 슬롯이 하나씩 생성된다.")
+    void createVote_allDay_createsSlotEndingAt235959() throws JsonProcessingException {
+        EventVoteCreateRequest voteRequest = objectMapper.readValue("""
+                {
+                  "title": "종일 투표",
+                  "participants": [],
+                  "isAllDay": true,
+                  "dates": ["2026-09-22", "2026-09-23"]
+                }
+                """, EventVoteCreateRequest.class);
+        Long allDayVoteId = voteService.createVote(creator, teamId, voteRequest).getVoteId();
+
+        Vote allDayVote = voteRepository.findById(allDayVoteId).orElseThrow();
+        List<VoteTimeSlot> slots = voteTimeSlotRepository.findByVoteDatesOrderByDateAndStartAt(
+                voteDateRepository.findByVoteOrderByDateAsc(allDayVote));
+
+        assertThat(slots).hasSize(2);
+        assertThat(slots).allSatisfy(slot -> {
+            assertThat(slot.getSlotStartAt()).isEqualTo(LocalTime.of(0, 0, 0));
+            assertThat(slot.getSlotEndAt()).isEqualTo(LocalTime.of(23, 59, 59));
+        });
+    }
+
+    @Test
+    @DisplayName("종일 투표는 당일 00:00:00 ~ 23:59:59로 결과 일정을 확정할 수 있다.")
+    void createVoteResult_allDayVote_createsAllDayEvent() throws JsonProcessingException {
+        EventVoteCreateRequest voteRequest = objectMapper.readValue("""
+                {
+                  "title": "종일 투표",
+                  "participants": [],
+                  "isAllDay": true,
+                  "dates": ["2026-09-22"]
+                }
+                """, EventVoteCreateRequest.class);
+        Long allDayVoteId = voteService.createVote(creator, teamId, voteRequest).getVoteId();
+        EventVoteTimeSelectRequest request = objectMapper.readValue("""
+                {
+                  "title": "종일 확정 일정",
+                  "isAllDay": true,
+                  "selectedStartAt": "2026-09-22T00:00:00",
+                  "selectedEndAt": "2026-09-22T23:59:59"
+                }
+                """, EventVoteTimeSelectRequest.class);
+
+        EventDetailResponse response = voteService.createVoteResult(creator, allDayVoteId, request);
+
+        assertThat(response.getIsAllDay()).isTrue();
+        assertThat(response.getStartAt()).isEqualTo(LocalDateTime.of(2026, 9, 22, 0, 0, 0));
+        assertThat(response.getEndAt()).isEqualTo(LocalDateTime.of(2026, 9, 22, 23, 59, 59));
     }
 
     private Long createOpenVote(String title) throws JsonProcessingException {
