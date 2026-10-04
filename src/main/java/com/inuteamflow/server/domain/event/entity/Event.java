@@ -7,6 +7,7 @@ import com.inuteamflow.server.domain.event.enums.EventColor;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.global.BaseEntity;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -98,6 +99,20 @@ public class Event extends BaseEntity {
                 .sequence(0)
                 .isFinished(false)
                 .isSingle(resolveIsSingle(command.getRecurrence()))
+                .build();
+    }
+
+    public static Event createAllDay(String title, LocalDate date, EventColor color) {
+        return Event.builder()
+                .title(title)
+                .startAt(date.atStartOfDay())
+                .endAt(date.atTime(23, 59))
+                .isAllDay(true)
+                .color(color)
+                .uid(UUID.randomUUID().toString())
+                .sequence(0)
+                .isFinished(false)
+                .isSingle(true)
                 .build();
     }
 

@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.user.service;
 
+import com.inuteamflow.server.domain.event.service.MyEventService;
 import com.inuteamflow.server.domain.user.dto.request.LoginRequest;
 import com.inuteamflow.server.domain.user.dto.request.SignupRequest;
 import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
@@ -41,6 +42,7 @@ public class AuthService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final MyEventService myEventService;
 
     /**
      * 새로운 사용자를 가입시킨다.
@@ -62,7 +64,10 @@ public class AuthService {
         User user = User.create(request, bCryptPasswordEncoder.encode(request.getPassword()));
         String imageUrl = s3Service.getImageUrl(user.getImageKey());
 
-        return MyInfoResponse.of(userRepository.save(user), imageUrl);
+        User savedUser = userRepository.save(user);
+        myEventService.createWelcomeEvents(savedUser);
+
+        return MyInfoResponse.of(savedUser, imageUrl);
     }
 
     /**
