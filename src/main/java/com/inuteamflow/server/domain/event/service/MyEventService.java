@@ -6,13 +6,16 @@ import com.inuteamflow.server.domain.event.dto.response.EventDetailResponse;
 import com.inuteamflow.server.domain.event.dto.response.EventListResponse;
 import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
+import com.inuteamflow.server.domain.event.enums.EventColor;
 import com.inuteamflow.server.domain.event.enums.RecurrenceEditScope;
 import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.EventRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -87,6 +90,27 @@ public class MyEventService {
         RecurrenceRule recurrenceRule = eventRecurrenceService.createRecurrenceRule(event, request);
 
         return EventDetailResponse.of(event, recurrenceRule, null, false, List.of());
+    }
+
+    /**
+     * 신규 가입자에게 기본 안내 일정을 생성한다.
+     *
+     * <p>가입 요청은 인증 전이라 JPA Auditing이 작성자를 채우지 못하므로, 일정마다 작성자를 직접 지정한 뒤 바로 저장한다.</p>
+     *
+     * @param user 가입한 사용자
+     */
+    @Transactional
+    public void createWelcomeEvents(User user) {
+        LocalDate today = LocalDate.now(ZoneId.systemDefault());
+        List<Event> welcomeEvents = List.of(
+                Event.createAllDay("안녕하세요!", today, EventColor.SUN),
+                Event.createAllDay("모이미에 온 걸 환영해요", today, EventColor.SUN),
+                Event.createAllDay("일정을 추가해보세요", today.plusDays(1), EventColor.SUN));
+
+        for (Event event : welcomeEvents) {
+            event.assignAuditor(user.getUserId());
+            eventRepository.save(event);
+        }
     }
 
     /**
