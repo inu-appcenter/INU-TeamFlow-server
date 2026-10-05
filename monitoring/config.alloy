@@ -1,0 +1,37 @@
+// logback LogstashEncoder가 남기는 JSON 파일만 수집 (롤링된 .gz는 제외)
+local.file_match "inu_teamflow" {
+  path_targets = [{
+    __path__ = "/var/log/inu-teamflow/*.log",
+    app      = "inu-teamflow",
+    env      = sys.env("APP_ENV"),
+  }]
+}
+
+loki.source.file "inu_teamflow" {
+  targets    = local.file_match.inu_teamflow.targets
+  forward_to = [loki.process.inu_teamflow.receiver]
+}
+
+// traceId, userId는 라벨로 올리지 않음 (쿼리에서 | json 으로 조회)
+loki.process "inu_teamflow" {
+  stage.json {
+    expressions = { level = "level", ts = "timestamp" }
+  }
+
+  stage.labels {
+    values = { level = "" }
+  }
+
+  stage.timestamp {
+    source = "ts"
+    format = "RFC3339"
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

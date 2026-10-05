@@ -4,7 +4,7 @@ spring:
       on-profile: dev
 
   application:
-    name: inu-teamflow
+    name: inu-teamflow-dev
 
   datasource:
     url: ${POSTGRESQL_URL}
@@ -71,7 +71,6 @@ ai:
 logging:
   file:
     path: /var/log/spring
-
 
 management:
   server:
