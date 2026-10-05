@@ -31,6 +31,6 @@ loki.process "inu_teamflow" {
 
 loki.write "default" {
   endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
+    url = "http://inu-teamflow-loki:3100/loki/api/v1/push"
   }
 }

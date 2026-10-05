@@ -11,7 +11,7 @@ services:
       - loki-data:/loki
     restart: unless-stopped
     networks:
-      - inu-teamflow-logging
+      - inu-teamflow-dev
 
   alloy:
     container_name: inu-teamflow-alloy
@@ -30,12 +30,13 @@ services:
       - loki
     restart: unless-stopped
     networks:
-      - inu-teamflow-logging
+      - inu-teamflow-dev
 
+# 서버의 Docker 주소 풀이 소진되어 별도 네트워크 대신 dev 네트워크를 사용
 networks:
-  inu-teamflow-logging:
+  inu-teamflow-dev:
     external: true
-    name: inu-teamflow-logging
+    name: inu-teamflow-dev
 
 volumes:
   loki-data:
