@@ -67,7 +67,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           password: ${{ secrets.SERVER_PASSWORD }}
-          source: "docker-compose-dev.yml,monitoring/"
+          source: "docker-compose-dev.yml"
           target: "/home/serverking/inu-teamflow/dev"
 
       - name: Deploy dev
@@ -104,7 +104,4 @@ jobs:
             docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
             docker compose -f docker-compose-dev.yml pull app
             docker compose -f docker-compose-dev.yml up -d --no-deps --force-recreate app
-
-            docker compose -f docker-compose-dev.yml up -d loki alloy
-            docker compose -f docker-compose-dev.yml restart alloy
             docker image prune -f

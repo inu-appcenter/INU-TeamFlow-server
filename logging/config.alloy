@@ -1,10 +1,9 @@
 // logback LogstashEncoder가 남기는 JSON 파일만 수집 (롤링된 .gz는 제외)
 local.file_match "inu_teamflow" {
-  path_targets = [{
-    __path__ = "/var/log/inu-teamflow/*.log",
-    app      = "inu-teamflow",
-    env      = sys.env("APP_ENV"),
-  }]
+  path_targets = [
+    { __path__ = "/var/log/inu-teamflow/dev/*.log", app = "inu-teamflow", env = "dev" },
+    { __path__ = "/var/log/inu-teamflow/prod/*.log", app = "inu-teamflow", env = "prod" },
+  ]
 }
 
 loki.source.file "inu_teamflow" {

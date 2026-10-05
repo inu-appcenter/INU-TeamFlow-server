@@ -32,42 +32,7 @@ services:
     networks:
       - inu-teamflow-dev
 
-  loki:
-    container_name: inu-teamflow-loki-dev
-    image: grafana/loki:3.5.5
-    command: -config.file=/etc/loki/config.yaml
-    volumes:
-      - ./monitoring/loki-config.yaml:/etc/loki/config.yaml:ro
-      - loki-data:/loki
-    restart: unless-stopped
-    networks:
-      - inu-teamflow-dev
-
-  alloy:
-    container_name: inu-teamflow-alloy-dev
-    image: grafana/alloy:latest
-    command:
-      - run
-      - --server.http.listen-addr=0.0.0.0:12345
-      - --storage.path=/var/lib/alloy/data
-      - /etc/alloy/config.alloy
-    environment:
-      APP_ENV: dev
-    volumes:
-      - ./monitoring/config.alloy:/etc/alloy/config.alloy:ro
-      - ./logs:/var/log/inu-teamflow:ro
-      - alloy-data:/var/lib/alloy/data
-    depends_on:
-      - loki
-    restart: unless-stopped
-    networks:
-      - inu-teamflow-dev
-
 networks:
   inu-teamflow-dev:
     external: true
     name: inu-teamflow-dev
-
-volumes:
-  loki-data:
-  alloy-data:
