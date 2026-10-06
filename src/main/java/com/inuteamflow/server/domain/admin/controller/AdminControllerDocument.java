@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.admin.controller;
 
 import com.inuteamflow.server.domain.admin.dto.response.DashboardResponse;
+import com.inuteamflow.server.domain.admin.dto.response.SuspendedUserResponse;
 import com.inuteamflow.server.domain.inquiry.dto.request.InquiryHandleRequest;
 import com.inuteamflow.server.domain.inquiry.dto.response.InquiryDetailResponse;
 import com.inuteamflow.server.domain.inquiry.dto.response.InquirySummaryResponse;
@@ -16,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -160,6 +162,69 @@ public interface AdminControllerDocument {
             @AuthenticationPrincipal UserDetailsImpl userDetails,
             @PathVariable Long reportId,
             @Valid @RequestBody ReportHandleRequest request);
+
+    @Operation(summary = "releaseReport", description = "신고 처리로 부과된 사용자 제재(정지/영구정지) 해제")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "제재 해제 성공"),
+        @ApiResponse(
+                responseCode = "400",
+                description = "아직 처리되지 않은 신고이거나 해제할 수 있는 제재가 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "403",
+                description = "관리자 권한 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "404",
+                description = "신고를 찾을 수 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "409",
+                description = "이미 해제된 제재",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> releaseReport(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long reportId);
+
+    @Operation(summary = "getSuspendedUsers", description = "정지/영구정지된 계정 목록 조회 (해제되지 않은 정지 만료 전 계정, 영구정지 계정)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "조회 성공"),
+        @ApiResponse(
+                responseCode = "401",
+                description = "유효하지 않거나 만료된 토큰",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "403",
+                description = "관리자 권한 없음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Page<SuspendedUserResponse>> getSuspendedUsers(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, Pageable pageable);
 
     @Operation(summary = "getInquiries", description = "문의 목록 조회 (문의 집계 및 목록)")
     @ApiResponses({

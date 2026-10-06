@@ -8,6 +8,7 @@ import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -62,12 +63,12 @@ public class TeamInvitation extends BaseEntity {
 
     public void accept() {
         this.invitationStatus = Status.ACCEPTED;
-        this.respondedAt = LocalDateTime.now();
+        this.respondedAt = LocalDateTime.now(ZoneId.systemDefault());
     }
 
     public void decline() {
         this.invitationStatus = Status.DECLINED;
-        this.respondedAt = LocalDateTime.now();
+        this.respondedAt = LocalDateTime.now(ZoneId.systemDefault());
     }
 
     public void cancel() {

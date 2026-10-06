@@ -6,6 +6,7 @@ import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -48,7 +49,7 @@ public class RecruitmentApplication extends BaseEntity {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_STATUS_INVALID);
         }
         this.applicationStatus = Status.ACCEPTED;
-        this.respondedAt = LocalDateTime.now();
+        this.respondedAt = LocalDateTime.now(ZoneId.systemDefault());
     }
 
     public void decline() {
@@ -56,7 +57,7 @@ public class RecruitmentApplication extends BaseEntity {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_APPLICATION_STATUS_INVALID);
         }
         this.applicationStatus = Status.DECLINED;
-        this.respondedAt = LocalDateTime.now();
+        this.respondedAt = LocalDateTime.now(ZoneId.systemDefault());
     }
 
     public void cancel() {

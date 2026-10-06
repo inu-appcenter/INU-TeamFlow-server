@@ -4,6 +4,7 @@ import com.inuteamflow.server.global.enums.Category;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -26,6 +27,7 @@ public class RecruitmentCreateRequest {
     private Long teamId;
 
     @NotNull
+    @Positive // 모집 인원은 1 이상
     private Integer targetMemberCount;
 
     @NotNull

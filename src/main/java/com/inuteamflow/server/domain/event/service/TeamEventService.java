@@ -20,6 +20,7 @@ import com.inuteamflow.server.domain.team.enums.TeamRole;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.vote.repository.VoteResultRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import java.time.LocalDateTime;
@@ -46,6 +47,7 @@ public class TeamEventService {
     private final TeamMemberRepository teamMemberRepository;
     private final RecurrenceExceptionRepository recurrenceExceptionRepository;
     private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
+    private final VoteResultRepository voteResultRepository;
 
     private final NotificationService notificationService;
 
@@ -233,6 +235,7 @@ public class TeamEventService {
 
         if (eventRecurrenceService.deleteEvent(event, recurrenceEditScope, occurrenceAt)) {
             eventParticipantRepository.deleteByEvent(event);
+            voteResultRepository.detachEvent(event); // 투표로 확정된 일정이면 투표 결과와의 연결을 끊는다
             eventRepository.delete(event);
         }
     }

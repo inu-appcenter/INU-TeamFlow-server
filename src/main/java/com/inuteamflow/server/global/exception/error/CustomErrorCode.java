@@ -9,14 +9,14 @@ import org.springframework.http.HttpStatus;
 public enum CustomErrorCode implements ErrorCode {
 
     // 유저 관련 에러
-    AUTH_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, 401, "아이디 또는 비밀번호가 올바르지 않습니다."),
+    AUTH_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, 401, "아이디 또는 비밀번호가 올바르지 않습니다"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "사용자를 찾을 수 없습니다."),
-    USER_BANNED(HttpStatus.FORBIDDEN, 403, "영구 정지된 사용자입니다."),
-    USER_SUSPENDED(HttpStatus.FORBIDDEN, 403, "임시 정지된 사용자입니다."),
+    USER_BANNED(HttpStatus.FORBIDDEN, 403, "영구 정지된 사용자입니다"),
+    USER_SUSPENDED(HttpStatus.FORBIDDEN, 403, "임시 정지된 사용자입니다"),
     USER_USERNAME_CONFLICT(HttpStatus.CONFLICT, 409, "이미 사용 중인 아이디입니다."),
     USER_EMAIL_CONFLICT(HttpStatus.CONFLICT, 409, "이미 사용 중인 이메일입니다."),
     USER_SCHOOL_VERIFY_FAILED(HttpStatus.BAD_REQUEST, 400, "학교 인증에 실패했습니다."),
-    USER_SCHOOL_VERIFY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, 503, "학교 인증 서비스를 현재 사용할 수 없습니다."),
+    USER_SCHOOL_VERIFY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, 503, "학교 인증 서비스를" + " 현재 사용할 수 없습니다."),
     USER_SCHOOL_VERIFICATION_REQUIRED(HttpStatus.FORBIDDEN, 403, "학교 인증이 필요한 기능입니다."),
     USER_STUDENT_NUMBER_CONFLICT(HttpStatus.CONFLICT, 409, "이미 다른 계정에 연결된 학번입니다."),
     USER_SCHOOL_ALREADY_VERIFIED(HttpStatus.CONFLICT, 409, "이미 학교 인증이 된 계정입니다."),
@@ -122,6 +122,9 @@ public enum CustomErrorCode implements ErrorCode {
     REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "신고를 찾을 수 없습니다."),
     REPORT_ALREADY_HANDLED(HttpStatus.CONFLICT, 409, "이미 처리된 신고입니다."),
     REPORT_HANDLE_INVALID(HttpStatus.BAD_REQUEST, 400, "신고 처리 요청이 올바르지 않습니다."),
+    REPORT_NOT_HANDLED(HttpStatus.BAD_REQUEST, 400, "아직 처리되지 않은 신고입니다."),
+    REPORT_RELEASE_NOT_APPLICABLE(HttpStatus.BAD_REQUEST, 400, "해제할 수 있는 제재가 없습니다."),
+    REPORT_ALREADY_RELEASED(HttpStatus.CONFLICT, 409, "이미 해제된 제재입니다."),
 
     // 문의 관련 에러
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "문의를 찾을 수 없습니다."),

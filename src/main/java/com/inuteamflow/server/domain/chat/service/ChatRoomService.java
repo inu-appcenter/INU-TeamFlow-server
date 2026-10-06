@@ -248,6 +248,37 @@ public class ChatRoomService {
     }
 
     /**
+     * 채팅방 목록 화면 실시간 갱신을 위해 특정 유저에게 채팅방 상태 변경을 push한다.
+     *
+     * <p>{@code /sub/users/{userId}/chat-rooms}를 구독 중인 클라이언트에게 전달된다.
+     * 실제 호출 시점(새 메시지 발생, 안읽음 수 변경 등)은 다음 단계에서 연결한다.</p>
+     *
+     * @param userId push 대상 유저 ID
+     * @param payload 채팅방 목록에 반영할 갱신 정보
+     */
+    private void pushChatRoomListUpdate(Long userId, ChatRoomListUpdateResponse payload) {
+        messagingTemplate.convertAndSend("/sub/users/" + userId + "/chat-rooms", payload);
+    }
+
+    /**
+     * 채팅방 마지막 메시지를 목록 push용 정보로 변환한다. 발신자 이름 조회를 위해 유저를 조회한다.
+     *
+     * @param lastMessage 채팅방의 마지막 메시지, 없으면 {@code null}
+     * @return 변환된 마지막 메시지 정보, {@code lastMessage}가 {@code null}이면 {@code null}
+     */
+    private ChatRoomListUpdateResponse.LastMessage toLastMessageInfo(ChatMessage lastMessage) {
+        if (lastMessage == null) {
+            return null;
+        }
+        String senderName = userRepository
+                .findById(lastMessage.getCreatedBy())
+                .map(User::getName)
+                .orElse(null);
+        return ChatRoomListUpdateResponse.LastMessage.of(
+                previewOf(lastMessage), lastMessage.getCreatedBy(), senderName, lastMessage.getCreatedAt());
+    }
+
+    /**
      * 팀 채팅방의 이미지를 설정한다.
      *
      * <p>팀 리더만 변경할 수 있으며, {@code imageKey}가 {@code null}이면 기본 멤버 콜라주 이미지로 초기화된다.</p>
@@ -506,6 +537,35 @@ public class ChatRoomService {
         }
 
         chatMessageService.sendSystemMessage(chatRoom, user.getName() + "님이 나갔습니다", user);
+    }
+
+    /**
+     * 그룹 채팅방에 초대 가능한 팀원을 이름으로 검색한다.
+     *
+     * <p>채팅방이 속한 팀의 멤버 중 이미 이 채팅방에 참여 중인 사람은 제외하고, 이름에 검색어가
+     * 포함된 사용자만 반환한다. 그룹 채팅방에서만 가능하다.</p>
+     *
+     * @param user 검색을 요청한 사용자
+     * @param roomId 검색 대상 채팅방 ID
+     * @param keyword 검색할 이름 키워드 (빈 문자열이면 전체 반환)
+     * @return 초대 가능한 팀원 목록
+     * @throws RestApiException 채팅방을 찾을 수 없거나, 그룹 채팅방이 아니거나, 사용자가 채팅방 멤버가 아닌 경우
+     */
+    public List<ChatRoomAvailableMemberResponse> getAvailableMembers(User user, Long roomId, String keyword) {
+        ChatRoom chatRoom = getChatRoomById(roomId);
+        requireGroupRoom(chatRoom);
+        getMemberOrThrow(chatRoom, user);
+
+        Set<Long> existingMemberIds = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
+                .map(crm -> crm.getUser().getUserId())
+                .collect(Collectors.toSet());
+
+        return teamMemberRepository.findByTeamWithUser(chatRoom.getTeam()).stream()
+                .map(TeamMember::getUser)
+                .filter(u -> !existingMemberIds.contains(u.getUserId()))
+                .filter(u -> u.getName() != null && u.getName().contains(keyword))
+                .map(ChatRoomAvailableMemberResponse::from)
+                .toList();
     }
 
     /**

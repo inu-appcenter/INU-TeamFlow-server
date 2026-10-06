@@ -13,6 +13,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -56,6 +58,15 @@ public class ReportHandle extends BaseTimeEntity {
     @Column(name = "user_action_detail")
     private String userActionDetail;
 
+    @Column(name = "released_at")
+    private LocalDateTime releasedAt;
+
+    @Column(name = "released_by_id")
+    private Long releasedById;
+
+    @Column(name = "released_by_name")
+    private String releasedByName;
+
     @Builder
     private ReportHandle(
             Report report,
@@ -95,5 +106,15 @@ public class ReportHandle extends BaseTimeEntity {
                 .userActionDurationDays(userActionDurationDays)
                 .userActionDetail(userActionDetail)
                 .build();
+    }
+
+    public boolean isReleased() {
+        return releasedAt != null;
+    }
+
+    public void release(Long releasedById, String releasedByName) {
+        this.releasedAt = LocalDateTime.now(ZoneId.systemDefault());
+        this.releasedById = releasedById;
+        this.releasedByName = releasedByName;
     }
 }

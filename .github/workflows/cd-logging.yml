@@ -1,0 +1,50 @@
+name: CD-LOGGING
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - 'logging/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            mkdir -p /home/serverking/inu-teamflow/logging
+
+      - name: Copy logging config
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source: "logging/"
+          target: "/home/serverking/inu-teamflow/logging"
+          strip_components: 1
+
+      - name: Deploy logging
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            cd /home/serverking/inu-teamflow/logging
+
+            docker network inspect inu-teamflow >/dev/null 2>&1 || docker network create inu-teamflow
+
+            docker compose up -d
+            # 설정 파일은 바인드 마운트라 변경 시 재생성되지 않으므로 재시작으로 반영
+            docker compose restart

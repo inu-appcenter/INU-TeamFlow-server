@@ -100,7 +100,7 @@ public class S3Service {
         if (StringUtils.hasText(imageKey)) {
             return getImageUrl(imageKey);
         }
-        String defaultKey = "teams/banner/default/" + category.name().toLowerCase() + ".png";
+        String defaultKey = "teams/banner/default/" + category.name().toLowerCase(Locale.ROOT) + ".png";
         return getImageUrl(defaultKey);
     }
 

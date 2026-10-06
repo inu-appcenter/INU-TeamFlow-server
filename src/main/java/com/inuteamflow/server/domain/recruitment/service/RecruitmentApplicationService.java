@@ -22,6 +22,7 @@ import com.inuteamflow.server.global.enums.Status;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -79,7 +80,7 @@ public class RecruitmentApplicationService {
         if (!recruitment.getIsOpened()) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_CLOSED);
         }
-        if (recruitment.getEndAt().isBefore(LocalDateTime.now())) {
+        if (recruitment.getEndAt().isBefore(LocalDateTime.now(ZoneId.systemDefault()))) {
             throw new RestApiException(CustomErrorCode.RECRUITMENT_EXPIRED);
         }
 

@@ -1,8 +1,12 @@
 package com.inuteamflow.server.domain.user.repository;
 
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.user.enums.Role;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,4 +26,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
             WHERE u.name LIKE CONCAT('%', :name, '%') AND u.isSchoolVerified = true AND u.userId != :userId
             """)
     List<User> searchByName(@Param("name") String name, @Param("userId") Long userId);
+
+    @Query("""
+            SELECT u FROM User u
+            WHERE u.role = :bannedRole OR (u.suspendedUntil IS NOT NULL AND u.suspendedUntil > :now)
+            """)
+    Page<User> findSuspendedOrBanned(
+            @Param("bannedRole") Role bannedRole, @Param("now") LocalDateTime now, Pageable pageable);
 }

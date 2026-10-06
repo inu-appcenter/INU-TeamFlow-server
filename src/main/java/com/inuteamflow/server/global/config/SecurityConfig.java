@@ -38,6 +38,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/v1/auth/**")
                         .permitAll() // 로그인 및 회원가입
+                        .requestMatchers("/actuator/health", "/actuator/prometheus")
+                        .permitAll() // 모니터링 (관리 포트 8081)
                         .requestMatchers("/api/v1/admin/**")
                         .hasRole("ADMIN")
                         .anyRequest()

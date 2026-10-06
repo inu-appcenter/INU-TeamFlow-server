@@ -1,10 +1,12 @@
 package com.inuteamflow.server.domain.user.service;
 
+import com.inuteamflow.server.domain.event.service.MyEventService;
 import com.inuteamflow.server.domain.user.dto.request.LoginRequest;
 import com.inuteamflow.server.domain.user.dto.request.SignupRequest;
 import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.repository.SchoolLoginRepository;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
@@ -14,8 +16,13 @@ import com.inuteamflow.server.global.jwt.TokenResponse;
 import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import com.inuteamflow.server.global.s3.S3Service;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -35,6 +42,7 @@ public class AuthService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final MyEventService myEventService;
 
     /**
      * 새로운 사용자를 가입시킨다.
@@ -56,21 +64,57 @@ public class AuthService {
         User user = User.create(request, bCryptPasswordEncoder.encode(request.getPassword()));
         String imageUrl = s3Service.getImageUrl(user.getImageKey());
 
-        return MyInfoResponse.of(userRepository.save(user), imageUrl);
+        User savedUser = userRepository.save(user);
+        myEventService.createWelcomeEvents(savedUser);
+
+        return MyInfoResponse.of(savedUser, imageUrl);
     }
 
     /**
      * 사용자 자격 증명을 검증하고 토큰을 발급한다.
      *
+     * <p>정지/영구정지된 사용자는 {@link UserDetailsImpl#isAccountNonLocked()}에 의해 동일하게
+     * {@link LockedException}으로 처리되므로, 실제 상태를 다시 조회해 임시 정지와 영구정지를 구분한다.</p>
+     *
      * @param request 로그인 자격 증명
      * @return 발급된 액세스 토큰과 리프레시 토큰
+     * @throws RestApiException 임시 정지 또는 영구정지된 사용자인 경우
      */
     @Transactional
     public TokenResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManagerBuilder
-                .getObject()
-                .authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        Authentication authentication;
+        try {
+            authentication = authenticationManagerBuilder
+                    .getObject()
+                    .authenticate(
+                            new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        } catch (LockedException e) {
+            throw resolveLockedUserException(request.getUsername());
+        }
         return jwtTokenProvider.generateToken(authentication);
+    }
+
+    /**
+     * 계정 잠김으로 로그인이 거부된 사용자의 실제 제재 상태(임시 정지/영구정지)를 조회해 알맞은 예외를 반환한다.
+     *
+     * @param username 로그인을 시도한 사용자의 아이디
+     * @return 사용자 상태에 맞는 {@link RestApiException}
+     */
+    private RestApiException resolveLockedUserException(String username) {
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user != null && user.getRole() == Role.BANNED) {
+            return new RestApiException(CustomErrorCode.USER_BANNED);
+        }
+        if (user != null && user.getSuspendedUntil() != null) {
+            long remainingDays = Duration.between(LocalDateTime.now(ZoneId.systemDefault()), user.getSuspendedUntil())
+                            .toDays()
+                    + 1;
+            String until = user.getSuspendedUntil().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+            return new RestApiException(
+                    CustomErrorCode.USER_SUSPENDED,
+                    "임시 정지된 사용자입니다. (해제일: " + until + ", 남은 기간: " + remainingDays + "일)");
+        }
+        return new RestApiException(CustomErrorCode.USER_SUSPENDED);
     }
 
     /**

@@ -3,6 +3,7 @@ package com.inuteamflow.server.domain.recruitment.dto.request;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class RecruitmentUpdateRequest {
     private String description;
 
     @NotNull
+    @Positive // 모집 인원은 1 이상
     private Integer targetMemberCount;
 
     @NotNull

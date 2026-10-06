@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.admin.controller;
 
 import com.inuteamflow.server.domain.admin.dto.response.DashboardResponse;
+import com.inuteamflow.server.domain.admin.dto.response.SuspendedUserResponse;
 import com.inuteamflow.server.domain.admin.service.AdminService;
 import com.inuteamflow.server.domain.inquiry.dto.request.InquiryHandleRequest;
 import com.inuteamflow.server.domain.inquiry.dto.response.InquiryDetailResponse;
@@ -12,6 +13,7 @@ import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -56,6 +58,21 @@ public class AdminController implements AdminControllerDocument {
             @Valid @RequestBody ReportHandleRequest request) {
         adminService.handleReport(reportId, request, userDetails.getUser());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @PatchMapping("/reports/{reportId}/release")
+    public ResponseEntity<Void> releaseReport(
+            @AuthenticationPrincipal UserDetailsImpl userDetails, @PathVariable Long reportId) {
+        adminService.releaseUserAction(reportId, userDetails.getUser());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @GetMapping("/users/suspended")
+    public ResponseEntity<Page<SuspendedUserResponse>> getSuspendedUsers(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(adminService.getSuspendedUsers(pageable, userDetails.getUser()));
     }
 
     @GetMapping("/inquiries")
