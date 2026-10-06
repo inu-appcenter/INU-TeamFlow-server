@@ -99,7 +99,7 @@ jobs:
             TZ=Asia/Seoul
             EOF
             
-            docker network inspect inu-teamflow-dev >/dev/null 2>&1 || docker network create inu-teamflow-dev
+            docker network inspect inu-teamflow >/dev/null 2>&1 || docker network create inu-teamflow
 
             docker login -u "${{ secrets.DOCKER_USERNAME }}" -p "${{ secrets.DOCKER_PASSWORD }}"
             docker compose -f docker-compose-dev.yml pull app
