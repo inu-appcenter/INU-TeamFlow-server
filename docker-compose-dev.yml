@@ -30,9 +30,9 @@ services:
       TZ: ${TZ}
     restart: unless-stopped
     networks:
-      - inu-teamflow-dev
+      - inu-teamflow
 
 networks:
-  inu-teamflow-dev:
+  inu-teamflow:
     external: true
-    name: inu-teamflow-dev
+    name: inu-teamflow

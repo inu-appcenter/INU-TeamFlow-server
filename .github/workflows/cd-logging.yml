@@ -43,6 +43,8 @@ jobs:
           script: |
             cd /home/serverking/inu-teamflow/logging
 
+            docker network inspect inu-teamflow >/dev/null 2>&1 || docker network create inu-teamflow
+
             docker compose up -d
             # 설정 파일은 바인드 마운트라 변경 시 재생성되지 않으므로 재시작으로 반영
             docker compose restart
