@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.vote.repository;
 
+import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.vote.entity.Vote;
 import com.inuteamflow.server.domain.vote.entity.VoteResult;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,12 @@ public interface VoteResultRepository extends JpaRepository<VoteResult, Long> {
     WHERE vr.vote.voteId = :voteId
     """)
     void deleteByVoteId(@Param("voteId") Long voteId);
+
+    @Modifying
+    @Query("""
+    UPDATE VoteResult vr
+    SET vr.event = null
+    WHERE vr.event = :event
+    """)
+    void detachEvent(@Param("event") Event event);
 }
