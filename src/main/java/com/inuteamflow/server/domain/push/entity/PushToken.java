@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.push.entity;
 
 import com.inuteamflow.server.domain.push.dto.req.PushTokenRequest;
+import com.inuteamflow.server.domain.push.enums.PushProvider;
 import com.inuteamflow.server.global.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -25,16 +26,22 @@ public class PushToken extends BaseEntity {
     @Column(name = "device_type")
     private String deviceType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "provider", nullable = false)
+    private PushProvider provider;
+
     @Builder
-    private PushToken(String token, String deviceType) {
+    private PushToken(String token, String deviceType, PushProvider provider) {
         this.token = token;
         this.deviceType = deviceType;
+        this.provider = provider != null ? provider : PushProvider.FCM;
     }
 
     public static PushToken create(PushTokenRequest request) {
         return PushToken.builder()
                 .token(request.getToken())
                 .deviceType(request.getDeviceType())
+                .provider(request.getProvider())
                 .build();
     }
 }

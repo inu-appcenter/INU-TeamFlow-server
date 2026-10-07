@@ -1,5 +1,6 @@
 package com.inuteamflow.server.domain.push.dto.req;
 
+import com.inuteamflow.server.domain.push.enums.PushProvider;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
@@ -18,4 +19,7 @@ public class PushTokenRequest {
     @NotBlank
     @Schema(description = "디바이스 타입", example = "web")
     private String deviceType;
+
+    @Schema(description = "토큰 발급 제공자 (미입력 시 FCM)", example = "FCM")
+    private PushProvider provider;
 }
