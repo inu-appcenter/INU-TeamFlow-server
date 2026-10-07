@@ -1,25 +1,27 @@
 package com.inuteamflow.server.domain.push.service;
 
-import com.google.firebase.messaging.*;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.repository.NotificationOptionRepository;
+import com.inuteamflow.server.domain.push.dto.PushMessage;
 import com.inuteamflow.server.domain.push.dto.req.PushTokenRequest;
 import com.inuteamflow.server.domain.push.dto.res.PushTokenResponse;
 import com.inuteamflow.server.domain.push.entity.PushToken;
+import com.inuteamflow.server.domain.push.enums.PushProvider;
 import com.inuteamflow.server.domain.push.repository.PushTokenRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -27,8 +29,8 @@ public class PushService {
 
     private final PushTokenRepository pushTokenRepository;
     private final NotificationOptionRepository notificationOptionRepository;
-
-    private static final int FCM_MAX_BATCH_SIZE = 500;
+    private final FcmSender fcmSender;
+    private final ExpoSender expoSender;
 
     // =========================================================================
     // ============================= 주요 서비스 기능 =============================
@@ -72,8 +74,8 @@ public class PushService {
      * 단일 사용자에게 푸시 알림을 발송한다.
      *
      * <p>수신자의 알림 옵션에서 해당 유형이 비활성화되어 있으면 발송하지 않는다.
-     * 등록된 토큰이 없으면 발송하지 않으며, 발송 후 Firebase에서 등록 해제된 것으로 응답한 토큰을 삭제한다.
-     * Firebase 발송 실패는 기록하고 호출자에게 전파하지 않는다.</p>
+     * 등록된 토큰을 provider별로 나누어 FCM 토큰은 Firebase로, Expo 토큰은 Expo Push API로 발송하고,
+     * 발송 후 등록 해제된 것으로 응답한 토큰을 삭제한다.</p>
      *
      * @param receiverId 알림 수신자 ID
      * @param title 알림 제목
@@ -96,35 +98,19 @@ public class PushService {
                 .orElse(true);
         if (!enabled) return;
 
-        List<String> tokens = pushTokenRepository.findTokenByCreatedBy(receiverId);
-        if (tokens.isEmpty()) return;
+        Map<String, String> data = new HashMap<>();
+        data.put("redirectUrl", redirectUrl);
+        data.put("type", type.name());
+        data.put("notificationId", String.valueOf(notificationId));
 
-        MulticastMessage message = MulticastMessage.builder()
-                .setNotification(com.google.firebase.messaging.Notification.builder()
-                        .setTitle(title)
-                        .setBody(body)
-                        .build())
-                .putData("redirectUrl", redirectUrl)
-                .putData("type", type.name())
-                .putData("notificationId", String.valueOf(notificationId))
-                .addAllTokens(tokens)
-                .build();
-
-        try {
-            BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
-            log.info("FCM 발송 완료 - userId: {}, 성공: {}/{}", receiverId, response.getSuccessCount(), tokens.size());
-            removeInvalidTokens(tokens, response);
-        } catch (FirebaseMessagingException e) {
-            log.error("FCM 발송 실패 - userId: {}", receiverId, e);
-        }
+        send(pushTokenRepository.findAllByCreatedBy(receiverId), new PushMessage(title, body, data, null));
     }
 
     /**
      * 여러 사용자에게 푸시 알림을 발송한다.
      *
      * <p>알림 옵션에서 해당 유형이 비활성화된 수신자는 발송 대상에서 제외한다.
-     * Firebase 멀티캐스트 제한에 맞춰 토큰을 최대 {@value #FCM_MAX_BATCH_SIZE}개씩 나누어 발송하고,
-     * 각 배치에서 등록 해제된 토큰을 삭제한다.</p>
+     * 등록된 토큰을 provider별로 나누어 발송하고, 등록 해제된 것으로 응답한 토큰을 삭제한다.</p>
      *
      * @param receiverIds 알림 수신자 ID 목록
      * @param title 알림 제목
@@ -138,37 +124,18 @@ public class PushService {
         receiverIds = filterEnabledReceivers(receiverIds, type);
         if (receiverIds.isEmpty()) return;
 
-        List<String> tokens = pushTokenRepository.findTokenByCreatedByIn(receiverIds);
-        if (tokens.isEmpty()) return;
+        Map<String, String> data = new HashMap<>();
+        data.put("redirectUrl", redirectUrl);
+        data.put("type", type.name());
 
-        for (List<String> batch : partitionTokens(tokens)) {
-            MulticastMessage message = MulticastMessage.builder()
-                    .setNotification(com.google.firebase.messaging.Notification.builder()
-                            .setTitle(title)
-                            .setBody(body)
-                            .build())
-                    .putData("redirectUrl", redirectUrl)
-                    .putData("type", type.name())
-                    .addAllTokens(batch)
-                    .build();
-
-            try {
-                BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
-                log.info(
-                        "FCM 다중 발송 완료 - userIds: {}, 성공: {}/{}", receiverIds, response.getSuccessCount(), batch.size());
-                removeInvalidTokens(batch, response);
-            } catch (FirebaseMessagingException e) {
-                log.error("FCM 다중 발송 실패", e);
-            }
-        }
+        send(pushTokenRepository.findAllByCreatedByIn(receiverIds), new PushMessage(title, body, data, null));
     }
 
     /**
      * 여러 사용자에게 채팅 푸시 알림을 발송한다.
      *
      * <p>알림 옵션에서 해당 유형이 비활성화된 수신자는 발송 대상에서 제외한다.
-     * Android와 iOS에 동일한 축약 키를 설정하여 같은 채팅방의 미확인 알림이 중복 표시되지 않도록 하고,
-     * 토큰은 최대 {@value #FCM_MAX_BATCH_SIZE}개씩 나누어 발송한다.</p>
+     * 같은 채팅방의 미확인 알림이 중복 표시되지 않도록 축약 키를 함께 발송한다.</p>
      *
      * @param receiverIds 알림 수신자 ID 목록
      * @param title 알림 제목
@@ -190,32 +157,12 @@ public class PushService {
         receiverIds = filterEnabledReceivers(receiverIds, type);
         if (receiverIds.isEmpty()) return;
 
-        List<String> tokens = pushTokenRepository.findTokenByCreatedByIn(receiverIds);
-        if (tokens.isEmpty()) return;
+        Map<String, String> data = new HashMap<>();
+        data.put("redirectUrl", redirectUrl);
+        data.put("type", type.name());
+        data.put("roomId", String.valueOf(roomId));
 
-        for (List<String> batch : partitionTokens(tokens)) {
-            MulticastMessage message = MulticastMessage.builder()
-                    .setNotification(
-                            Notification.builder().setTitle(title).setBody(body).build())
-                    .setAndroidConfig(
-                            AndroidConfig.builder().setCollapseKey(collapseKey).build())
-                    .setApnsConfig(ApnsConfig.builder()
-                            .putHeader("apns-collapse-id", collapseKey)
-                            .build())
-                    .putData("redirectUrl", redirectUrl)
-                    .putData("type", type.name())
-                    .putData("roomId", String.valueOf(roomId))
-                    .addAllTokens(batch)
-                    .build();
-
-            try {
-                BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
-                log.info("FCM 채팅 알림 발송 완료 - 성공: {}/{}", response.getSuccessCount(), batch.size());
-                removeInvalidTokens(batch, response);
-            } catch (FirebaseMessagingException e) {
-                log.error("FCM 채팅 알림 발송 실패", e);
-            }
-        }
+        send(pushTokenRepository.findAllByCreatedByIn(receiverIds), new PushMessage(title, body, data, collapseKey));
     }
 
     // =========================================================================
@@ -223,42 +170,33 @@ public class PushService {
     // =========================================================================
 
     /**
-     * FCM 토큰을 Firebase 멀티캐스트 제한 크기로 분할한다.
+     * 토큰을 provider별로 나누어 해당 채널로 발송한다.
      *
-     * <p>마지막 배치는 남은 토큰 수만 포함하며 원본 목록의 순서를 유지한다.</p>
+     * <p>FCM 토큰은 {@link FcmSender}, Expo 토큰은 {@link ExpoSender}로 발송하고,
+     * 각 채널에서 등록 해제된 것으로 응답한 토큰을 모아 한 번에 삭제한다.</p>
      *
-     * @param tokens 분할할 FCM 토큰 목록
-     * @return 최대 {@value #FCM_MAX_BATCH_SIZE}개 단위로 분할된 토큰 목록
+     * @param tokens 발송 대상 푸시 토큰 목록
+     * @param message 발송할 알림 내용
      */
-    private List<List<String>> partitionTokens(List<String> tokens) {
-        List<List<String>> batches = new ArrayList<>();
-        for (int i = 0; i < tokens.size(); i += FCM_MAX_BATCH_SIZE) {
-            batches.add(tokens.subList(i, Math.min(i + FCM_MAX_BATCH_SIZE, tokens.size())));
-        }
-        return batches;
-    }
+    private void send(List<PushToken> tokens, PushMessage message) {
+        if (tokens.isEmpty()) return;
 
-    /**
-     * Firebase에서 등록 해제된 것으로 응답한 FCM 토큰을 삭제한다.
-     *
-     * <p>배치 응답과 요청 토큰의 인덱스를 대응시켜
-     * {@link MessagingErrorCode#UNREGISTERED} 오류가 발생한 토큰만 제거한다.</p>
-     *
-     * @param tokens 배치 발송에 사용한 FCM 토큰 목록
-     * @param response Firebase의 배치 발송 응답
-     */
-    private void removeInvalidTokens(List<String> tokens, BatchResponse response) {
+        Map<PushProvider, List<String>> tokensByProvider = tokens.stream()
+                .collect(Collectors.groupingBy(
+                        PushToken::getProvider,
+                        () -> new EnumMap<>(PushProvider.class),
+                        Collectors.mapping(PushToken::getToken, Collectors.toList())));
+
         List<String> invalidTokens = new ArrayList<>();
-        List<SendResponse> responses = response.getResponses();
-        for (int i = 0; i < responses.size(); i++) {
-            SendResponse sendResponse = responses.get(i);
-            if (!sendResponse.isSuccessful()) {
-                FirebaseMessagingException e = sendResponse.getException();
-                if (e != null && MessagingErrorCode.UNREGISTERED.equals(e.getMessagingErrorCode())) {
-                    invalidTokens.add(tokens.get(i));
-                }
-            }
+        List<String> fcmTokens = tokensByProvider.getOrDefault(PushProvider.FCM, List.of());
+        if (!fcmTokens.isEmpty()) {
+            invalidTokens.addAll(fcmSender.send(fcmTokens, message));
         }
+        List<String> expoTokens = tokensByProvider.getOrDefault(PushProvider.EXPO, List.of());
+        if (!expoTokens.isEmpty()) {
+            invalidTokens.addAll(expoSender.send(expoTokens, message));
+        }
+
         if (!invalidTokens.isEmpty()) {
             pushTokenRepository.deleteByTokenIn(invalidTokens);
         }

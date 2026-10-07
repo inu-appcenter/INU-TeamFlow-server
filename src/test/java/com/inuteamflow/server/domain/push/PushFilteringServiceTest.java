@@ -10,6 +10,8 @@ import com.inuteamflow.server.domain.notification.entity.NotificationOption;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.repository.NotificationOptionRepository;
 import com.inuteamflow.server.domain.push.repository.PushTokenRepository;
+import com.inuteamflow.server.domain.push.service.ExpoSender;
+import com.inuteamflow.server.domain.push.service.FcmSender;
 import com.inuteamflow.server.domain.push.service.PushService;
 import com.inuteamflow.server.domain.user.entity.User;
 import java.util.List;
@@ -23,8 +25,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * {@link PushService}의 푸시 발송이 수신자의 알림 활성화 옵션에 따라 필터링되는지 Mockito 기반 단위 테스트로 검증한다.
- * - Spring Context, 실제 데이터베이스, Firebase를 사용하지 않는다.
- * - 토큰 조회 결과를 빈 목록으로 두어 실제 Firebase 발송 이전 단계(필터링)까지의 분기만 확인한다.
+ * - Spring Context, 실제 데이터베이스, Firebase, Expo를 사용하지 않는다.
+ * - 토큰 조회 결과를 빈 목록으로 두어 실제 발송 이전 단계(필터링)까지의 분기만 확인한다.
  */
 @ExtendWith(MockitoExtension.class)
 class PushFilteringServiceTest {
@@ -38,6 +40,12 @@ class PushFilteringServiceTest {
     @Mock
     private NotificationOptionRepository notificationOptionRepository;
 
+    @Mock
+    private FcmSender fcmSender;
+
+    @Mock
+    private ExpoSender expoSender;
+
     private static final Long RECEIVER_ID = 1L;
 
     @Test
@@ -48,7 +56,7 @@ class PushFilteringServiceTest {
 
         pushService.sendToUser(RECEIVER_ID, "제목", "내용", "/url", NotificationType.CALENDAR, 10L);
 
-        verify(pushTokenRepository, never()).findTokenByCreatedBy(anyLong());
+        verify(pushTokenRepository, never()).findAllByCreatedBy(anyLong());
     }
 
     @Test
@@ -56,22 +64,22 @@ class PushFilteringServiceTest {
     void sendToUser_proceedsWhenTypeEnabled() {
         NotificationOption option = optionWithEnabled(NotificationType.CALENDAR, true);
         when(notificationOptionRepository.findByUserId(RECEIVER_ID)).thenReturn(Optional.of(option));
-        when(pushTokenRepository.findTokenByCreatedBy(RECEIVER_ID)).thenReturn(List.of());
+        when(pushTokenRepository.findAllByCreatedBy(RECEIVER_ID)).thenReturn(List.of());
 
         pushService.sendToUser(RECEIVER_ID, "제목", "내용", "/url", NotificationType.CALENDAR, 10L);
 
-        verify(pushTokenRepository).findTokenByCreatedBy(RECEIVER_ID);
+        verify(pushTokenRepository).findAllByCreatedBy(RECEIVER_ID);
     }
 
     @Test
     @DisplayName("단일 발송: 알림 옵션이 없는 수신자는 활성화된 것으로 간주해 토큰 조회까지 진행한다")
     void sendToUser_proceedsWhenOptionAbsent() {
         when(notificationOptionRepository.findByUserId(RECEIVER_ID)).thenReturn(Optional.empty());
-        when(pushTokenRepository.findTokenByCreatedBy(RECEIVER_ID)).thenReturn(List.of());
+        when(pushTokenRepository.findAllByCreatedBy(RECEIVER_ID)).thenReturn(List.of());
 
         pushService.sendToUser(RECEIVER_ID, "제목", "내용", "/url", NotificationType.CHAT, 10L);
 
-        verify(pushTokenRepository).findTokenByCreatedBy(RECEIVER_ID);
+        verify(pushTokenRepository).findAllByCreatedBy(RECEIVER_ID);
     }
 
     @Test
@@ -82,11 +90,11 @@ class PushFilteringServiceTest {
         NotificationOption enabledOption = optionWithEnabled(NotificationType.NOTICE, true);
         NotificationOption disabledOption = optionForUser(disabledId, NotificationType.NOTICE, false);
         when(notificationOptionRepository.findByUserIdIn(any())).thenReturn(List.of(enabledOption, disabledOption));
-        when(pushTokenRepository.findTokenByCreatedByIn(any())).thenReturn(List.of());
+        when(pushTokenRepository.findAllByCreatedByIn(any())).thenReturn(List.of());
 
         pushService.sendToUsers(List.of(enabledId, disabledId), "제목", "내용", "/url", NotificationType.NOTICE);
 
-        verify(pushTokenRepository).findTokenByCreatedByIn(List.of(enabledId));
+        verify(pushTokenRepository).findAllByCreatedByIn(List.of(enabledId));
     }
 
     @Test
@@ -97,12 +105,12 @@ class PushFilteringServiceTest {
         NotificationOption enabledOption = optionWithEnabled(NotificationType.CHAT, true);
         NotificationOption disabledOption = optionForUser(disabledId, NotificationType.CHAT, false);
         when(notificationOptionRepository.findByUserIdIn(any())).thenReturn(List.of(enabledOption, disabledOption));
-        when(pushTokenRepository.findTokenByCreatedByIn(any())).thenReturn(List.of());
+        when(pushTokenRepository.findAllByCreatedByIn(any())).thenReturn(List.of());
 
         pushService.sendChatNotification(
                 List.of(enabledId, disabledId), "제목", "내용", NotificationType.CHAT, "/url", 5L, "collapse");
 
-        verify(pushTokenRepository).findTokenByCreatedByIn(List.of(enabledId));
+        verify(pushTokenRepository).findAllByCreatedByIn(List.of(enabledId));
     }
 
     private NotificationOption optionWithEnabled(NotificationType type, boolean enabled) {
