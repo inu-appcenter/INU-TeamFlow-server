@@ -48,7 +48,7 @@ public class ChatMessageService {
      *
      * <p>WebSocket 컨트롤러에서 호출되며, STOMP는 URL 기반 인가가 자동으로 걸리지 않으므로 방 멤버 여부를
      * 직접 검증한다. {@link ChatMessageType#SYSTEM}은 클라이언트가 직접 보낼 수 없다. 저장 후 방 구독자에게
-     * 브로드캐스트하고, 방을 구독하지 않은 멤버에게는 FCM 알림을 보낸다. 채팅방 목록 화면 갱신을 위해 방 멤버
+     * 브로드캐스트하고, 방을 구독하지 않은 멤버에게는 푸시 알림을 보낸다. 채팅방 목록 화면 갱신을 위해 방 멤버
      * 전원에게 개인 topic으로도 push한다.</p>
      *
      * @param roomId 메시지를 전송할 채팅방 ID
@@ -83,8 +83,8 @@ public class ChatMessageService {
         broadcast(roomId, ChatMessageResponse.of(message, sender, s3Service::getImageUrl, 0, visibleMemberCount));
         notifyChatRoomListUpdate(chatRoom, message, sender);
 
-        // 채팅을 구독하지 않은 인원들에게 FCM 전송
-        sendChatFcmIfNeeded(chatRoom, sender, roomId, request);
+        // 채팅을 구독하지 않은 인원들에게 푸시 전송
+        sendChatPushIfNeeded(chatRoom, sender, roomId, request);
     }
 
     /**
@@ -203,9 +203,9 @@ public class ChatMessageService {
     }
 
     /**
-     * 채팅방을 구독하지 않고 있는 멤버에게 채팅 FCM 알림을 보낸다.
+     * 채팅방을 구독하지 않고 있는 멤버에게 채팅 푸시 알림을 보낸다.
      *
-     * <p>발신자는 대상에서 제외하며, WebSocket 세션이 있더라도 해당 채팅방을 구독 중이 아니면 FCM 대상에 포함한다.
+     * <p>발신자는 대상에서 제외하며, WebSocket 세션이 있더라도 해당 채팅방을 구독 중이 아니면 푸시 대상에 포함한다.
      * 대상이 없으면 알림을 보내지 않으며, 이미지 메시지는 고정 안내 문구를 알림 본문으로 사용한다.</p>
      *
      * @param chatRoom 메시지가 전송된 채팅방
@@ -213,14 +213,14 @@ public class ChatMessageService {
      * @param roomId 채팅방 ID
      * @param request 전송된 메시지 정보
      */
-    private void sendChatFcmIfNeeded(ChatRoom chatRoom, User sender, Long roomId, ChatMessageSendRequest request) {
-        List<Long> fcmTargetIds = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
+    private void sendChatPushIfNeeded(ChatRoom chatRoom, User sender, Long roomId, ChatMessageSendRequest request) {
+        List<Long> pushTargetIds = chatRoomMemberRepository.findByChatRoomWithUser(chatRoom).stream()
                 .map(ChatRoomMember::getUser)
                 .filter(u -> !u.getUserId().equals(sender.getUserId())) // 발신자는 제외
                 .filter(u -> {
                     SimpUser simpUser = simpUserRegistry.getUser(u.getUsername());
-                    // WebSocket 세션이 없는 경우 → FCM 대상
-                    // WebSocket 세션이 있는 경우 → 해당 채팅방을 구독 중(화면 보는 중) 이라면 FCM 불필요
+                    // WebSocket 세션이 없는 경우 → 푸시 대상
+                    // WebSocket 세션이 있는 경우 → 해당 채팅방을 구독 중(화면 보는 중) 이라면 푸시 불필요
                     if (simpUser == null) return true;
                     return simpUser.getSessions().stream()
                             .flatMap(session -> session.getSubscriptions().stream())
@@ -230,12 +230,12 @@ public class ChatMessageService {
                 .toList();
 
         // 전부 이 채팅방을 구독 중이라면 알림 전송은 필요 없음
-        if (fcmTargetIds.isEmpty()) return;
+        if (pushTargetIds.isEmpty()) return;
 
         String content = request.getMessageType() == ChatMessageType.IMAGE ? "사진을 보냈습니다." : request.getContent();
 
-        notificationService.sendChatFcm(
-                fcmTargetIds, // FCM을 수신해야 하는 사용자 ID
+        notificationService.sendChatPush(
+                pushTargetIds, // 푸시를 수신해야 하는 사용자 ID
                 sender.getName(), // 알림 제목: 발신자 실제 이름 (확인 필요)
                 content, // 알림 본문: IMAGE가 아니라면 채팅 내용
                 NotificationType.CHAT,

@@ -1,4 +1,4 @@
-package com.inuteamflow.server.domain.fcm.dto.req;
+package com.inuteamflow.server.domain.push.dto.req;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -8,11 +8,11 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Schema(description = "FCM 토큰 저장 요청 DTO")
-public class FcmRequest {
+@Schema(description = "푸시 토큰 저장 요청 DTO")
+public class PushTokenRequest {
 
     @NotBlank
-    @Schema(description = "Firebase SDK 로부터 받은 토큰", example = "eXaMpLeF1c7oKeN...:APA91bF...")
+    @Schema(description = "Firebase SDK 또는 Expo로부터 받은 푸시 토큰", example = "eXaMpLeF1c7oKeN...:APA91bF...")
     private String token;
 
     @NotBlank

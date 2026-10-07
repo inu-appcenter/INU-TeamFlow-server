@@ -1,13 +1,13 @@
 package com.inuteamflow.server.domain.notification.service;
 
-import com.inuteamflow.server.domain.fcm.dto.ChatFcmEvent;
-import com.inuteamflow.server.domain.fcm.dto.FcmMultiEvent;
-import com.inuteamflow.server.domain.fcm.dto.FcmSingleEvent;
 import com.inuteamflow.server.domain.notification.dto.req.NotificationRequest;
 import com.inuteamflow.server.domain.notification.dto.res.NotificationSliceResponse;
 import com.inuteamflow.server.domain.notification.entity.Notification;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.repository.NotificationRepository;
+import com.inuteamflow.server.domain.push.dto.ChatPushEvent;
+import com.inuteamflow.server.domain.push.dto.PushMultiEvent;
+import com.inuteamflow.server.domain.push.dto.PushSingleEvent;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
@@ -96,7 +96,7 @@ public class NotificationService {
     /**
      * 단일 수신자의 알림을 생성한다.
      *
-     * <p>알림을 저장한 뒤 트랜잭션 커밋 이후 발송할 {@link FcmSingleEvent}를 발행한다.</p>
+     * <p>알림을 저장한 뒤 트랜잭션 커밋 이후 발송할 {@link PushSingleEvent}를 발행한다.</p>
      *
      * @param receiver 알림 수신자
      * @param title 알림 제목
@@ -109,14 +109,14 @@ public class NotificationService {
             User receiver, String title, String content, NotificationType type, String redirectUrl) {
         Notification notification =
                 notificationRepository.save(Notification.create(receiver, title, content, type, redirectUrl));
-        eventPublisher.publishEvent(new FcmSingleEvent(
+        eventPublisher.publishEvent(new PushSingleEvent(
                 receiver.getUserId(), title, content, redirectUrl, type, notification.getNotificationId()));
     }
 
     /**
      * 여러 수신자의 알림을 생성한다.
      *
-     * <p>수신자별 알림을 일괄 저장한 뒤 트랜잭션 커밋 이후 발송할 {@link FcmMultiEvent}를 한 번 발행한다.</p>
+     * <p>수신자별 알림을 일괄 저장한 뒤 트랜잭션 커밋 이후 발송할 {@link PushMultiEvent}를 한 번 발행한다.</p>
      *
      * @param receivers 알림 수신자 목록
      * @param title 알림 제목
@@ -132,11 +132,11 @@ public class NotificationService {
                 .toList();
         notificationRepository.saveAll(notifications);
         List<Long> receiverIds = receivers.stream().map(User::getUserId).toList();
-        eventPublisher.publishEvent(new FcmMultiEvent(receiverIds, title, content, redirectUrl, type));
+        eventPublisher.publishEvent(new PushMultiEvent(receiverIds, title, content, redirectUrl, type));
     }
 
     /**
-     * 여러 수신자에게 채팅 FCM 이벤트를 발행한다.
+     * 여러 수신자에게 채팅 푸시 이벤트를 발행한다.
      *
      * <p>채팅방 ID로 축약 키를 생성하여 같은 채팅방의 알림을 하나의 그룹으로 처리하도록 한다.</p>
      *
@@ -147,7 +147,7 @@ public class NotificationService {
      * @param redirectUrl 알림 선택 시 이동할 URL
      * @param roomId 채팅방 ID
      */
-    public void sendChatFcm(
+    public void sendChatPush(
             List<Long> receiverIds,
             String title,
             String content,
@@ -155,14 +155,14 @@ public class NotificationService {
             String redirectUrl,
             Long roomId) {
         eventPublisher.publishEvent(
-                new ChatFcmEvent(receiverIds, title, content, type, redirectUrl, roomId, "chat-room-" + roomId));
+                new ChatPushEvent(receiverIds, title, content, type, redirectUrl, roomId, "chat-room-" + roomId));
     }
 
     /**
      * 시스템이 발생시킨 여러 수신자의 알림을 생성한다.
      *
      * <p>스케줄러 등 로그인 사용자가 없는 흐름에서 호출되므로 {@code auditorId}로 작성자 정보를 직접 채운 뒤
-     * 수신자별 알림을 일괄 저장하고, 트랜잭션 커밋 이후 발송할 {@link FcmMultiEvent}를 한 번 발행한다.</p>
+     * 수신자별 알림을 일괄 저장하고, 트랜잭션 커밋 이후 발송할 {@link PushMultiEvent}를 한 번 발행한다.</p>
      *
      * @param receivers 알림 수신자 목록
      * @param title 알림 제목
@@ -185,6 +185,6 @@ public class NotificationService {
             notificationRepository.save(notification);
         }
         List<Long> receiverIds = receivers.stream().map(User::getUserId).toList();
-        eventPublisher.publishEvent(new FcmMultiEvent(receiverIds, title, content, redirectUrl, type));
+        eventPublisher.publishEvent(new PushMultiEvent(receiverIds, title, content, redirectUrl, type));
     }
 }

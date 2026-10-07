@@ -1,12 +1,12 @@
-package com.inuteamflow.server.domain.fcm.service;
+package com.inuteamflow.server.domain.push.service;
 
 import com.google.firebase.messaging.*;
-import com.inuteamflow.server.domain.fcm.dto.req.FcmRequest;
-import com.inuteamflow.server.domain.fcm.dto.res.FcmResponse;
-import com.inuteamflow.server.domain.fcm.entity.FcmToken;
-import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.repository.NotificationOptionRepository;
+import com.inuteamflow.server.domain.push.dto.req.PushTokenRequest;
+import com.inuteamflow.server.domain.push.dto.res.PushTokenResponse;
+import com.inuteamflow.server.domain.push.entity.PushToken;
+import com.inuteamflow.server.domain.push.repository.PushTokenRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
@@ -23,9 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class FcmService {
+public class PushService {
 
-    private final FcmTokenRepository fcmTokenRepository;
+    private final PushTokenRepository pushTokenRepository;
     private final NotificationOptionRepository notificationOptionRepository;
 
     private static final int FCM_MAX_BATCH_SIZE = 500;
@@ -35,41 +35,41 @@ public class FcmService {
     // =========================================================================
 
     /**
-     * 사용자의 FCM 토큰을 등록한다.
+     * 사용자의 푸시 토큰을 등록한다.
      *
      * <p>동일한 사용자가 같은 토큰을 이미 등록한 경우 새로 저장하지 않고 기존 토큰 정보를 반환한다.</p>
      *
      * @param user 토큰을 등록하는 사용자
-     * @param request 등록할 FCM 토큰 요청
-     * @return 등록되었거나 기존에 존재하는 FCM 토큰 정보
+     * @param request 등록할 푸시 토큰 요청
+     * @return 등록되었거나 기존에 존재하는 푸시 토큰 정보
      */
     @Transactional
-    public FcmResponse createFcmToken(User user, FcmRequest request) {
-        FcmToken fcmToken = fcmTokenRepository
-                .findByCreatedByAndFcmToken(user.getUserId(), request.getToken())
-                .orElseGet(() -> fcmTokenRepository.save(FcmToken.create(request)));
-        return FcmResponse.from(fcmToken);
+    public PushTokenResponse createPushToken(User user, PushTokenRequest request) {
+        PushToken pushToken = pushTokenRepository
+                .findByCreatedByAndToken(user.getUserId(), request.getToken())
+                .orElseGet(() -> pushTokenRepository.save(PushToken.create(request)));
+        return PushTokenResponse.from(pushToken);
     }
 
     /**
-     * 사용자의 FCM 토큰을 삭제한다.
+     * 사용자의 푸시 토큰을 삭제한다.
      *
      * <p>요청 사용자에게 등록된 토큰만 삭제할 수 있다.</p>
      *
      * @param user 토큰을 삭제하는 사용자
-     * @param request 삭제할 FCM 토큰 요청
+     * @param request 삭제할 푸시 토큰 요청
      * @throws RestApiException 사용자에게 등록된 토큰을 찾을 수 없는 경우
      */
     @Transactional
-    public void deleteFcmToken(User user, FcmRequest request) {
-        FcmToken fcmToken = fcmTokenRepository
-                .findByCreatedByAndFcmToken(user.getUserId(), request.getToken())
-                .orElseThrow(() -> new RestApiException(CustomErrorCode.FCM_TOKEN_NOT_FOUND));
-        fcmTokenRepository.delete(fcmToken);
+    public void deletePushToken(User user, PushTokenRequest request) {
+        PushToken pushToken = pushTokenRepository
+                .findByCreatedByAndToken(user.getUserId(), request.getToken())
+                .orElseThrow(() -> new RestApiException(CustomErrorCode.PUSH_TOKEN_NOT_FOUND));
+        pushTokenRepository.delete(pushToken);
     }
 
     /**
-     * 단일 사용자에게 FCM 알림을 발송한다.
+     * 단일 사용자에게 푸시 알림을 발송한다.
      *
      * <p>수신자의 알림 옵션에서 해당 유형이 비활성화되어 있으면 발송하지 않는다.
      * 등록된 토큰이 없으면 발송하지 않으며, 발송 후 Firebase에서 등록 해제된 것으로 응답한 토큰을 삭제한다.
@@ -96,7 +96,7 @@ public class FcmService {
                 .orElse(true);
         if (!enabled) return;
 
-        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedBy(receiverId);
+        List<String> tokens = pushTokenRepository.findTokenByCreatedBy(receiverId);
         if (tokens.isEmpty()) return;
 
         MulticastMessage message = MulticastMessage.builder()
@@ -120,7 +120,7 @@ public class FcmService {
     }
 
     /**
-     * 여러 사용자에게 FCM 알림을 발송한다.
+     * 여러 사용자에게 푸시 알림을 발송한다.
      *
      * <p>알림 옵션에서 해당 유형이 비활성화된 수신자는 발송 대상에서 제외한다.
      * Firebase 멀티캐스트 제한에 맞춰 토큰을 최대 {@value #FCM_MAX_BATCH_SIZE}개씩 나누어 발송하고,
@@ -138,7 +138,7 @@ public class FcmService {
         receiverIds = filterEnabledReceivers(receiverIds, type);
         if (receiverIds.isEmpty()) return;
 
-        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
+        List<String> tokens = pushTokenRepository.findTokenByCreatedByIn(receiverIds);
         if (tokens.isEmpty()) return;
 
         for (List<String> batch : partitionTokens(tokens)) {
@@ -164,7 +164,7 @@ public class FcmService {
     }
 
     /**
-     * 여러 사용자에게 채팅 FCM 알림을 발송한다.
+     * 여러 사용자에게 채팅 푸시 알림을 발송한다.
      *
      * <p>알림 옵션에서 해당 유형이 비활성화된 수신자는 발송 대상에서 제외한다.
      * Android와 iOS에 동일한 축약 키를 설정하여 같은 채팅방의 미확인 알림이 중복 표시되지 않도록 하고,
@@ -190,7 +190,7 @@ public class FcmService {
         receiverIds = filterEnabledReceivers(receiverIds, type);
         if (receiverIds.isEmpty()) return;
 
-        List<String> tokens = fcmTokenRepository.findFcmTokenByCreatedByIn(receiverIds);
+        List<String> tokens = pushTokenRepository.findTokenByCreatedByIn(receiverIds);
         if (tokens.isEmpty()) return;
 
         for (List<String> batch : partitionTokens(tokens)) {
@@ -260,7 +260,7 @@ public class FcmService {
             }
         }
         if (!invalidTokens.isEmpty()) {
-            fcmTokenRepository.deleteByFcmTokenIn(invalidTokens);
+            pushTokenRepository.deleteByTokenIn(invalidTokens);
         }
     }
 
