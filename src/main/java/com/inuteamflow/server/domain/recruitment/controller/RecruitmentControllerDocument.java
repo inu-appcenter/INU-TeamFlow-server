@@ -9,7 +9,9 @@ import com.inuteamflow.server.domain.recruitment.dto.response.RecruitmentSummary
 import com.inuteamflow.server.domain.report.dto.request.ReportRequest;
 import com.inuteamflow.server.domain.report.dto.response.ReportResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
+import com.inuteamflow.server.global.enums.Category;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -45,7 +47,10 @@ public interface RecruitmentControllerDocument {
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(String keyword, Pageable pageable);
+    ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(
+            @Parameter(description = "모집 카테고리 (미지정 시 전체)", example = "CONTEST") Category category,
+            @Parameter(description = "검색어 (모집글 제목, 연결된 정보글 제목)") String keyword,
+            Pageable pageable);
 
     @Operation(summary = "getMyRecruitments", description = "내가 작성한 모집글 목록 조회")
     @ApiResponses({
