@@ -1,6 +1,6 @@
-package com.inuteamflow.server.domain.fcm.dto;
+package com.inuteamflow.server.domain.push.dto;
 
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 
-public record FcmSingleEvent(
+public record PushSingleEvent(
         Long receiverId, String title, String body, String redirectUrl, NotificationType type, Long notificationId) {}

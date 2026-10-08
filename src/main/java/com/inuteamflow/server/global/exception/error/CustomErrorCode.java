@@ -106,7 +106,7 @@ public enum CustomErrorCode implements ErrorCode {
 
     // 알림 관련 에러
     FIREBASE_INITIALIZATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, 500, "Firebase SDK 초기화에 실패하였습니다."),
-    FCM_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "FCM 토큰을 찾을 수 없습니다."),
+    PUSH_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "푸시 토큰을 찾을 수 없습니다."),
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "알림을 찾을 수 없습니다."),
     NOTIFICATION_FORBIDDEN(HttpStatus.FORBIDDEN, 403, "알림에 대한 권한이 없습니다."),
     NOTIFICATION_OPTION_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "알림 활성화 옵션을 찾을 수 없습니다."),

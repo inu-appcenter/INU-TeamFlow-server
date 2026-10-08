@@ -2,13 +2,13 @@ package com.inuteamflow.server.domain.user.service;
 
 import com.inuteamflow.server.domain.chat.repository.ChatRoomMemberRepository;
 import com.inuteamflow.server.domain.event.repository.*;
-import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostScrapRepository;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
 import com.inuteamflow.server.domain.notification.repository.NotificationOptionRepository;
 import com.inuteamflow.server.domain.notification.repository.NotificationRepository;
+import com.inuteamflow.server.domain.push.repository.PushTokenRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentRepository;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentScrapRepository;
@@ -70,7 +70,7 @@ public class UserService {
     private final EventParticipantRepository eventParticipantRepository;
     private final EventRepository eventRepository;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final FcmTokenRepository fcmTokenRepository;
+    private final PushTokenRepository pushTokenRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationOptionRepository notificationOptionRepository;
     private final ChatRoomMemberRepository chatRoomMemberRepository;
@@ -209,8 +209,8 @@ public class UserService {
         recurrenceRuleRepository.deleteByEventCreatedByAndTeamIsNull(user.getUserId());
         eventRepository.deleteByCreatedByAndTeamIsNull(user.getUserId());
 
-        // FCM + Notification + NotificationOption
-        fcmTokenRepository.deleteByCreatedBy(user.getUserId());
+        // PushToken + Notification + NotificationOption
+        pushTokenRepository.deleteByCreatedBy(user.getUserId());
         notificationRepository.deleteByReceiver(user);
         notificationOptionRepository.deleteByUser(user);
 

@@ -32,7 +32,7 @@ import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 
 /**
- * {@link ChatMessageService}의 메시지 전송 및 FCM 발송 조건을 Mockito 기반 단위 테스트로 검증한다.
+ * {@link ChatMessageService}의 메시지 전송 및 푸시 발송 조건을 Mockito 기반 단위 테스트로 검증한다.
  * - Spring Context와 실제 데이터베이스를 사용하지 않는다.
  * - 서비스의 모든 협력 객체를 Mock으로 대체해 분기 로직과 호출 결과만 확인한다.
  */
@@ -95,32 +95,33 @@ class ChatMessageServiceTest {
     }
 
     @Test
-    @DisplayName("수신자 WebSocket 세션이 없으면(앱 꺼짐) FCM을 전송한다")
-    void sendFcm_whenReceiverHasNoSession() {
+    @DisplayName("수신자 WebSocket 세션이 없으면(앱 꺼짐) 푸시를 전송한다")
+    void sendPush_whenReceiverHasNoSession() {
         when(simpUserRegistry.getUser("receiver")).thenReturn(null);
         ChatMessageSendRequest request = textRequest("안녕");
 
         chatMessageService.sendMessage(ROOM_ID, request, sender);
 
         verify(notificationService)
-                .sendChatFcm(eq(List.of(2L)), eq("발신자"), eq("안녕"), eq(NotificationType.CHAT), anyString(), eq(ROOM_ID));
+                .sendChatPush(
+                        eq(List.of(2L)), eq("발신자"), eq("안녕"), eq(NotificationType.CHAT), anyString(), eq(ROOM_ID));
     }
 
     @Test
-    @DisplayName("수신자가 해당 채팅방을 구독 중이면 FCM을 전송하지 않는다")
-    void noFcm_whenReceiverIsSubscribedToThisRoom() {
+    @DisplayName("수신자가 해당 채팅방을 구독 중이면 푸시를 전송하지 않는다")
+    void noPush_whenReceiverIsSubscribedToThisRoom() {
         SimpUser subscribedUser = mockUserSubscribedTo("/sub/chat-rooms/" + ROOM_ID);
         when(simpUserRegistry.getUser("receiver")).thenReturn(subscribedUser);
         ChatMessageSendRequest request = textRequest("안녕");
 
         chatMessageService.sendMessage(ROOM_ID, request, sender);
 
-        verify(notificationService, never()).sendChatFcm(any(), any(), any(), any(), any(), any());
+        verify(notificationService, never()).sendChatPush(any(), any(), any(), any(), any(), any());
     }
 
     @Test
-    @DisplayName("수신자가 다른 채팅방을 구독 중이면 FCM을 전송한다")
-    void sendFcm_whenReceiverIsSubscribedToOtherRoom() {
+    @DisplayName("수신자가 다른 채팅방을 구독 중이면 푸시를 전송한다")
+    void sendPush_whenReceiverIsSubscribedToOtherRoom() {
         SimpUser subscribedUser = mockUserSubscribedTo("/sub/chat-rooms/999");
         when(simpUserRegistry.getUser("receiver")).thenReturn(subscribedUser);
         ChatMessageSendRequest request = textRequest("안녕");
@@ -128,13 +129,13 @@ class ChatMessageServiceTest {
         chatMessageService.sendMessage(ROOM_ID, request, sender);
 
         verify(notificationService)
-                .sendChatFcm(
+                .sendChatPush(
                         eq(List.of(2L)), anyString(), anyString(), eq(NotificationType.CHAT), anyString(), eq(ROOM_ID));
     }
 
     @Test
-    @DisplayName("이미지 메시지이면 FCM 본문을 '사진을 보냈습니다.'로 전송한다")
-    void sendFcm_withFixedBody_whenMessageTypeIsImage() {
+    @DisplayName("이미지 메시지이면 푸시 본문을 '사진을 보냈습니다.'로 전송한다")
+    void sendPush_withFixedBody_whenMessageTypeIsImage() {
         when(simpUserRegistry.getUser("receiver")).thenReturn(null);
         ChatMessageSendRequest request = mock(ChatMessageSendRequest.class);
         when(request.getMessageType()).thenReturn(ChatMessageType.IMAGE);
@@ -143,7 +144,7 @@ class ChatMessageServiceTest {
         chatMessageService.sendMessage(ROOM_ID, request, sender);
 
         verify(notificationService)
-                .sendChatFcm(
+                .sendChatPush(
                         eq(List.of(2L)),
                         anyString(),
                         eq("사진을 보냈습니다."),
