@@ -20,6 +20,7 @@ public class PushTokenRequest {
     @Schema(description = "디바이스 타입", example = "web")
     private String deviceType;
 
+    // TODO: 프론트에서 provider를 명시하는 방법으로 변경하면 @NotNull 추가
     @Schema(description = "토큰 발급 제공자 (미입력 시 FCM)", example = "FCM")
     private PushProvider provider;
 }
