@@ -76,6 +76,10 @@ public class FcmSender {
             SendResponse sendResponse = responses.get(i);
             if (!sendResponse.isSuccessful()) {
                 FirebaseMessagingException e = sendResponse.getException();
+                log.warn(
+                        "FCM 발송 실패 - error: {}, message: {}",
+                        e != null ? e.getMessagingErrorCode() : null,
+                        e != null ? e.getMessage() : null);
                 if (e != null && MessagingErrorCode.UNREGISTERED.equals(e.getMessagingErrorCode())) {
                     invalidTokens.add(tokens.get(i));
                 }
