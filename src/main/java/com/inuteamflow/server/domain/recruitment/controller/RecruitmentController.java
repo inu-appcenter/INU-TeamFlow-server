@@ -13,6 +13,7 @@ import com.inuteamflow.server.domain.report.dto.response.ReportResponse;
 import com.inuteamflow.server.domain.report.service.ReportService;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
+import com.inuteamflow.server.global.enums.Category;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -37,9 +38,11 @@ public class RecruitmentController implements RecruitmentControllerDocument {
 
     @GetMapping
     public ResponseEntity<Page<RecruitmentSummaryResponse>> getRecruitments(
+            @RequestParam(required = false) Category category,
             @RequestParam(required = false) String keyword,
             @ParameterObject @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.status(HttpStatus.OK).body(recruitmentService.getRecruitments(keyword, pageable));
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(recruitmentService.getRecruitments(category, keyword, pageable));
     }
 
     @GetMapping("/me")
