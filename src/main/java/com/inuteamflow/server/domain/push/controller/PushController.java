@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping({"/api/v1/push-tokens", "/api/v1/fcm"})  // TODO: 프론트 전환 후 /fcm 제거
+@RequestMapping("/api/v1/fcm")
 public class PushController implements PushControllerDocument {
 
     private final PushService pushService;
