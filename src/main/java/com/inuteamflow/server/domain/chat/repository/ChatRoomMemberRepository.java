@@ -23,10 +23,19 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     boolean existsByChatRoom(ChatRoom chatRoom);
 
     // 팀인지 1:1 인지 분기해서 조회
-    @Query(
-            "SELECT crm FROM ChatRoomMember crm JOIN FETCH crm.chatRoom WHERE crm.user = :user AND crm.chatRoom.chatRoomType = :type")
+    // 1:1 방은 팀이 없으므로 LEFT JOIN FETCH (팀 지연 로딩 N+1 방지)
+    @Query("""
+        SELECT crm FROM ChatRoomMember crm
+        JOIN FETCH crm.chatRoom cr
+        LEFT JOIN FETCH cr.team
+        WHERE crm.user = :user AND cr.chatRoomType = :type
+        """)
     List<ChatRoomMember> findByUserAndChatRoomTypeWithChatRoom(
             @Param("user") User user, @Param("type") ChatRoomType type);
+
+    // 채팅방 목록 조회용: 여러 방의 멤버를 한 번에 조회 (방마다 조회하는 N+1 방지)
+    @Query("SELECT crm FROM ChatRoomMember crm JOIN FETCH crm.user WHERE crm.chatRoom.chatRoomId IN :chatRoomIds")
+    List<ChatRoomMember> findByChatRoomIdInWithUser(@Param("chatRoomIds") List<Long> chatRoomIds);
 
     // 팀 삭제 시 채팅방도 삭제
     @Modifying
