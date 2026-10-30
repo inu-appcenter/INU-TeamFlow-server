@@ -11,6 +11,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestCookieException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -91,6 +92,18 @@ public class GlobalExceptionHandler {
                 errorCode.getCode(),
                 errorCode.getHttpStatus().value(),
                 errorCode.getMessage());
+        return ResponseEntity.status(errorCode.getHttpStatus())
+                .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(MissingRequestCookieException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestCookie(MissingRequestCookieException e) {
+        ErrorCode errorCode = CustomErrorCode.JWT_REFRESH_MISSING;
+        log.warn(
+                "MissingRequestCookieException: code={}, status={}, cookie={}",
+                errorCode.getCode(),
+                errorCode.getHttpStatus().value(),
+                e.getCookieName());
         return ResponseEntity.status(errorCode.getHttpStatus())
                 .body(ErrorResponse.create(errorCode.getCode(), errorCode.getMessage()));
     }

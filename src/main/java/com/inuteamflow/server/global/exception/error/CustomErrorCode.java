@@ -22,10 +22,12 @@ public enum CustomErrorCode implements ErrorCode {
     USER_SCHOOL_ALREADY_VERIFIED(HttpStatus.CONFLICT, 409, "이미 학교 인증이 된 계정입니다."),
 
     // JWT 인증 에러
+    AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, 401, "인증이 필요합니다."),
     JWT_INVALID(HttpStatus.UNAUTHORIZED, 401, "유효하지 않은 토큰입니다."),
     JWT_EXPIRED(HttpStatus.UNAUTHORIZED, 401, "만료된 토큰입니다."),
     JWT_MALFORMED(HttpStatus.UNAUTHORIZED, 401, "잘못된 형식의 토큰입니다."),
     JWT_UNSUPPORTED(HttpStatus.UNAUTHORIZED, 401, "지원하지 않는 토큰입니다."),
+    JWT_REFRESH_MISSING(HttpStatus.UNAUTHORIZED, 401, "리프레시 토큰이 없습니다."),
     JWT_REFRESH_NOT_MATCH(HttpStatus.BAD_REQUEST, 400, "리프레시 토큰이 일치하지 않습니다."),
     JWT_REFRESH_NOT_FOUND(HttpStatus.NOT_FOUND, 404, "리프레시 토큰을 찾을 수 없습니다."),
 

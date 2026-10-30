@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.inuteamflow.server.domain.user.entity.User;
@@ -93,5 +94,13 @@ class AuthLogoutTest {
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")));
 
         assertThat(refreshTokenRepository.findByRefreshToken(REFRESH_TOKEN)).isPresent();
+    }
+
+    @Test
+    @DisplayName("리프레시 토큰 쿠키 없이 재발급을 요청하면 401을 반환한다")
+    void reissue_withoutRefreshToken_returnsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/reissue"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(401));
     }
 }
