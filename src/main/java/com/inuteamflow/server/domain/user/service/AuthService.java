@@ -6,6 +6,7 @@ import com.inuteamflow.server.domain.user.dto.request.SignupRequest;
 import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.repository.SchoolLoginRepository;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
