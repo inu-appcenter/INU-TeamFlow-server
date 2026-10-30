@@ -6,6 +6,7 @@ import com.inuteamflow.server.domain.user.dto.request.SignupRequest;
 import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.repository.SchoolLoginRepository;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
@@ -139,6 +140,21 @@ public class AuthService {
                 .findById(savedRefreshToken.getUserId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
         return jwtTokenProvider.generateTokenByUsername(user.getUsername());
+    }
+
+    /**
+     * 리프레시 토큰을 삭제해 더 이상 재발급에 사용할 수 없게 한다.
+     *
+     * <p>토큰이 없거나 이미 삭제된 경우에도 로그아웃은 성공으로 처리한다.</p>
+     *
+     * @param refreshToken 무효화할 리프레시 토큰
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null) {
+            return;
+        }
+        refreshTokenRepository.findByRefreshToken(refreshToken).ifPresent(refreshTokenRepository::delete);
     }
 
     /**

@@ -67,7 +67,14 @@ public interface AuthControllerDocument {
                                 schema = @Schema(implementation = TokenResponse.class))),
         @ApiResponse(
                 responseCode = "400",
-                description = "리프레시 토큰 쿠키가 없거나 저장된 토큰과 일치하지 않음",
+                description = "저장된 토큰과 일치하지 않음",
+                content =
+                        @Content(
+                                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                                schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(
+                responseCode = "401",
+                description = "리프레시 토큰 쿠키가 없음",
                 content =
                         @Content(
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -81,6 +88,10 @@ public interface AuthControllerDocument {
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<TokenResponse> reissue(@CookieValue("refreshToken") String refreshToken);
+
+    @Operation(summary = "logout", description = "로그아웃 (리프레시 토큰 무효화 및 쿠키 삭제)")
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "로그아웃 성공")})
+    ResponseEntity<Void> logout(@CookieValue(value = "refreshToken", required = false) String refreshToken);
 
     @Operation(summary = "signup", description = "회원가입")
     @ApiResponses({
