@@ -53,6 +53,17 @@ public class AuthController implements AuthControllerDocument {
                 .body(tokenResponse);
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @CookieValue(value = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
+        authService.logout(refreshToken);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        createRefreshTokenCookie("", Duration.ZERO).toString())
+                .build();
+    }
+
     @PostMapping("/signup")
     public ResponseEntity<MyInfoResponse> signup(@Valid @RequestBody SignupRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.signUp(request));
@@ -65,11 +76,15 @@ public class AuthController implements AuthControllerDocument {
     }
 
     private ResponseCookie createRefreshTokenCookie(String refreshToken) {
+        return createRefreshTokenCookie(refreshToken, Duration.ofMillis(JwtTokenProvider.REFRESH_TOKEN_VALID_TIME));
+    }
+
+    private ResponseCookie createRefreshTokenCookie(String refreshToken, Duration maxAge) {
         return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
-                .maxAge(Duration.ofMillis(JwtTokenProvider.REFRESH_TOKEN_VALID_TIME))
+                .maxAge(maxAge)
                 .sameSite("Lax")
                 .build();
     }

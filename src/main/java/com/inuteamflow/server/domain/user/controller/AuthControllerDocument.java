@@ -82,6 +82,10 @@ public interface AuthControllerDocument {
     })
     ResponseEntity<TokenResponse> reissue(@CookieValue("refreshToken") String refreshToken);
 
+    @Operation(summary = "logout", description = "로그아웃 (리프레시 토큰 무효화 및 쿠키 삭제)")
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "로그아웃 성공")})
+    ResponseEntity<Void> logout(@CookieValue(value = "refreshToken", required = false) String refreshToken);
+
     @Operation(summary = "signup", description = "회원가입")
     @ApiResponses({
         @ApiResponse(

@@ -142,6 +142,21 @@ public class AuthService {
     }
 
     /**
+     * 리프레시 토큰을 삭제해 더 이상 재발급에 사용할 수 없게 한다.
+     *
+     * <p>토큰이 없거나 이미 삭제된 경우에도 로그아웃은 성공으로 처리한다.</p>
+     *
+     * @param refreshToken 무효화할 리프레시 토큰
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null) {
+            return;
+        }
+        refreshTokenRepository.findByRefreshToken(refreshToken).ifPresent(refreshTokenRepository::delete);
+    }
+
+    /**
      * 로그인한 사용자의 재학 여부를 인증한다.
      *
      * <p>학교 포털 인증에 성공하고 학번이 중복되지 않은 경우 사용자에게 학번을 등록한다.</p>
