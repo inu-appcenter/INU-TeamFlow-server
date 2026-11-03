@@ -10,6 +10,7 @@ import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.repository.SchoolLoginRepository;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
+import com.inuteamflow.server.global.enums.ClientType;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.jwt.JwtTokenProvider;
@@ -78,11 +79,12 @@ public class AuthService {
      * {@link LockedException}으로 처리되므로, 실제 상태를 다시 조회해 임시 정지와 영구정지를 구분한다.</p>
      *
      * @param request 로그인 자격 증명
+     * @param clientType 리프레시 토큰 유효기간을 정할 클라이언트 타입
      * @return 발급된 액세스 토큰과 리프레시 토큰
      * @throws RestApiException 임시 정지 또는 영구정지된 사용자인 경우
      */
     @Transactional
-    public TokenResponse login(LoginRequest request) {
+    public TokenResponse login(LoginRequest request, ClientType clientType) {
         Authentication authentication;
         try {
             authentication = authenticationManagerBuilder
@@ -92,7 +94,7 @@ public class AuthService {
         } catch (LockedException e) {
             throw resolveLockedUserException(request.getUsername());
         }
-        return jwtTokenProvider.generateToken(authentication);
+        return jwtTokenProvider.generateToken(authentication, clientType);
     }
 
     /**
@@ -121,13 +123,18 @@ public class AuthService {
     /**
      * 리프레시 토큰으로 토큰을 재발급한다.
      *
+     * <p>저장된 리프레시 토큰의 클라이언트 타입으로 새 토큰을 발급하므로, 유효기간은 재발급 시점부터 다시 시작된다.</p>
+     *
      * @param refreshToken 재발급에 사용할 리프레시 토큰
      * @return 재발급된 액세스 토큰과 리프레시 토큰
-     * @throws RestApiException 리프레시 토큰을 찾을 수 없거나 저장된 토큰과 일치하지 않는 경우,
+     * @throws RestApiException 리프레시 토큰이 만료되었거나 유효하지 않은 경우,
+     *                          또는 리프레시 토큰을 찾을 수 없거나 저장된 토큰과 일치하지 않는 경우,
      *                          또는 사용자를 찾을 수 없는 경우
      */
     @Transactional
     public TokenResponse reissue(String refreshToken) {
+        jwtTokenProvider.validateToken(refreshToken);
+
         RefreshToken savedRefreshToken = refreshTokenRepository
                 .findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.JWT_REFRESH_NOT_FOUND));
@@ -139,7 +146,7 @@ public class AuthService {
         User user = userRepository
                 .findById(savedRefreshToken.getUserId())
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.USER_NOT_FOUND));
-        return jwtTokenProvider.generateTokenByUsername(user.getUsername());
+        return jwtTokenProvider.generateTokenByUsername(user.getUsername(), savedRefreshToken.getClientType());
     }
 
     /**

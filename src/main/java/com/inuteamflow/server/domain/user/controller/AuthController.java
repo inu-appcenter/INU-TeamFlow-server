@@ -6,6 +6,7 @@ import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.service.AuthService;
+import com.inuteamflow.server.global.enums.ClientType;
 import com.inuteamflow.server.global.jwt.TokenResponse;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenCookie;
 import jakarta.validation.Valid;
@@ -17,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,12 +30,14 @@ public class AuthController implements AuthControllerDocument {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
-        TokenResponse tokenResponse = authService.login(loginRequest);
+    public ResponseEntity<TokenResponse> login(
+            @RequestHeader(value = ClientType.HEADER_NAME, required = false) String clientType,
+            @Valid @RequestBody LoginRequest loginRequest) {
+        TokenResponse tokenResponse = authService.login(loginRequest, ClientType.from(clientType));
         return ResponseEntity.status(HttpStatus.OK)
                 .header(
                         HttpHeaders.SET_COOKIE,
-                        RefreshTokenCookie.create(tokenResponse.getRefreshToken())
+                        RefreshTokenCookie.create(tokenResponse.getRefreshToken(), tokenResponse.getClientType())
                                 .toString())
                 .body(tokenResponse);
     }
@@ -44,7 +48,7 @@ public class AuthController implements AuthControllerDocument {
         return ResponseEntity.status(HttpStatus.OK)
                 .header(
                         HttpHeaders.SET_COOKIE,
-                        RefreshTokenCookie.create(tokenResponse.getRefreshToken())
+                        RefreshTokenCookie.create(tokenResponse.getRefreshToken(), tokenResponse.getClientType())
                                 .toString())
                 .body(tokenResponse);
     }

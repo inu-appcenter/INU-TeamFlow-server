@@ -71,6 +71,7 @@ import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteTimeSlotRepository;
 import com.inuteamflow.server.global.enums.Category;
+import com.inuteamflow.server.global.enums.ClientType;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
@@ -364,10 +365,15 @@ class UserServiceTest {
         notificationRepository.save(Notification.create(target, "제목", "내용", NotificationType.CHAT, "/url"));
         notificationRepository.save(Notification.create(leader, "제목2", "내용2", NotificationType.CHAT, "/url2"));
 
-        // RefreshToken
+        // RefreshToken: 웹/모바일 토큰 모두 삭제 대상
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(target)
                 .refreshToken("refresh-token")
+                .build());
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(target)
+                .clientType(ClientType.MOBILE)
+                .refreshToken("mobile-refresh-token")
                 .build());
 
         // ChatRoom/ChatRoomMember: 팀 채팅방 + 1:1 채팅방 양쪽에 target 소속
@@ -436,7 +442,7 @@ class UserServiceTest {
         assertThat(pushTokenRepository.count()).isEqualTo(0);
 
         assertThat(notificationRepository.count()).isEqualTo(1); // leader가 받은 알림은 유지
-        assertThat(refreshTokenRepository.findByUserId(targetId)).isEmpty();
+        assertThat(refreshTokenRepository.existsByUserId(targetId)).isFalse();
 
         assertThat(chatRoomRepository.findById(teamChatRoomId)).isPresent();
         assertThat(chatRoomRepository.findById(directChatRoomId)).isPresent();

@@ -13,6 +13,7 @@ import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.enums.Department;
 import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.repository.UserRepository;
+import com.inuteamflow.server.global.enums.ClientType;
 import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import com.inuteamflow.server.global.s3.S3Service;
@@ -68,6 +69,11 @@ class UserDeleteCookieTest {
                 .user(user)
                 .refreshToken("saved-refresh-token")
                 .build());
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(user)
+                .clientType(ClientType.MOBILE)
+                .refreshToken("saved-mobile-refresh-token")
+                .build());
         UserDetailsImpl userDetails = new UserDetailsImpl(user);
 
         // when & then
@@ -83,6 +89,6 @@ class UserDeleteCookieTest {
                                         containsString("Secure"),
                                         containsString("HttpOnly"))));
 
-        assertThat(refreshTokenRepository.findByUserId(user.getUserId())).isEmpty();
+        assertThat(refreshTokenRepository.existsByUserId(user.getUserId())).isFalse();
     }
 }

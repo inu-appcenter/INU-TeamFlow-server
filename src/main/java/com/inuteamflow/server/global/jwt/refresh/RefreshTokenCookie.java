@@ -1,6 +1,6 @@
 package com.inuteamflow.server.global.jwt.refresh;
 
-import com.inuteamflow.server.global.jwt.JwtTokenProvider;
+import com.inuteamflow.server.global.enums.ClientType;
 import java.time.Duration;
 import org.springframework.http.ResponseCookie;
 
@@ -10,8 +10,8 @@ public final class RefreshTokenCookie {
 
     private RefreshTokenCookie() {}
 
-    public static ResponseCookie create(String refreshToken) {
-        return build(refreshToken, Duration.ofMillis(JwtTokenProvider.REFRESH_TOKEN_VALID_TIME));
+    public static ResponseCookie create(String refreshToken, ClientType clientType) {
+        return build(refreshToken, clientType.getRefreshTokenValidTime());
     }
 
     public static ResponseCookie expire() {
