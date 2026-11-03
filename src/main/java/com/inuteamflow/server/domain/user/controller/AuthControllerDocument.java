@@ -8,6 +8,7 @@ import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.global.exception.error.ErrorResponse;
 import com.inuteamflow.server.global.jwt.TokenResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,11 +20,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @Tag(name = "Auth Controller", description = "인증 컨트롤러")
 public interface AuthControllerDocument {
 
-    @Operation(summary = "login", description = "로그인")
+    @Operation(summary = "login", description = "로그인. X-Client-Type: mobile 헤더를 보내면 리프레시 토큰 유효기간이 30일, 없으면 3일")
     @ApiResponses({
         @ApiResponse(
                 responseCode = "200",
@@ -54,9 +56,13 @@ public interface AuthControllerDocument {
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest loginRequest);
+    ResponseEntity<TokenResponse> login(
+            @Parameter(description = "클라이언트 타입 (mobile이면 모바일, 미입력 시 웹)", example = "mobile")
+                    @RequestHeader(value = "X-Client-Type", required = false)
+                    String clientType,
+            @Valid @RequestBody LoginRequest loginRequest);
 
-    @Operation(summary = "reissue", description = "토큰 재발급")
+    @Operation(summary = "reissue", description = "토큰 재발급. 로그인할 때의 클라이언트 타입 기준으로 유효기간이 다시 시작됨")
     @ApiResponses({
         @ApiResponse(
                 responseCode = "200",
