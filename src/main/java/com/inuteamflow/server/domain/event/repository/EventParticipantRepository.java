@@ -15,13 +15,6 @@ public interface EventParticipantRepository extends JpaRepository<EventParticipa
     List<EventParticipant> findByEvent(Event event);
 
     @Query("""
-    SELECT ep.event.eventId
-    FROM EventParticipant ep
-    WHERE ep.teamMember.user = :user
-    """)
-    List<Long> findEventIdsByUser(@Param("user") User user);
-
-    @Query("""
     SELECT tm.user FROM EventParticipant ep
     JOIN ep.teamMember tm
     WHERE ep.event = :event AND tm.user.userId != :excludeUserId

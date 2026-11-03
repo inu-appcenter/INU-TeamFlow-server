@@ -90,9 +90,17 @@ public class EventOccurrenceService {
         Map<Long, RecurrenceRule> ruleByEventId = recurrenceRuleRepository.findByEventIn(recurringEvents).stream()
                 .collect(Collectors.toMap(RecurrenceRule::getEventId, Function.identity()));
 
-        List<RecurrenceException> recurrenceExceptions = recurrenceExceptionRepository.findByEventIn(recurringEvents);
-        List<RecurrenceException> movedIntoRangeExceptions = recurrenceExceptionRepository.findModifiedOverlapping(
-                RecurrenceExceptionType.MODIFIED, recurringEvents, dateRange.startAt(), dateRange.endAt());
+        // 조회 시작 전에 시작해 범위까지 이어지는 회차의 예외도 포함되도록 가장 긴 일정 기간만큼 하한을 당긴다.
+        Duration longestDuration = recurringEvents.stream()
+                .map(event -> Duration.between(event.getStartAt(), event.getEndAt()))
+                .max(Comparator.naturalOrder())
+                .orElse(Duration.ZERO);
+        List<RecurrenceException> recurrenceExceptions = recurrenceExceptionRepository.findAffectingRange(
+                recurringEvents,
+                RecurrenceExceptionType.MODIFIED,
+                dateRange.startAt().minus(longestDuration),
+                dateRange.startAt(),
+                dateRange.endAt());
 
         Map<EventOccurrenceService.OccurrenceKey, RecurrenceException> exceptionByKey = recurrenceExceptions.stream()
                 .collect(Collectors.toMap(
@@ -122,7 +130,7 @@ public class EventOccurrenceService {
                 .map(response -> new OccurrenceKey(response.getEventId(), response.getOccurrenceAt()))
                 .collect(Collectors.toSet());
 
-        for (RecurrenceException recurrenceException : movedIntoRangeExceptions) {
+        for (RecurrenceException recurrenceException : recurrenceExceptions) {
             OccurrenceKey occurrenceKey =
                     new OccurrenceKey(recurrenceException.getEventId(), recurrenceException.getOriginalOccurrenceAt());
 

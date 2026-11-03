@@ -8,7 +8,6 @@ import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.entity.RecurrenceRule;
 import com.inuteamflow.server.domain.event.enums.EventColor;
 import com.inuteamflow.server.domain.event.enums.RecurrenceEditScope;
-import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.EventRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
@@ -30,7 +29,6 @@ public class MyEventService {
     private final EventOccurrenceService eventOccurrenceService;
     private final EventRecurrenceService eventRecurrenceService;
     private final EventRepository eventRepository;
-    private final EventParticipantRepository eventParticipantRepository;
 
     // =========================================================================
     // ============================= 주요 서비스 기능 =============================
@@ -58,19 +56,13 @@ public class MyEventService {
         List<EventListResponse> recurringOccurrences =
                 new ArrayList<>(eventOccurrenceService.expandRecurringEvents(recurringEvents, dateRange, user));
 
-        List<Long> participatingEventIds = eventParticipantRepository.findEventIdsByUser(user).stream()
-                .distinct()
-                .toList();
+        singleEvents.addAll(eventRepository.findByParticipantAndIsSingleAndStartAtBeforeAndEndAtAfter(
+                user, true, dateRange.endAt(), dateRange.startAt()));
 
-        if (!participatingEventIds.isEmpty()) {
-            singleEvents.addAll(eventRepository.findByEventIdInAndIsSingleAndStartAtBeforeAndEndAtAfter(
-                    participatingEventIds, true, dateRange.endAt(), dateRange.startAt()));
-
-            List<Event> participatingRecurringEvents = eventRepository.findByEventIdInAndIsSingleAndStartAtBefore(
-                    participatingEventIds, false, dateRange.endAt());
-            recurringOccurrences.addAll(
-                    eventOccurrenceService.expandRecurringEvents(participatingRecurringEvents, dateRange, user, true));
-        }
+        List<Event> participatingRecurringEvents =
+                eventRepository.findByParticipantAndIsSingleAndStartAtBefore(user, false, dateRange.endAt());
+        recurringOccurrences.addAll(
+                eventOccurrenceService.expandRecurringEvents(participatingRecurringEvents, dateRange, user, true));
 
         return eventOccurrenceService.mergeAndSort(singleEvents, recurringOccurrences, user);
     }
