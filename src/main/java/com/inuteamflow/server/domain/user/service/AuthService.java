@@ -123,11 +123,14 @@ public class AuthService {
      *
      * @param refreshToken 재발급에 사용할 리프레시 토큰
      * @return 재발급된 액세스 토큰과 리프레시 토큰
-     * @throws RestApiException 리프레시 토큰을 찾을 수 없거나 저장된 토큰과 일치하지 않는 경우,
+     * @throws RestApiException 리프레시 토큰이 만료되었거나 유효하지 않은 경우,
+     *                          또는 리프레시 토큰을 찾을 수 없거나 저장된 토큰과 일치하지 않는 경우,
      *                          또는 사용자를 찾을 수 없는 경우
      */
     @Transactional
     public TokenResponse reissue(String refreshToken) {
+        jwtTokenProvider.validateToken(refreshToken);
+
         RefreshToken savedRefreshToken = refreshTokenRepository
                 .findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new RestApiException(CustomErrorCode.JWT_REFRESH_NOT_FOUND));

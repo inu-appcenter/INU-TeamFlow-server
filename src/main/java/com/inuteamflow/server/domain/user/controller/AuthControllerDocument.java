@@ -74,14 +74,14 @@ public interface AuthControllerDocument {
                                 schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(
                 responseCode = "401",
-                description = "리프레시 토큰 쿠키가 없음",
+                description = "리프레시 토큰 쿠키가 없거나, 만료·폐기되었거나, 유효하지 않음",
                 content =
                         @Content(
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
                                 schema = @Schema(implementation = ErrorResponse.class))),
         @ApiResponse(
                 responseCode = "404",
-                description = "저장된 리프레시 토큰 또는 사용자 정보를 찾을 수 없음",
+                description = "사용자 정보를 찾을 수 없음",
                 content =
                         @Content(
                                 mediaType = MediaType.APPLICATION_JSON_VALUE,
