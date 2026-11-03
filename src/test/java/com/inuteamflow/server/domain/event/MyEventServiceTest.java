@@ -265,6 +265,20 @@ class MyEventServiceTest {
     }
 
     @Test
+    @DisplayName("조회 범위와 무관한 예외 회차는 조회하지 않는다")
+    void findAffectingRange_excludesExceptionsOutsideRange() {
+        Event recurring = saveRecurringEvent(null, "반복", at(5, 1, 9), at(5, 1, 10));
+        saveRule(recurring, RecurrenceFrequency.DAILY, List.of(), null, null);
+        saveModified(recurring, at(5, 2, 9), "지난 회차", at(5, 2, 11), at(5, 2, 12));
+        saveCancelled(recurring, at(5, 3, 9));
+
+        List<RecurrenceException> found = recurrenceExceptionRepository.findAffectingRange(
+                List.of(recurring), RecurrenceExceptionType.MODIFIED, at(6, 30, 23), at(7, 1, 0), at(8, 1, 0));
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
     @DisplayName("반복 일정이 늘어도 조회 쿼리 수는 늘어나지 않는다")
     void getMyEventList_queryCountDoesNotGrowWithRecurringEvents() {
         saveWeeklyEvents(1);
