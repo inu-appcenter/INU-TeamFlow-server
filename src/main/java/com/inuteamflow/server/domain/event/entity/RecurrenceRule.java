@@ -12,6 +12,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 @Getter
 @Entity
@@ -36,6 +37,8 @@ public class RecurrenceRule extends BaseTimeEntity {
     private Integer intervalValue;
 
     // 별도의 테이블을 생성하여 byDay를 리스트로 관리한다.
+    // 일정 목록 조회 시 규칙마다 쿼리가 나가지 않도록 묶어서 조회한다.
+    @BatchSize(size = 100)
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recurrence_rule_by_day", joinColumns = @JoinColumn(name = "recurrence_rule_id"))
     @Column(name = "by_day")

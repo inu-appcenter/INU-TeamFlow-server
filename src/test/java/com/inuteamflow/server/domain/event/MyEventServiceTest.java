@@ -35,6 +35,8 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -260,6 +262,46 @@ class MyEventServiceTest {
         assertThat(getList(JULY))
                 .extracting(EventListResponse::getOccurrenceAt)
                 .containsExactly(at(7, 1, 9), at(7, 3, 9));
+    }
+
+    @Test
+    @DisplayName("반복 일정이 늘어도 조회 쿼리 수는 늘어나지 않는다")
+    void getMyEventList_queryCountDoesNotGrowWithRecurringEvents() {
+        saveWeeklyEvents(1);
+        long queryCountWithFewEvents = countQueriesOfGetList();
+
+        saveWeeklyEvents(9);
+        long queryCountWithManyEvents = countQueriesOfGetList();
+
+        assertThat(queryCountWithManyEvents).isEqualTo(queryCountWithFewEvents);
+    }
+
+    private void saveWeeklyEvents(int count) {
+        for (int i = 0; i < count; i++) {
+            Event personal = saveRecurringEvent(null, "개인 반복", at(7, 6, 9), at(7, 6, 10));
+            saveRule(personal, RecurrenceFrequency.WEEKLY, List.of(DayOfWeek.MONDAY), null, null);
+
+            Event participating = saveRecurringEvent(team, "팀 반복", at(7, 7, 9), at(7, 7, 10));
+            saveRule(participating, RecurrenceFrequency.WEEKLY, List.of(DayOfWeek.TUESDAY), null, null);
+            saveEventParticipant(participating, myMember);
+        }
+    }
+
+    private long countQueriesOfGetList() {
+        Statistics statistics = entityManager
+                .getEntityManagerFactory()
+                .unwrap(SessionFactory.class)
+                .getStatistics();
+        entityManager.flush();
+        entityManager.clear();
+
+        statistics.setStatisticsEnabled(true);
+        statistics.clear();
+        myEventService.getMyEventList(me, YEAR, JULY);
+        long queryCount = statistics.getPrepareStatementCount();
+        statistics.setStatisticsEnabled(false);
+
+        return queryCount;
     }
 
     private List<EventListResponse> getList(int month) {
