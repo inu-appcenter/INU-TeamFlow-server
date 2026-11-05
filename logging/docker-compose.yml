@@ -9,6 +9,11 @@ services:
     volumes:
       - ./loki-config.yaml:/etc/loki/config.yaml:ro
       - loki-data:/loki
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     restart: unless-stopped
     networks:
       - inu-teamflow
@@ -28,6 +33,11 @@ services:
       - alloy-data:/var/lib/alloy/data
     depends_on:
       - loki
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
     restart: unless-stopped
     networks:
       - inu-teamflow
