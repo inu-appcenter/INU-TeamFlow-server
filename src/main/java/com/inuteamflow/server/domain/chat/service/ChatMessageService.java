@@ -18,12 +18,14 @@ import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -222,12 +224,26 @@ public class ChatMessageService {
                     // WebSocket 세션이 없는 경우 → 푸시 대상
                     // WebSocket 세션이 있는 경우 → 해당 채팅방을 구독 중(화면 보는 중) 이라면 푸시 불필요
                     if (simpUser == null) return true;
-                    return simpUser.getSessions().stream()
+                    boolean subscribed = simpUser.getSessions().stream()
                             .flatMap(session -> session.getSubscriptions().stream())
-                            .noneMatch(sub -> sub.getDestination().equals("/sub/chat-rooms/" + roomId));
+                            .anyMatch(sub -> sub.getDestination().equals("/sub/chat-rooms/" + roomId));
+                    if (subscribed) {
+                        log.info(
+                                "[채팅 푸시 디버그] 채팅방 구독 중이라 푸시 제외 roomId={} userId={} sessionCount={}",
+                                roomId,
+                                u.getUserId(),
+                                simpUser.getSessions().size()); // 임시 디버그용, 확인 후 제거
+                    }
+                    return !subscribed;
                 })
                 .map(User::getUserId)
                 .toList();
+
+        log.info(
+                "[채팅 푸시 디버그] 푸시 대상 roomId={} senderId={} targetIds={}",
+                roomId,
+                sender.getUserId(),
+                pushTargetIds); // 임시 디버그용, 확인 후 제거
 
         // 전부 이 채팅방을 구독 중이라면 알림 전송은 필요 없음
         if (pushTargetIds.isEmpty()) return;

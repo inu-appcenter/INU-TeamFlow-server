@@ -156,7 +156,13 @@ public class PushService {
             String redirectUrl,
             Long roomId,
             String collapseKey) {
+        List<Long> requestedIds = receiverIds;
         receiverIds = filterEnabledReceivers(receiverIds, type);
+        log.info(
+                "[채팅 푸시 디버그] 알림 옵션 필터 roomId={} requestedIds={} enabledIds={}",
+                roomId,
+                requestedIds,
+                receiverIds); // 임시 디버그용, 확인 후 제거
         if (receiverIds.isEmpty()) return;
 
         Map<String, String> data = new HashMap<>();
@@ -164,7 +170,9 @@ public class PushService {
         data.put("type", type.name());
         data.put("roomId", String.valueOf(roomId));
 
-        send(pushTokenRepository.findAllByCreatedByIn(receiverIds), new PushMessage(title, body, data, collapseKey));
+        List<PushToken> tokens = pushTokenRepository.findAllByCreatedByIn(receiverIds);
+        log.info("[채팅 푸시 디버그] 발송 토큰 roomId={} tokenCount={}", roomId, tokens.size()); // 임시 디버그용, 확인 후 제거
+        send(tokens, new PushMessage(title, body, data, collapseKey));
     }
 
     // =========================================================================
