@@ -39,7 +39,7 @@ public class FcmSender {
         return invalidTokens;
     }
 
-    private MulticastMessage toMulticast(List<String> batch, PushMessage message) {
+    MulticastMessage toMulticast(List<String> batch, PushMessage message) {
         MulticastMessage.Builder builder = MulticastMessage.builder()
                 .setNotification(Notification.builder()
                         .setTitle(message.title())
@@ -54,6 +54,7 @@ public class FcmSender {
                             .build())
                     .setApnsConfig(ApnsConfig.builder()
                             .putHeader("apns-collapse-id", message.collapseKey())
+                            .setAps(Aps.builder().build()) // Firebase SDK는 ApnsConfig 생성 시 aps를 필수로 요구
                             .build());
         }
         return builder.build();
