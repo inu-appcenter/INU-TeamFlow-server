@@ -5,7 +5,7 @@ services:
   loki:
     container_name: inu-teamflow-loki
     image: grafana/loki:3.5.5
-    command: -config.file=/etc/loki/config.yaml
+    command: -config.file=/etc/loki/config.yaml -log.level=warn
     volumes:
       - ./loki-config.yaml:/etc/loki/config.yaml:ro
       - loki-data:/loki
