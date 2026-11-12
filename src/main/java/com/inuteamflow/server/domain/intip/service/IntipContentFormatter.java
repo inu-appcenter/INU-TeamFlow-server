@@ -96,7 +96,51 @@ public final class IntipContentFormatter {
             DASH_BULLET_PATTERN,
             LABEL_SEPARATOR_PATTERN);
 
+    /**
+     * AI 본문 정리에서 줄 맨 앞에 붙이도록 허용한 기호. AiClassificationClient의 정리 프롬프트와 맞춰야 한다.
+     */
+    private static final String ADDED_SYMBOLS = "■•";
+
+    /**
+     * 원문 대조 검증에서 무시하는 문자(공백과 {@link #ADDED_SYMBOLS}).
+     */
+    private static final Pattern IGNORED_IN_COMPARISON_PATTERN = Pattern.compile("[\\s" + ADDED_SYMBOLS + "]");
+
+    /**
+     * 이미 글머리표로 시작하는 줄 앞에 AI가 덧붙인 {@link #ADDED_SYMBOLS}.
+     *
+     * <p>예: {@code "■ 1. 시험일정"}, {@code "• ✅ 행사기간"}, {@code "■ ❍ 지원내용"}
+     *
+     * <ul>
+     *   <li>기호류({@code ✅ ❍ □ ①} 등), {@code ※ * -}, {@code 1.}/{@code 2)}, {@code 가.} 앞이면 겹친 것으로 본다.
+     * </ul>
+     */
+    private static final Pattern REDUNDANT_ADDED_SYMBOL_PATTERN =
+            Pattern.compile("(?m)^[" + ADDED_SYMBOLS + "] ?(?=[\\p{So}\\p{No}※*\\-]|\\d{1,2}[.)]|[가나다라마바사아자차카타파하]\\.)");
+
     private IntipContentFormatter() {}
+
+    /**
+     * AI가 이미 글머리표가 있는 줄에 덧붙인 {@link #ADDED_SYMBOLS}를 지운다.
+     */
+    public static String removeRedundantAddedSymbols(String content) {
+        return REDUNDANT_ADDED_SYMBOL_PATTERN.matcher(content).replaceAll("");
+    }
+
+    /**
+     * AI가 정리한 본문이 원문과 같은 글자로 이루어졌는지 검증한다.
+     *
+     * <p>공백과 {@link #ADDED_SYMBOLS}를 지운 뒤 비교하므로, 줄바꿈과 허용 기호만 다르면 같은 본문으로 본다.
+     */
+    public static boolean hasSameText(String original, String formatted) {
+        if (original == null || formatted == null) {
+            return false;
+        }
+        return IGNORED_IN_COMPARISON_PATTERN
+                .matcher(original)
+                .replaceAll("")
+                .equals(IGNORED_IN_COMPARISON_PATTERN.matcher(formatted).replaceAll(""));
+    }
 
     public static String format(String content) {
         if (content == null) {

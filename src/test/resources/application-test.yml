@@ -34,7 +34,9 @@ aws:
 ai:
   base-url: http://localhost:9999
   api-key: test-api-key
-  model: test-model
+  model:
+    classification: test-classification-model
+    format: test-format-model
 
 intip:
   base-url: http://localhost:9999
