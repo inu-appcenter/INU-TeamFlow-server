@@ -3,7 +3,8 @@ spring:
     import: optional:file:.env[.properties]
 
   datasource:
-    url: jdbc:h2:mem:inu_teamflow_test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    # 컨텍스트마다 별도 DB를 사용해, @DirtiesContext로 닫히는 컨텍스트의 create-drop이 캐시된 다른 컨텍스트의 테이블을 지우지 않도록 한다.
+    url: jdbc:h2:mem:inu_teamflow_test_${random.uuid};MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     username: sa
     password:
     driver-class-name: org.h2.Driver

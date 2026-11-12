@@ -67,6 +67,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByTeamAndIsSingleAndStartAtBefore(
             @Param("team") Team team, @Param("isSingle") Boolean isSingle, @Param("endAt") LocalDateTime endAt);
 
+    List<Event> findByTeam(Team team);
+
     @Modifying
     @Query("DELETE FROM Event e WHERE e.createdBy = :createdBy AND e.team IS NULL")
     void deleteByCreatedByAndTeamIsNull(@Param("createdBy") Long createdBy);
