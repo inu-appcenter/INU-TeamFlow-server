@@ -297,6 +297,61 @@ class IntipContentFormatterTest {
     }
 
     @Test
+    @DisplayName("줄바꿈과 허용 기호(■, •)만 다르면 원문과 같은 본문으로 본다")
+    void hasSameTextIgnoresWhitespaceAndAddedSymbols() {
+        String original = "바. 세부 평가 항목 평가항목 AI활동경험 학업성적 배점(100점) 50점 30점";
+        String formatted = "■ 바. 세부 평가 항목\n\n• 평가항목 AI활동경험 학업성적\n• 배점(100점) 50점 30점";
+
+        assertThat(IntipContentFormatter.hasSameText(original, formatted)).isTrue();
+    }
+
+    @Test
+    @DisplayName("글자가 바뀌거나 빠지면 원문과 다른 본문으로 본다")
+    void hasSameTextDetectsChangedCharacters() {
+        String original = "신청기간 : ~ 2026. 9. 11.(금) 13:00";
+
+        assertThat(IntipContentFormatter.hasSameText(original, "신청기간 : ~ 2026. 9. 12.(금) 13:00"))
+                .isFalse();
+        assertThat(IntipContentFormatter.hasSameText(original, "신청기간 : ~ 2026. 9. 11.(금)"))
+                .isFalse();
+        assertThat(IntipContentFormatter.hasSameText(original, "- 신청기간 : ~ 2026. 9. 11.(금) 13:00"))
+                .isFalse();
+        assertThat(IntipContentFormatter.hasSameText(original, null)).isFalse();
+    }
+
+    @Test
+    @DisplayName("이미 글머리표가 있는 줄에 겹쳐 붙은 ■, •만 지운다")
+    void removesRedundantAddedSymbols() {
+        String content = """
+                ■ 근로지 상세내용
+                • 사무국 모집인원 1명
+
+                ■ 1. 시험일정
+                ■ ❍ 지원내용
+                • ✅ 행사기간 : 2026년 11월 16일(월)
+                ■ ※ 참여신청 방법
+                • * 인천 9개 대학
+                • ① 인천 소재 9개 대학
+                • 2) 2학기 시간표
+                ■ 가. 선발대상
+                • - 인천대학교 재학생""";
+
+        assertThat(IntipContentFormatter.removeRedundantAddedSymbols(content)).isEqualTo("""
+                ■ 근로지 상세내용
+                • 사무국 모집인원 1명
+
+                1. 시험일정
+                ❍ 지원내용
+                ✅ 행사기간 : 2026년 11월 16일(월)
+                ※ 참여신청 방법
+                * 인천 9개 대학
+                ① 인천 소재 9개 대학
+                2) 2학기 시간표
+                가. 선발대상
+                - 인천대학교 재학생""");
+    }
+
+    @Test
     @DisplayName("이미 개행이 복원된 본문에 다시 적용해도 결과가 같다")
     void isIdempotent() {
         String content = "□모집인원: 1명 □근로내용 1) 근로기간: ~ 2027. 2. 12.(금) 참가를 바랍니다. - 재학생";

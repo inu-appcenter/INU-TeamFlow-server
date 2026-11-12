@@ -49,6 +49,27 @@ class AiClassificationClientTest {
     }
 
     @Test
+    @DisplayName("전화번호/이메일을 번호 자리표시자로 바꾸고 원래 값으로 되돌린다")
+    void masksWithPlaceholdersAndRestores() {
+        String content = "문의 032-835-9576 또는 donghyeon@inu.ac.kr, 010-1234-5678";
+
+        AiClassificationClient.PlaceholderMaskedText masked = AiClassificationClient.maskWithPlaceholders(content);
+
+        assertThat(masked.text()).isEqualTo("문의 ⟦1⟧ 또는 ⟦3⟧, ⟦2⟧");
+        assertThat(masked.restore("문의\n⟦1⟧ 또는 ⟦3⟧,\n⟦2⟧"))
+                .isEqualTo("문의\n032-835-9576 또는 donghyeon@inu.ac.kr,\n010-1234-5678");
+    }
+
+    @Test
+    @DisplayName("범위를 벗어난 자리표시자는 그대로 둔다")
+    void keepsUnknownPlaceholder() {
+        AiClassificationClient.PlaceholderMaskedText masked =
+                AiClassificationClient.maskWithPlaceholders("문의 032-835-9576");
+
+        assertThat(masked.restore("⟦1⟧ ⟦9⟧")).isEqualTo("032-835-9576 ⟦9⟧");
+    }
+
+    @Test
     @DisplayName("전화번호/이메일이 없는 본문은 원문 그대로 유지한다")
     void keepsCleanTextUnchanged() {
         String content = "1. 자기주도형 파이오니어 인턴 프로그램 안내 - 초기비용 약 650-750만원 내외 예상, 유급인턴임";
