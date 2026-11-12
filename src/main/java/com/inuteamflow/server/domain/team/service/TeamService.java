@@ -1,8 +1,12 @@
 package com.inuteamflow.server.domain.team.service;
 
 import com.inuteamflow.server.domain.chat.service.ChatRoomService;
+import com.inuteamflow.server.domain.event.entity.Event;
 import com.inuteamflow.server.domain.event.repository.EventParticipantRepository;
+import com.inuteamflow.server.domain.event.repository.EventRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionParticipantRepository;
+import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionRepository;
+import com.inuteamflow.server.domain.event.repository.RecurrenceRuleRepository;
 import com.inuteamflow.server.domain.invitation.repository.TeamInvitationRepository;
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.repository.RecruitmentApplicationRepository;
@@ -23,7 +27,11 @@ import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeReadReposit
 import com.inuteamflow.server.domain.teamNotice.repository.TeamNoticeRepository;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.vote.repository.VoteAvailabilityRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteDateRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteResultRepository;
+import com.inuteamflow.server.domain.vote.repository.VoteTimeSlotRepository;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
@@ -53,6 +61,13 @@ public class TeamService {
     private final VoteParticipantRepository voteParticipantRepository;
     private final RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
     private final EventParticipantRepository eventParticipantRepository;
+    private final EventRepository eventRepository;
+    private final RecurrenceExceptionRepository recurrenceExceptionRepository;
+    private final RecurrenceRuleRepository recurrenceRuleRepository;
+    private final VoteRepository voteRepository;
+    private final VoteResultRepository voteResultRepository;
+    private final VoteTimeSlotRepository voteTimeSlotRepository;
+    private final VoteDateRepository voteDateRepository;
     private final ChatRoomService chatRoomService;
 
     // =========================================================================
@@ -264,7 +279,7 @@ public class TeamService {
     /**
      * 팀을 삭제한다.
      *
-     * <p>팀 리더만 삭제할 수 있다. 모집글/신청서, 팀 공지(읽음 기록·이미지 포함), 팀 초대, 팀 멤버, 팀
+     * <p>팀 리더만 삭제할 수 있다. 모집글/신청서, 팀 공지(읽음 기록·이미지 포함), 팀 초대, 팀 투표, 팀 일정, 팀 멤버, 팀
      * 채팅방을 FK 제약이 해소되는 순서로 모두 삭제한 뒤 팀 이미지와 팀 자체를 삭제한다.</p>
      *
      * @param user 삭제를 요청한 사용자
@@ -306,6 +321,12 @@ public class TeamService {
 
         // 팀 초대 삭제
         teamInvitationRepository.deleteAllByTeam(team);
+
+        // 팀 투표 삭제 (투표 결과가 일정을 참조하므로 일정보다 먼저 삭제)
+        voteRepository.findByTeam(team).forEach(vote -> deleteVoteCascade(vote.getVoteId()));
+
+        // 팀 일정 삭제
+        eventRepository.findByTeam(team).forEach(this::deleteEventCascade);
 
         // 팀 멤버 삭제
         teamMemberRepository.deleteAllByTeam(team);
@@ -413,5 +434,32 @@ public class TeamService {
         eventParticipantRepository.deleteByTeamMember(member);
         chatRoomService.removeTeamChatRoomMember(member.getTeam(), member.getUser());
         teamMemberRepository.delete(member);
+    }
+
+    /**
+     * 투표와 연관된 가능 시간, 결과, 참여자, 날짜/시간 슬롯을 FK 제약이 해소되는 순서로 삭제한 뒤 투표를 삭제한다.
+     *
+     * @param voteId 삭제할 투표 ID
+     */
+    private void deleteVoteCascade(Long voteId) {
+        voteAvailabilityRepository.deleteByVoteId(voteId);
+        voteResultRepository.deleteByVoteId(voteId);
+        voteParticipantRepository.deleteByVoteId(voteId);
+        voteTimeSlotRepository.deleteByVoteId(voteId);
+        voteDateRepository.deleteByVoteId(voteId);
+        voteRepository.deleteByVoteId(voteId);
+    }
+
+    /**
+     * 일정과 연관된 반복 예외 참여자, 반복 예외, 반복 규칙, 참여자를 FK 제약이 해소되는 순서로 삭제한 뒤 일정을 삭제한다.
+     *
+     * @param event 삭제할 일정
+     */
+    private void deleteEventCascade(Event event) {
+        recurrenceExceptionParticipantRepository.deleteByEvent(event);
+        recurrenceExceptionRepository.deleteByEvent(event);
+        recurrenceRuleRepository.deleteByEvent(event);
+        eventParticipantRepository.deleteByEvent(event);
+        eventRepository.delete(event);
     }
 }
