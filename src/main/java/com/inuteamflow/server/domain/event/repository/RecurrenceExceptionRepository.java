@@ -18,19 +18,20 @@ public interface RecurrenceExceptionRepository extends JpaRepository<RecurrenceE
 
     Optional<RecurrenceException> findByEventAndOriginalOccurrenceAt(Event event, LocalDateTime originalOccurrenceAt);
 
+    // 원래 회차가 조회 범위에 걸치거나, 수정된 시각이 조회 범위와 겹치는 예외만 조회한다.
     @Query("""
     SELECT re
     FROM RecurrenceException re
-    JOIN FETCH re.event e
-    LEFT JOIN FETCH e.team
-    WHERE re.exceptionType = :exceptionType
-    AND re.event IN :events
-    AND re.modifiedStartAt < :endAt
-    AND re.modifiedEndAt > :startAt
+    WHERE re.event IN :events
+    AND (
+        (re.originalOccurrenceAt > :occurrenceFrom AND re.originalOccurrenceAt < :endAt)
+        OR (re.exceptionType = :modifiedType AND re.modifiedStartAt < :endAt AND re.modifiedEndAt > :startAt)
+    )
     """)
-    List<RecurrenceException> findModifiedOverlapping(
-            @Param("exceptionType") RecurrenceExceptionType exceptionType,
+    List<RecurrenceException> findAffectingRange(
             @Param("events") Collection<Event> events,
+            @Param("modifiedType") RecurrenceExceptionType modifiedType,
+            @Param("occurrenceFrom") LocalDateTime occurrenceFrom,
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt);
 

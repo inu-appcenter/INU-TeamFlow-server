@@ -110,8 +110,8 @@ public class IntipSyncService {
             return;
         }
 
-        InfoPost infoPost = InfoPost.createFromIntip(
-                category, notice.getTitle(), IntipContentFormatter.format(notice.getContentText()), notice.getUrl());
+        InfoPost infoPost =
+                InfoPost.createFromIntip(category, notice.getTitle(), formatContent(notice), notice.getUrl());
         infoPost.assignAuditor(InfoPost.SYSTEM_AUTHOR_ID); // 스케줄러 컨텍스트엔 로그인 사용자가 없어 예약 ID 로 지정
         log.info(
                 "[INTIP 동기화] 저장 직전, notice id={}, category={}, title={}",
@@ -123,6 +123,29 @@ public class IntipSyncService {
                 "[INTIP 동기화] 저장 완료, notice id={}, savedId={}",
                 notice.getId(),
                 saved.getInfoPostId()); // 임시 디버그용, 확인 후 제거
+    }
+
+    /**
+     * 정규식 포매터로 개행을 복원한 본문을 AI로 한 번 더 정리한다.
+     *
+     * <p>AI 호출이 실패하거나 결과가 원문과 다른 글자를 포함하면 정규식 포매터 결과를 그대로 쓴다.
+     */
+    private String formatContent(IntipNoticeResponse notice) {
+        String formatted = IntipContentFormatter.format(notice.getContentText());
+        if (formatted == null || formatted.isBlank()) {
+            return formatted;
+        }
+
+        try {
+            String aiFormatted = aiClassificationClient.formatContent(notice.getId(), formatted);
+            if (IntipContentFormatter.hasSameText(formatted, aiFormatted)) {
+                return IntipContentFormatter.removeRedundantAddedSymbols(aiFormatted.strip());
+            }
+            log.warn("[INTIP 동기화] AI 본문 정리 결과가 원문과 달라 정규식 결과 사용, notice id={}", notice.getId());
+        } catch (Exception e) {
+            log.warn("[INTIP 동기화] AI 본문 정리 실패, 정규식 결과 사용, notice id={}", notice.getId(), e);
+        }
+        return formatted;
     }
 
     private InfoPostCategory toValidCategory(String category) {

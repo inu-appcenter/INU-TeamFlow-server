@@ -4,6 +4,7 @@ import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.global.enums.Category;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,10 +24,12 @@ public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> 
 
     @Query(
             value = "SELECT r FROM Recruitment r LEFT JOIN FETCH r.infoPost ip "
-                    + "WHERE (:keyword IS NULL OR r.title LIKE %:keyword% OR ip.title LIKE %:keyword%)",
+                    + "WHERE (:category IS NULL OR r.category = :category) "
+                    + "AND (:keyword IS NULL OR r.title LIKE %:keyword% OR ip.title LIKE %:keyword%)",
             countQuery = "SELECT COUNT(r) FROM Recruitment r LEFT JOIN r.infoPost ip "
-                    + "WHERE (:keyword IS NULL OR r.title LIKE %:keyword% OR ip.title LIKE %:keyword%)")
-    Page<Recruitment> search(@Param("keyword") String keyword, Pageable pageable);
+                    + "WHERE (:category IS NULL OR r.category = :category) "
+                    + "AND (:keyword IS NULL OR r.title LIKE %:keyword% OR ip.title LIKE %:keyword%)")
+    Page<Recruitment> search(@Param("category") Category category, @Param("keyword") String keyword, Pageable pageable);
 
     List<Recruitment> findAllByTeam(Team team);
 

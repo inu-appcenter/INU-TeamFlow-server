@@ -3,6 +3,7 @@ package com.inuteamflow.server.global.jwt;
 import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.service.UserDetailsServiceImpl;
+import com.inuteamflow.server.global.enums.ClientType;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
@@ -29,7 +30,6 @@ import org.springframework.stereotype.Component;
 public class JwtTokenProvider {
 
     public static final long ACCESS_TOKEN_VALID_TIME = 3 * 60 * 60 * 1000L; // 3시간
-    public static final long REFRESH_TOKEN_VALID_TIME = 3 * 24 * 60 * 60 * 1000L; // 3일
 
     private final Key key;
     private final UserDetailsServiceImpl userDetailsService;
@@ -44,7 +44,7 @@ public class JwtTokenProvider {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
-    public TokenResponse generateToken(Authentication authentication) {
+    public TokenResponse generateToken(Authentication authentication, ClientType clientType) {
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
@@ -53,10 +53,10 @@ public class JwtTokenProvider {
         User user = userDetails.getUser();
 
         String accessToken = createAccessToken(user.getUsername(), authorities);
-        String refreshToken = createRefreshToken(user.getUsername());
-        upsertRefreshToken(user, refreshToken);
+        String refreshToken = createRefreshToken(user.getUsername(), clientType);
+        upsertRefreshToken(user, clientType, refreshToken);
 
-        return TokenResponse.of(accessToken, refreshToken);
+        return TokenResponse.of(accessToken, refreshToken, clientType);
     }
 
     public Authentication getAuthentication(String accessToken) {
@@ -111,30 +111,31 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    private String createRefreshToken(String username) {
+    private String createRefreshToken(String username, ClientType clientType) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(now.plusMillis(REFRESH_TOKEN_VALID_TIME)))
+                .setExpiration(Date.from(now.plus(clientType.getRefreshTokenValidTime())))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public TokenResponse generateTokenByUsername(String username) {
+    public TokenResponse generateTokenByUsername(String username, ClientType clientType) {
         UserDetailsImpl userDetails = userDetailsService.loadUserByUsername(username);
         Authentication authentication =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-        return generateToken(authentication);
+        return generateToken(authentication, clientType);
     }
 
-    private void upsertRefreshToken(User user, String refreshTokenValue) {
+    private void upsertRefreshToken(User user, ClientType clientType, String refreshTokenValue) {
         refreshTokenRepository
-                .findByUserId(user.getUserId())
+                .findByUserIdAndClientType(user.getUserId(), clientType)
                 .ifPresentOrElse(
                         refreshToken -> refreshToken.updateToken(refreshTokenValue),
                         () -> refreshTokenRepository.save(RefreshToken.builder()
                                 .user(user)
+                                .clientType(clientType)
                                 .refreshToken(refreshTokenValue)
                                 .build()));
     }

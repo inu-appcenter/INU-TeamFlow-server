@@ -21,8 +21,6 @@ import com.inuteamflow.server.domain.event.repository.EventRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionParticipantRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceExceptionRepository;
 import com.inuteamflow.server.domain.event.repository.RecurrenceRuleRepository;
-import com.inuteamflow.server.domain.fcm.entity.FcmToken;
-import com.inuteamflow.server.domain.fcm.repository.FcmTokenRepository;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostScrap;
@@ -37,6 +35,8 @@ import com.inuteamflow.server.domain.notification.entity.NotificationOption;
 import com.inuteamflow.server.domain.notification.enums.NotificationType;
 import com.inuteamflow.server.domain.notification.repository.NotificationOptionRepository;
 import com.inuteamflow.server.domain.notification.repository.NotificationRepository;
+import com.inuteamflow.server.domain.push.entity.PushToken;
+import com.inuteamflow.server.domain.push.repository.PushTokenRepository;
 import com.inuteamflow.server.domain.recruitment.entity.Recruitment;
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentApplication;
 import com.inuteamflow.server.domain.recruitment.entity.RecruitmentScrap;
@@ -71,6 +71,7 @@ import com.inuteamflow.server.domain.vote.repository.VoteParticipantRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteRepository;
 import com.inuteamflow.server.domain.vote.repository.VoteTimeSlotRepository;
 import com.inuteamflow.server.global.enums.Category;
+import com.inuteamflow.server.global.enums.ClientType;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.jwt.refresh.RefreshToken;
@@ -182,7 +183,7 @@ class UserServiceTest {
     private RecurrenceExceptionParticipantRepository recurrenceExceptionParticipantRepository;
 
     @Autowired
-    private FcmTokenRepository fcmTokenRepository;
+    private PushTokenRepository pushTokenRepository;
 
     @Autowired
     private NotificationRepository notificationRepository;
@@ -356,20 +357,23 @@ class UserServiceTest {
                 .exceptionType(RecurrenceExceptionType.CANCELLED)
                 .build());
 
-        // FcmToken
-        fcmTokenRepository.save(FcmToken.builder()
-                .fcmToken("fcm-token-target")
-                .deviceType("WEB")
-                .build());
+        // PushToken
+        pushTokenRepository.save(
+                PushToken.builder().token("push-token-target").deviceType("WEB").build());
 
         // Notification: target이 받은 알림(삭제 대상) + target이 보낸 알림(receiver=leader, 삭제되면 안됨)
         notificationRepository.save(Notification.create(target, "제목", "내용", NotificationType.CHAT, "/url"));
         notificationRepository.save(Notification.create(leader, "제목2", "내용2", NotificationType.CHAT, "/url2"));
 
-        // RefreshToken
+        // RefreshToken: 웹/모바일 토큰 모두 삭제 대상
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(target)
                 .refreshToken("refresh-token")
+                .build());
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(target)
+                .clientType(ClientType.MOBILE)
+                .refreshToken("mobile-refresh-token")
                 .build());
 
         // ChatRoom/ChatRoomMember: 팀 채팅방 + 1:1 채팅방 양쪽에 target 소속
@@ -435,10 +439,10 @@ class UserServiceTest {
         assertThat(recurrenceExceptionRepository.count()).isEqualTo(1); // teamEvent용 exception만 남음
         assertThat(recurrenceRuleRepository.count()).isEqualTo(0);
 
-        assertThat(fcmTokenRepository.count()).isEqualTo(0);
+        assertThat(pushTokenRepository.count()).isEqualTo(0);
 
         assertThat(notificationRepository.count()).isEqualTo(1); // leader가 받은 알림은 유지
-        assertThat(refreshTokenRepository.findByUserId(targetId)).isEmpty();
+        assertThat(refreshTokenRepository.existsByUserId(targetId)).isFalse();
 
         assertThat(chatRoomRepository.findById(teamChatRoomId)).isPresent();
         assertThat(chatRoomRepository.findById(directChatRoomId)).isPresent();

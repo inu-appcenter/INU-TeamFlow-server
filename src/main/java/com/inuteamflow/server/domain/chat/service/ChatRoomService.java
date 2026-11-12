@@ -87,15 +87,33 @@ public class ChatRoomService {
                         .collect(Collectors.toMap(crm -> crm.getChatRoom().getChatRoomId(), ChatRoomMember::getUser))
                 : Map.of();
 
+        // 방별 안읽은 수를 한 번에 계산 (방마다 COUNT 하던 N+1 제거)
+        Map<Long, Long> unreadCountByRoomId =
+                chatMessageRepository.countUnreadByChatRoomIdIn(user.getUserId(), chatRoomIds).stream()
+                        .collect(Collectors.toMap(
+                                ChatMessageRepository.UnreadCountView::getChatRoomId,
+                                ChatMessageRepository.UnreadCountView::getUnreadCount));
+
+        // TEAM/GROUP 방의 멤버를 한 번에 조회 (방마다 멤버를 조회하던 N+1 제거)
+        Map<Long, List<ChatRoomMember>> membersByRoomId = type == ChatRoomType.DIRECT
+                ? Map.of()
+                : chatRoomMemberRepository.findByChatRoomIdInWithUser(chatRoomIds).stream()
+                        .collect(Collectors.groupingBy(crm -> crm.getChatRoom().getChatRoomId()));
+
         return myMemberships.stream()
                 .map(member -> {
-                    ChatMessage lastMessage =
-                            lastMessageByRoomId.get(member.getChatRoom().getChatRoomId());
+                    Long roomId = member.getChatRoom().getChatRoomId();
+                    ChatMessage lastMessage = lastMessageByRoomId.get(roomId);
                     // 합류 시점 이전 메시지는 방 목록 미리보기에도 노출하지 않음
                     if (lastMessage != null && lastMessage.getChatMessageId() <= member.getVisibleFromMessageId()) {
                         lastMessage = null;
                     }
-                    return toSummary(member, lastMessage, partnerByRoomId);
+                    return toSummary(
+                            member,
+                            lastMessage,
+                            partnerByRoomId,
+                            membersByRoomId.get(roomId),
+                            unreadCountByRoomId.getOrDefault(roomId, 0L));
                 })
                 .toList();
     }
@@ -615,25 +633,40 @@ public class ChatRoomService {
      * @param member 요약할 채팅방의 멤버 정보
      * @param lastMessage 채팅방의 마지막 메시지, 없으면 {@code null}
      * @param partnerByRoomId 1:1 채팅방 ID별 상대방 정보
+     * @param preloadedGroupMembers 미리 조회한 채팅방 멤버 목록, {@code null}이면 이 방만 따로 조회
      * @return 채팅방 목록 화면에 표시할 요약 정보
      */
-    private ChatRoomSummaryResponse toSummary(
-            ChatRoomMember member, ChatMessage lastMessage, Map<Long, User> partnerByRoomId) {
-        return toSummary(member, lastMessage, partnerByRoomId, null);
-    }
-
     private ChatRoomSummaryResponse toSummary(
             ChatRoomMember member,
             ChatMessage lastMessage,
             Map<Long, User> partnerByRoomId,
             List<ChatRoomMember> preloadedGroupMembers) {
+        return toSummary(member, lastMessage, partnerByRoomId, preloadedGroupMembers, null);
+    }
+
+    /**
+     * 미리 조회한 안읽은 메시지 수까지 받아 채팅방 요약 정보로 변환한다.
+     *
+     * <p>채팅방 목록처럼 여러 방을 한 번에 처리할 때는 멤버 목록과 안읽은 수를 미리 조회해서 넘기고,
+     * {@code null}을 넘기면 이 방 하나만 따로 조회한다.</p>
+     *
+     * @param preloadedUnreadCount 미리 계산한 안읽은 메시지 수, {@code null}이면 이 방만 따로 계산
+     */
+    private ChatRoomSummaryResponse toSummary(
+            ChatRoomMember member,
+            ChatMessage lastMessage,
+            Map<Long, User> partnerByRoomId,
+            List<ChatRoomMember> preloadedGroupMembers,
+            Long preloadedUnreadCount) {
         ChatRoom chatRoom = member.getChatRoom();
 
-        long unreadCount = chatMessageRepository.countByChatRoomAndChatMessageIdGreaterThan(
-                chatRoom,
-                Math.max(
-                        member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L,
-                        member.getVisibleFromMessageId()));
+        long unreadCount = preloadedUnreadCount != null
+                ? preloadedUnreadCount
+                : chatMessageRepository.countByChatRoomAndChatMessageIdGreaterThan(
+                        chatRoom,
+                        Math.max(
+                                member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L,
+                                member.getVisibleFromMessageId()));
 
         String roomName;
         String imageUrl;

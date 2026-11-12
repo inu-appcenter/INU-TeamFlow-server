@@ -7,6 +7,7 @@ import com.inuteamflow.server.domain.user.entity.User;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.enums.Role;
 import com.inuteamflow.server.domain.user.service.UserDetailsServiceImpl;
+import com.inuteamflow.server.global.enums.ClientType;
 import com.inuteamflow.server.global.jwt.refresh.RefreshTokenRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -56,13 +57,14 @@ class JwtTokenProviderTest {
         when(user.getRole()).thenReturn(Role.USER);
 
         // 저장된 리프레시 토큰이 없어 신규 저장 분기를 타도록 한다.
-        when(refreshTokenRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(refreshTokenRepository.findByUserIdAndClientType(1L, ClientType.WEB))
+                .thenReturn(Optional.empty());
     }
 
     @Test
     @DisplayName("액세스 토큰은 발급 시각으로부터 3시간 뒤 만료된다")
     void generateToken_setsAccessTokenExpiryToThreeHours() {
-        TokenResponse response = jwtTokenProvider.generateToken(authentication());
+        TokenResponse response = jwtTokenProvider.generateToken(authentication(), ClientType.WEB);
 
         Claims claims = parseClaims(response.getAccessToken());
 
@@ -72,7 +74,7 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("리프레시 토큰은 발급 시각으로부터 3일 뒤 만료된다")
     void generateToken_setsRefreshTokenExpiryToThreeDays() {
-        TokenResponse response = jwtTokenProvider.generateToken(authentication());
+        TokenResponse response = jwtTokenProvider.generateToken(authentication(), ClientType.WEB);
 
         Claims claims = parseClaims(response.getRefreshToken());
 
@@ -82,7 +84,7 @@ class JwtTokenProviderTest {
     @Test
     @DisplayName("방금 발급한 액세스 토큰은 검증을 통과한다")
     void validateToken_acceptsGeneratedAccessToken() {
-        TokenResponse response = jwtTokenProvider.generateToken(authentication());
+        TokenResponse response = jwtTokenProvider.generateToken(authentication(), ClientType.WEB);
 
         assertThat(jwtTokenProvider.validateToken(response.getAccessToken())).isTrue();
     }

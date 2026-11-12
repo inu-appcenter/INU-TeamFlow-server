@@ -82,7 +82,7 @@ public interface UserControllerDocument {
     ResponseEntity<MyInfoResponse> updateMyInfo(
             @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody UserUpdateRequest request);
 
-    @Operation(summary = "deleteUser", description = "계정 탈퇴")
+    @Operation(summary = "deleteUser", description = "계정 탈퇴 (리프레시 토큰 쿠키 삭제)")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "계정 탈퇴 성공"),
         @ApiResponse(

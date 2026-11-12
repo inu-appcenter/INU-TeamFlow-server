@@ -15,6 +15,7 @@ import com.inuteamflow.server.domain.team.entity.Team;
 import com.inuteamflow.server.domain.team.repository.TeamMemberRepository;
 import com.inuteamflow.server.domain.team.repository.TeamRepository;
 import com.inuteamflow.server.domain.user.entity.User;
+import com.inuteamflow.server.global.enums.Category;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import java.util.List;
@@ -44,11 +45,15 @@ public class RecruitmentService {
     /**
      * 전체 모집글 목록을 조회한다.
      *
+     * <p>카테고리와 검색어는 선택 조건이며, 지정하지 않으면 해당 조건 없이 조회한다.</p>
+     *
+     * @param category 모집 카테고리
+     * @param keyword 검색어 (모집글 제목, 연결된 정보글 제목)
      * @param pageable 페이지 정보
      * @return 모집글 요약 목록
      */
-    public Page<RecruitmentSummaryResponse> getRecruitments(String keyword, Pageable pageable) {
-        return recruitmentRepository.search(keyword, pageable).map(RecruitmentSummaryResponse::from);
+    public Page<RecruitmentSummaryResponse> getRecruitments(Category category, String keyword, Pageable pageable) {
+        return recruitmentRepository.search(category, keyword, pageable).map(RecruitmentSummaryResponse::from);
     }
 
     /**

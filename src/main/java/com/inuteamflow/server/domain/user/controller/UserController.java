@@ -7,8 +7,10 @@ import com.inuteamflow.server.domain.user.dto.request.UserUpdateRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.service.UserService;
+import com.inuteamflow.server.global.jwt.refresh.RefreshTokenCookie;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,7 +38,9 @@ public class UserController implements UserControllerDocument {
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteUser(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         userService.deleteUser(userDetails.getUser());
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .header(HttpHeaders.SET_COOKIE, RefreshTokenCookie.expire().toString())
+                .build();
     }
 
     @PostMapping("/{userId}/reports")

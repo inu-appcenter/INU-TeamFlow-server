@@ -6,19 +6,19 @@ import com.inuteamflow.server.domain.user.dto.request.VerifySchoolRequest;
 import com.inuteamflow.server.domain.user.dto.response.MyInfoResponse;
 import com.inuteamflow.server.domain.user.entity.UserDetailsImpl;
 import com.inuteamflow.server.domain.user.service.AuthService;
-import com.inuteamflow.server.global.jwt.JwtTokenProvider;
+import com.inuteamflow.server.global.enums.ClientType;
 import com.inuteamflow.server.global.jwt.TokenResponse;
+import com.inuteamflow.server.global.jwt.refresh.RefreshTokenCookie;
 import jakarta.validation.Valid;
-import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,30 +27,39 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/auth")
 public class AuthController implements AuthControllerDocument {
 
-    private static final String REFRESH_TOKEN_COOKIE_NAME = "refreshToken";
-
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
-        TokenResponse tokenResponse = authService.login(loginRequest);
+    public ResponseEntity<TokenResponse> login(
+            @RequestHeader(value = ClientType.HEADER_NAME, required = false) String clientType,
+            @Valid @RequestBody LoginRequest loginRequest) {
+        TokenResponse tokenResponse = authService.login(loginRequest, ClientType.from(clientType));
         return ResponseEntity.status(HttpStatus.OK)
                 .header(
                         HttpHeaders.SET_COOKIE,
-                        createRefreshTokenCookie(tokenResponse.getRefreshToken())
+                        RefreshTokenCookie.create(tokenResponse.getRefreshToken(), tokenResponse.getClientType())
                                 .toString())
                 .body(tokenResponse);
     }
 
     @PostMapping("/reissue")
-    public ResponseEntity<TokenResponse> reissue(@CookieValue(REFRESH_TOKEN_COOKIE_NAME) String refreshToken) {
+    public ResponseEntity<TokenResponse> reissue(@CookieValue(RefreshTokenCookie.NAME) String refreshToken) {
         TokenResponse tokenResponse = authService.reissue(refreshToken);
         return ResponseEntity.status(HttpStatus.OK)
                 .header(
                         HttpHeaders.SET_COOKIE,
-                        createRefreshTokenCookie(tokenResponse.getRefreshToken())
+                        RefreshTokenCookie.create(tokenResponse.getRefreshToken(), tokenResponse.getClientType())
                                 .toString())
                 .body(tokenResponse);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @CookieValue(value = RefreshTokenCookie.NAME, required = false) String refreshToken) {
+        authService.logout(refreshToken);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .header(HttpHeaders.SET_COOKIE, RefreshTokenCookie.expire().toString())
+                .build();
     }
 
     @PostMapping("/signup")
@@ -62,15 +71,5 @@ public class AuthController implements AuthControllerDocument {
     public ResponseEntity<MyInfoResponse> verifySchool(
             @AuthenticationPrincipal UserDetailsImpl userDetails, @Valid @RequestBody VerifySchoolRequest request) {
         return ResponseEntity.status(HttpStatus.OK).body(authService.verifySchool(userDetails.getUser(), request));
-    }
-
-    private ResponseCookie createRefreshTokenCookie(String refreshToken) {
-        return ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(Duration.ofMillis(JwtTokenProvider.REFRESH_TOKEN_VALID_TIME))
-                .sameSite("Lax")
-                .build();
     }
 }
