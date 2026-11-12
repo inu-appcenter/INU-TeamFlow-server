@@ -37,7 +37,8 @@ public interface RecurrenceExceptionParticipantRepository extends JpaRepository<
 
     // ALL_SERIES 삭제/수정 시 — exception 삭제 전 참석자 일괄 삭제
     // 벌크 삭제는 DB에 반영되지만 영속성 컨텍스트에는 그대로 남음. 이걸 자동으로 비우는 설정
-    @Modifying(clearAutomatically = true)
+    // 비우기 전에 flush하지 않으면 아직 반영되지 않은 변경(삭제 등)이 함께 사라지므로 먼저 flush
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
     DELETE FROM RecurrenceExceptionParticipant p
     WHERE p.recurrenceException.event = :event
