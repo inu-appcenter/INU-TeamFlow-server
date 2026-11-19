@@ -291,10 +291,14 @@ public class InfoPostService {
                         .collect(
                                 Collectors.toMap(img -> img.getInfoPost().getInfoPostId(), InfoPostImage::getImageKey));
 
+        Map<Long, Integer> recruitmentCountByInfoPostId = getRecruitmentCountMap(infoPosts);
+
         return infoPostSlice.map(infoPost -> {
             String thumbnailKey = thumbnailKeyByInfoPostId.get(infoPost.getInfoPostId());
             String thumbnailUrl = thumbnailKey != null ? s3Service.getImageUrl(thumbnailKey) : null;
-            Integer recruitmentCount = getRecruitmentCount(infoPost);
+            Integer recruitmentCount = infoPost.isLinkable()
+                    ? recruitmentCountByInfoPostId.getOrDefault(infoPost.getInfoPostId(), 0)
+                    : null; // 자유형은 null
             return InfoPostSummaryResponse.of(infoPost, thumbnailUrl, recruitmentCount);
         });
     }
@@ -336,10 +340,14 @@ public class InfoPostService {
                         .collect(
                                 Collectors.toMap(img -> img.getInfoPost().getInfoPostId(), InfoPostImage::getImageKey));
 
+        Map<Long, Integer> recruitmentCountByInfoPostId = getRecruitmentCountMap(infoPosts);
+
         return infoPostPage.map(infoPost -> {
             String thumbnailKey = thumbnailKeyByInfoPostId.get(infoPost.getInfoPostId());
             String thumbnailUrl = thumbnailKey != null ? s3Service.getImageUrl(thumbnailKey) : null;
-            Integer recruitmentCount = getRecruitmentCount(infoPost);
+            Integer recruitmentCount = infoPost.isLinkable()
+                    ? recruitmentCountByInfoPostId.getOrDefault(infoPost.getInfoPostId(), 0)
+                    : null; // 자유형은 null
             return InfoPostSummaryResponse.of(infoPost, thumbnailUrl, recruitmentCount);
         });
     }
@@ -364,6 +372,24 @@ public class InfoPostService {
             images.add(InfoPostImage.create(imageKeys.get(i), i, infoPost)); // 대표 이미지 = sortOrder 0
         }
         return infoPostImageRepository.saveAll(images);
+    }
+
+    /**
+     * 정보글 목록의 모집글 수를 한 번의 집계 쿼리로 조회한다.
+     *
+     * <p>공고형 정보글만 대상이며, 모집글이 없는 공고형은 맵에 없으므로 호출부에서 0으로 처리한다.</p>
+     *
+     * @param infoPosts 모집글 수를 조회할 정보글 목록
+     * @return 정보글 ID별 모집글 수
+     */
+    private Map<Long, Integer> getRecruitmentCountMap(List<InfoPost> infoPosts) {
+        List<InfoPost> linkables =
+                infoPosts.stream().filter(InfoPost::isLinkable).toList();
+        if (linkables.isEmpty()) {
+            return Map.of();
+        }
+        return recruitmentRepository.countByInfoPosts(linkables).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> ((Long) row[1]).intValue()));
     }
 
     /**
