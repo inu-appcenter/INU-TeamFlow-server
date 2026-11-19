@@ -37,6 +37,14 @@ public interface RecruitmentRepository extends JpaRepository<Recruitment, Long> 
 
     long countByInfoPost(InfoPost infoPost);
 
+    @Query("""
+            SELECT r.infoPost.infoPostId, COUNT(r)
+            FROM Recruitment r
+            WHERE r.infoPost IN :infoPosts
+            GROUP BY r.infoPost.infoPostId
+            """)
+    List<Object[]> countByInfoPosts(@Param("infoPosts") List<InfoPost> infoPosts);
+
     @Modifying
     @Query("DELETE FROM Recruitment r WHERE r.recruiter = :recruiter")
     void deleteByRecruiter(@Param("recruiter") User recruiter);
