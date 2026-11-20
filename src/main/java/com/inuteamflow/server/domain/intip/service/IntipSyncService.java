@@ -17,7 +17,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 @Service
@@ -30,8 +30,8 @@ public class IntipSyncService {
     private final AiClassificationClient aiClassificationClient;
     private final IntipSyncCursorRepository cursorRepository;
     private final InfoPostRepository infoPostRepository;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
     public void sync() {
         IntipSyncCursor cursor = cursorRepository
                 .findById(IntipSyncCursor.SINGLETON_ID)
@@ -46,14 +46,15 @@ public class IntipSyncService {
         // 오래된 것부터 처리해야 커서를 순서대로 안전하게 갱신할 수 있음
         newNotices.sort(Comparator.comparing(IntipNoticeResponse::getId));
 
-        Long latestProcessedId = cursor.getLastProcessedNoticeId();
         for (IntipNoticeResponse notice : newNotices) {
-            classifyAndSave(notice);
-            latestProcessedId = notice.getId();
+            InfoPost infoPost = classifyNotice(notice); // 외부 호출은 트랜잭션 밖에서 처리, 저장 대상이 아니면 null
+            saveAndAdvanceCursor(infoPost, notice.getId()); // 저장과 커서 갱신만 짧은 트랜잭션으로 처리
         }
 
-        cursor.updateCursor(latestProcessedId);
-        log.info("[INTIP 동기화] {}건 처리, 커서 갱신 id={}", newNotices.size(), latestProcessedId);
+        log.info(
+                "[INTIP 동기화] {}건 처리, 커서 갱신 id={}",
+                newNotices.size(),
+                newNotices.get(newNotices.size() - 1).getId());
     }
 
     private List<IntipNoticeResponse> collectNewNotices(Long lastProcessedId) {
@@ -87,42 +88,54 @@ public class IntipSyncService {
         return result;
     }
 
-    private void classifyAndSave(IntipNoticeResponse notice) {
+    private InfoPost classifyNotice(IntipNoticeResponse notice) {
         AiClassificationResult result;
         try {
             result = aiClassificationClient.classify(notice);
         } catch (AiClassificationParseException e) {
             log.warn("[INTIP 동기화] 분류 응답 파싱 실패, notice id={}", notice.getId(), e);
-            return; // 스킵 (재시도 대상 아님)
+            return null; // 스킵 (재시도 대상 아님)
         } catch (Exception e) {
             log.warn("[INTIP 동기화] AI 서버 호출 실패, notice id={}", notice.getId(), e);
-            return; // 스킵 (별도 재처리 테이블은 아직 없음 - 필요하면 추가)
+            return null; // 스킵 (별도 재처리 테이블은 아직 없음 - 필요하면 추가)
         }
 
         if (!result.isRelevant()) {
-            return;
+            return null;
         }
 
         InfoPostCategory category = toValidCategory(result.getCategory());
         if (category == null) {
             log.warn(
                     "[INTIP 동기화] AI가 유효하지 않은 카테고리 반환, notice id={}, category={}", notice.getId(), result.getCategory());
-            return;
+            return null;
         }
 
-        InfoPost infoPost =
-                InfoPost.createFromIntip(category, notice.getTitle(), formatContent(notice), notice.getUrl());
-        infoPost.assignAuditor(InfoPost.SYSTEM_AUTHOR_ID); // 스케줄러 컨텍스트엔 로그인 사용자가 없어 예약 ID 로 지정
-        log.info(
-                "[INTIP 동기화] 저장 직전, notice id={}, category={}, title={}",
-                notice.getId(),
-                category,
-                notice.getTitle()); // 임시 디버그용, 확인 후 제거
-        InfoPost saved = infoPostRepository.save(infoPost);
-        log.info(
-                "[INTIP 동기화] 저장 완료, notice id={}, savedId={}",
-                notice.getId(),
-                saved.getInfoPostId()); // 임시 디버그용, 확인 후 제거
+        return InfoPost.createFromIntip(category, notice.getTitle(), formatContent(notice), notice.getUrl());
+    }
+
+    /**
+     * 정보글 저장과 커서 갱신을 하나의 짧은 트랜잭션으로 처리한다.
+     *
+     * <p>저장 대상이 아닌 공지({@code infoPost}가 null)도 커서는 갱신한다. 저장과 커서 갱신을 함께 커밋해,
+     * 저장만 되고 커서가 갱신되지 않아 같은 공지가 중복 등록되는 일을 막는다.</p>
+     *
+     * @param infoPost 저장할 정보글, 저장 대상이 아니면 {@code null}
+     * @param noticeId 처리한 공지 ID
+     */
+    private void saveAndAdvanceCursor(InfoPost infoPost, Long noticeId) {
+        transactionTemplate.executeWithoutResult(status -> {
+            if (infoPost != null) {
+                infoPost.assignAuditor(InfoPost.SYSTEM_AUTHOR_ID); // 스케줄러 컨텍스트엔 로그인 사용자가 없어 예약 ID 로 지정
+                infoPostRepository.save(infoPost);
+            }
+
+            // 이 트랜잭션의 영속성 컨텍스트에서 다시 조회해야 커서 변경이 커밋 때 저장된다
+            IntipSyncCursor cursor = cursorRepository
+                    .findById(IntipSyncCursor.SINGLETON_ID)
+                    .orElseThrow(() -> new IllegalStateException("intip_sync_cursor 초기 행이 없음"));
+            cursor.updateCursor(noticeId);
+        });
     }
 
     /**
