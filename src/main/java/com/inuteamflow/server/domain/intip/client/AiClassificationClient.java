@@ -6,6 +6,7 @@ import com.inuteamflow.server.domain.intip.dto.AiChatCompletionResponse;
 import com.inuteamflow.server.domain.intip.dto.AiChatMessage;
 import com.inuteamflow.server.domain.intip.dto.AiClassificationResult;
 import com.inuteamflow.server.domain.intip.dto.IntipNoticeResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -58,6 +61,8 @@ public class AiClassificationClient {
             """;
 
     private static final int MAX_RETRY = 3;
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(60);
 
     // AI 게이트웨이가 전화번호와 이메일이 포함된 요청을 400 content policy 위반으로 차단하므로, 해당 데이터를 마스킹해서 보낸다.
     private static final Pattern PHONE_PATTERN = Pattern.compile("0\\d{1,2}[-.\\s]?\\d{3,4}[-.\\s]?\\d{4}");
@@ -74,9 +79,13 @@ public class AiClassificationClient {
             @Value("${ai.model.classification}") String model,
             @Value("${ai.model.format}") String formatModel,
             ObjectMapper objectMapper) {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(CONNECT_TIMEOUT);
+        requestFactory.setReadTimeout(READ_TIMEOUT);
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("Authorization", "Bearer " + apiKey)
+                .requestFactory(requestFactory)
                 .build();
         this.objectMapper = objectMapper;
         this.model = model;
@@ -186,12 +195,28 @@ public class AiClassificationClient {
 
                 return response == null ? null : response.getFirstMessageContent();
             } catch (RestClientException e) {
+                if (isNonRetryable(e)) {
+                    throw e; // 400, 401 같은 요청/인증 문제는 재시도해도 같은 결과
+                }
                 lastError = e;
                 log.warn("[AI 분류] 호출 실패 (notice id={}, 시도 {}/{})", noticeId, attempt, MAX_RETRY, e);
                 sleep(attempt);
             }
         }
         throw lastError;
+    }
+
+    /**
+     * 재시도해도 결과가 달라지지 않는 클라이언트 오류인지 확인한다.
+     *
+     * <p>429(요청 과다)는 시간이 지나면 회복될 수 있어 재시도 대상으로 둔다.</p>
+     *
+     * @param e AI 서버 호출 중 발생한 예외
+     * @return 재시도가 무의미한 4xx 오류이면 {@code true}
+     */
+    private boolean isNonRetryable(RestClientException e) {
+        return e instanceof HttpClientErrorException clientError
+                && clientError.getStatusCode().value() != 429;
     }
 
     private void sleep(int attempt) {
