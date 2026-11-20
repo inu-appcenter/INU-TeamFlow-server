@@ -12,12 +12,13 @@ import com.inuteamflow.server.domain.intip.dto.IntipNoticeResponse;
 import com.inuteamflow.server.domain.intip.entity.IntipSyncCursor;
 import com.inuteamflow.server.domain.intip.repository.IntipSyncCursorRepository;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 
 @Slf4j
 @Service
@@ -43,17 +44,28 @@ public class IntipSyncService {
             return;
         }
 
-        // 오래된 것부터 처리해야 커서를 순서대로 안전하게 갱신할 수 있음
-        newNotices.sort(Comparator.comparing(IntipNoticeResponse::getId));
-
+        int processedCount = 0;
         for (IntipNoticeResponse notice : newNotices) {
-            InfoPost infoPost = classifyNotice(notice); // 외부 호출은 트랜잭션 밖에서 처리, 저장 대상이 아니면 null
+            InfoPost infoPost;
+            try {
+                infoPost = classifyNotice(notice); // 외부 호출은 트랜잭션 밖에서 처리, 저장 대상이 아니면 null
+            } catch (RestClientException e) {
+                // AI 서버 쪽 일시적 장애: 이 공지를 처리 완료로 기록하지 않고 멈춘다. 다음 주기에 이 공지부터 다시 처리한다
+                log.error(
+                        "[INTIP 동기화] AI 서버 장애로 중단, 다음 주기에 notice id={}부터 재시도 ({}/{}건 처리)",
+                        notice.getId(),
+                        processedCount,
+                        newNotices.size(),
+                        e);
+                return;
+            }
             saveAndAdvanceCursor(infoPost, notice.getId()); // 저장과 커서 갱신만 짧은 트랜잭션으로 처리
+            processedCount++;
         }
 
         log.info(
                 "[INTIP 동기화] {}건 처리, 커서 갱신 id={}",
-                newNotices.size(),
+                processedCount,
                 newNotices.get(newNotices.size() - 1).getId());
     }
 
@@ -93,11 +105,16 @@ public class IntipSyncService {
         try {
             result = aiClassificationClient.classify(notice);
         } catch (AiClassificationParseException e) {
-            log.warn("[INTIP 동기화] 분류 응답 파싱 실패, notice id={}", notice.getId(), e);
-            return null; // 스킵 (재시도 대상 아님)
+            log.warn("[INTIP 동기화] 분류 응답 파싱 실패, 해당 공지만 건너뜀, notice id={}", notice.getId(), e);
+            return null; // 이 공지 자체의 문제라 재시도해도 같은 결과
+        } catch (HttpClientErrorException.BadRequest e) {
+            log.warn("[INTIP 동기화] AI가 요청을 거부(400), 해당 공지만 건너뜀, notice id={}", notice.getId(), e);
+            return null; // 이 공지 자체의 문제
+        } catch (RestClientException e) {
+            throw e; // 타임아웃, 5xx, 401, 429 등 일시적/시스템 문제는 호출부(sync)에서 동기화를 멈춘다
         } catch (Exception e) {
-            log.warn("[INTIP 동기화] AI 서버 호출 실패, notice id={}", notice.getId(), e);
-            return null; // 스킵 (별도 재처리 테이블은 아직 없음 - 필요하면 추가)
+            log.error("[INTIP 동기화] 예상하지 못한 오류, 해당 공지만 건너뜀, notice id={}", notice.getId(), e);
+            return null; // 한 공지의 알 수 없는 오류가 뒤의 공지를 막지 않게 건너뜀
         }
 
         if (!result.isRelevant()) {
