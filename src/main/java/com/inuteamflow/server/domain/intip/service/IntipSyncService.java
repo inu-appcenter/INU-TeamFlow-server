@@ -13,6 +13,7 @@ import com.inuteamflow.server.domain.intip.entity.IntipSyncCursor;
 import com.inuteamflow.server.domain.intip.repository.IntipSyncCursorRepository;
 import com.inuteamflow.server.domain.intip.service.IntipAttachmentService.PreparedAttachments;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,9 @@ public class IntipSyncService {
             log.info("[INTIP 동기화] 신규 공지 없음");
             return;
         }
+
+        // INTIP API는 최신순으로 주므로, 오래된 것부터 처리해야 커서를 순서대로 안전하게 갱신할 수 있음
+        newNotices.sort(Comparator.comparing(IntipNoticeResponse::getId));
 
         int processedCount = 0;
         for (IntipNoticeResponse notice : newNotices) {

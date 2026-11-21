@@ -2,6 +2,8 @@ package com.inuteamflow.server.domain.intip;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -112,6 +115,47 @@ class IntipSyncServiceFailureTest {
 
         assertThat(cursor.getLastProcessedNoticeId()).isEqualTo(101L);
         verify(infoPostRepository, never()).save(any(InfoPost.class));
+    }
+
+    @Test
+    @DisplayName("API가 최신순으로 주더라도 오래된 공지부터 처리해 커서를 가장 최신 공지에 둔다")
+    void processesOldestFirstAndAdvancesCursorToNewest() {
+        IntipNoticeResponse newest = notice(103L);
+        IntipNoticeResponse middle = notice(102L);
+        IntipNoticeResponse oldest = notice(101L);
+        AiClassificationResult irrelevant = mock(AiClassificationResult.class);
+        when(irrelevant.isRelevant()).thenReturn(false);
+        when(intipClient.fetchNoticesWithContent(1)).thenReturn(new ArrayList<>(List.of(newest, middle, oldest)));
+        when(aiClassificationClient.classify(any())).thenReturn(irrelevant);
+
+        intipSyncService.sync();
+
+        InOrder inOrder = inOrder(aiClassificationClient);
+        inOrder.verify(aiClassificationClient).classify(oldest);
+        inOrder.verify(aiClassificationClient).classify(middle);
+        inOrder.verify(aiClassificationClient).classify(newest);
+        assertThat(cursor.getLastProcessedNoticeId()).isEqualTo(103L);
+    }
+
+    @Test
+    @DisplayName("API가 최신순으로 줄 때 중간에 AI 장애가 나면 커서를 처리한 가장 최신 공지에 두고 이후 공지는 처리하지 않는다")
+    void keepsCursorAtProcessedNoticeWhenAiFailsMidwayWithNewestFirstResponse() {
+        IntipNoticeResponse newest = notice(103L);
+        IntipNoticeResponse middle = notice(102L);
+        IntipNoticeResponse oldest = notice(101L);
+        AiClassificationResult irrelevant = mock(AiClassificationResult.class);
+        when(irrelevant.isRelevant()).thenReturn(false);
+        when(intipClient.fetchNoticesWithContent(1)).thenReturn(new ArrayList<>(List.of(newest, middle, oldest)));
+        lenient().when(aiClassificationClient.classify(oldest)).thenReturn(irrelevant);
+        lenient()
+                .when(aiClassificationClient.classify(middle))
+                .thenThrow(new HttpServerErrorException(HttpStatus.SERVICE_UNAVAILABLE));
+        lenient().when(aiClassificationClient.classify(newest)).thenReturn(irrelevant);
+
+        intipSyncService.sync();
+
+        assertThat(cursor.getLastProcessedNoticeId()).isEqualTo(101L); // 다음 주기에 102부터 다시 처리
+        verify(aiClassificationClient, never()).classify(newest);
     }
 
     private IntipNoticeResponse notice(Long id) {
