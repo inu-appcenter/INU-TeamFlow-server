@@ -137,7 +137,7 @@ public class PushService {
      * 여러 사용자에게 채팅 푸시 알림을 발송한다.
      *
      * <p>알림 옵션에서 해당 유형이 비활성화된 수신자는 발송 대상에서 제외한다.
-     * 같은 채팅방의 미확인 알림이 중복 표시되지 않도록 축약 키를 함께 발송한다.</p>
+     * 같은 채팅방 알림이 교체되지 않고 한 묶음으로 쌓이도록 그룹 키를 함께 발송한다.</p>
      *
      * @param receiverIds 알림 수신자 ID 목록
      * @param title 알림 제목
@@ -145,7 +145,7 @@ public class PushService {
      * @param type 알림 유형
      * @param redirectUrl 알림 선택 시 이동할 URL
      * @param roomId 채팅방 ID
-     * @param collapseKey 동일 채팅방 알림을 식별하는 축약 키
+     * @param threadId 동일 채팅방 알림을 묶는 그룹 키
      */
     @Transactional
     public void sendChatNotification(
@@ -155,7 +155,7 @@ public class PushService {
             NotificationType type,
             String redirectUrl,
             Long roomId,
-            String collapseKey) {
+            String threadId) {
         List<Long> requestedIds = receiverIds;
         receiverIds = filterEnabledReceivers(receiverIds, type);
         log.info(
@@ -172,7 +172,7 @@ public class PushService {
 
         List<PushToken> tokens = pushTokenRepository.findAllByCreatedByIn(receiverIds);
         log.info("[채팅 푸시 디버그] 발송 토큰 roomId={} tokenCount={}", roomId, tokens.size()); // 임시 디버그용, 확인 후 제거
-        send(tokens, new PushMessage(title, body, data, collapseKey));
+        send(tokens, new PushMessage(title, body, data, threadId));
     }
 
     // =========================================================================

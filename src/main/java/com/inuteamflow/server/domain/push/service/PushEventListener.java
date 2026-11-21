@@ -50,7 +50,7 @@ public class PushEventListener {
     /**
      * 채팅 푸시 이벤트를 처리한다.
      *
-     * <p>호출 트랜잭션이 커밋된 후 푸시 전용 스레드에서 채팅방 축약 키가 포함된 푸시 알림을 발송한다.</p>
+     * <p>호출 트랜잭션이 커밋된 후 푸시 전용 스레드에서 채팅방 그룹 키가 포함된 푸시 알림을 발송한다.</p>
      *
      * @param event 채팅 푸시 이벤트
      */
@@ -64,6 +64,6 @@ public class PushEventListener {
                 event.type(),
                 event.redirectUrl(),
                 event.roomId(),
-                event.collapseKey());
+                event.threadId());
     }
 }
