@@ -11,6 +11,7 @@ import com.inuteamflow.server.domain.intip.dto.AiClassificationResult;
 import com.inuteamflow.server.domain.intip.dto.IntipNoticeResponse;
 import com.inuteamflow.server.domain.intip.entity.IntipSyncCursor;
 import com.inuteamflow.server.domain.intip.repository.IntipSyncCursorRepository;
+import com.inuteamflow.server.domain.intip.service.IntipAttachmentService.PreparedAttachments;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class IntipSyncService {
     private final IntipSyncCursorRepository cursorRepository;
     private final InfoPostRepository infoPostRepository;
     private final TransactionTemplate transactionTemplate;
+    private final IntipAttachmentService intipAttachmentService;
 
     public void sync() {
         IntipSyncCursor cursor = cursorRepository
@@ -59,7 +61,11 @@ public class IntipSyncService {
                         e);
                 return;
             }
-            saveAndAdvanceCursor(infoPost, notice.getId()); // 저장과 커서 갱신만 짧은 트랜잭션으로 처리
+            // 이미지 다운로드·S3 업로드도 외부 호출이라 트랜잭션 밖에서 처리, 실패한 이미지는 첨부파일로 돌려 예외를 던지지 않음
+            PreparedAttachments attachments = infoPost == null
+                    ? PreparedAttachments.EMPTY
+                    : intipAttachmentService.prepare(notice.getAttachments());
+            saveAndAdvanceCursor(infoPost, attachments, notice.getId()); // 저장과 커서 갱신만 짧은 트랜잭션으로 처리
             processedCount++;
         }
 
@@ -138,13 +144,15 @@ public class IntipSyncService {
      * 저장만 되고 커서가 갱신되지 않아 같은 공지가 중복 등록되는 일을 막는다.</p>
      *
      * @param infoPost 저장할 정보글, 저장 대상이 아니면 {@code null}
+     * @param attachments 정보글에 붙일 첨부파일 (업로드는 트랜잭션 밖에서 끝난 상태)
      * @param noticeId 처리한 공지 ID
      */
-    private void saveAndAdvanceCursor(InfoPost infoPost, Long noticeId) {
+    private void saveAndAdvanceCursor(InfoPost infoPost, PreparedAttachments attachments, Long noticeId) {
         transactionTemplate.executeWithoutResult(status -> {
             if (infoPost != null) {
                 infoPost.assignAuditor(InfoPost.SYSTEM_AUTHOR_ID); // 스케줄러 컨텍스트엔 로그인 사용자가 없어 예약 ID 로 지정
                 infoPostRepository.save(infoPost);
+                intipAttachmentService.save(infoPost, attachments);
             }
 
             // 이 트랜잭션의 영속성 컨텍스트에서 다시 조회해야 커서 변경이 커밋 때 저장된다
