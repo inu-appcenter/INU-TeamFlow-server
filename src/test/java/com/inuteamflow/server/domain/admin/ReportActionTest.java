@@ -11,8 +11,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inuteamflow.server.domain.admin.service.AdminService;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
+import com.inuteamflow.server.domain.infoPost.entity.InfoPostAttachment;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
+import com.inuteamflow.server.domain.infoPost.repository.InfoPostAttachmentRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
 import com.inuteamflow.server.domain.notification.service.NotificationService;
@@ -81,6 +83,9 @@ class ReportActionTest {
     private InfoPostImageRepository infoPostImageRepository;
 
     @Autowired
+    private InfoPostAttachmentRepository infoPostAttachmentRepository;
+
+    @Autowired
     private RecruitmentRepository recruitmentRepository;
 
     @Autowired
@@ -130,6 +135,22 @@ class ReportActionTest {
                 .isEmpty();
         verify(s3Service, times(1)).deleteImage("images/reported-1.jpg");
         assertThat(report.getStatus()).isEqualTo(ReportStatus.RESOLVED);
+    }
+
+    @Test
+    @DisplayName("첨부파일이 있는 정보글 신고를 삭제로 처리하면 첨부파일도 함께 삭제된다.")
+    void deleteAction_removesInfoPostWithAttachments() throws JsonProcessingException {
+        InfoPost infoPost =
+                infoPostRepository.saveAndFlush(InfoPost.create(InfoPostCategory.CONTEST, "첨부파일 있는 정보글", "부적절한 내용"));
+        infoPostAttachmentRepository.saveAndFlush(
+                InfoPostAttachment.create("붙임1.hwp", "https://www.inu.ac.kr/download.do", "hwp", 0, infoPost));
+        Report report = savePostReport(ReportTargetType.INFO_POST, infoPost.getInfoPostId(), infoPost.getTitle());
+
+        adminService.handleReport(report.getReportId(), deleteRequest(), admin);
+        infoPostRepository.flush(); // 첨부파일이 남아 있으면 FK 위반이 여기서 드러남
+
+        assertThat(infoPostRepository.findById(infoPost.getInfoPostId())).isEmpty();
+        assertThat(infoPostAttachmentRepository.count()).isZero();
     }
 
     @Test

@@ -16,6 +16,8 @@ import com.inuteamflow.server.domain.intip.dto.AiClassificationResult;
 import com.inuteamflow.server.domain.intip.dto.IntipNoticeResponse;
 import com.inuteamflow.server.domain.intip.entity.IntipSyncCursor;
 import com.inuteamflow.server.domain.intip.repository.IntipSyncCursorRepository;
+import com.inuteamflow.server.domain.intip.service.IntipAttachmentService;
+import com.inuteamflow.server.domain.intip.service.IntipAttachmentService.PreparedAttachments;
 import com.inuteamflow.server.domain.intip.service.IntipSyncService;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +64,9 @@ class IntipSyncServiceTest {
 
     @Spy
     private TransactionTemplate transactionTemplate = new TransactionTemplate(mock(PlatformTransactionManager.class));
+
+    @Mock
+    private IntipAttachmentService intipAttachmentService;
 
     @BeforeEach
     void setUp() {
@@ -122,6 +127,20 @@ class IntipSyncServiceTest {
         intipSyncService.sync();
 
         assertThat(savedContent()).isEqualTo(REGEX_FORMATTED);
+    }
+
+    @Test
+    @DisplayName("준비한 첨부파일을 저장한 정보글에 연결한다")
+    void savesPreparedAttachmentsOfSavedInfoPost() {
+        PreparedAttachments prepared = new PreparedAttachments(List.of("info-posts/image/a.jpg"), List.of());
+        when(aiClassificationClient.formatContent(eq(NOTICE_ID), anyString())).thenReturn(null);
+        when(intipAttachmentService.prepare(any())).thenReturn(prepared);
+
+        intipSyncService.sync();
+
+        ArgumentCaptor<InfoPost> captor = ArgumentCaptor.forClass(InfoPost.class);
+        verify(infoPostRepository).save(captor.capture());
+        verify(intipAttachmentService).save(captor.getValue(), prepared);
     }
 
     private String savedContent() {

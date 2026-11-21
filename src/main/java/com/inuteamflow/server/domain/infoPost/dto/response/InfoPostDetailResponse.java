@@ -1,6 +1,7 @@
 package com.inuteamflow.server.domain.infoPost.dto.response;
 
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
+import com.inuteamflow.server.domain.infoPost.entity.InfoPostAttachment;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -37,6 +38,9 @@ public class InfoPostDetailResponse {
     @Schema(description = "이미지 목록")
     private List<Image> images;
 
+    @Schema(description = "첨부파일 목록 (이미지 외 첨부파일, 없으면 빈 배열)")
+    private List<Attachment> attachments;
+
     @Schema(description = "작성자 정보")
     private Author author;
 
@@ -61,6 +65,7 @@ public class InfoPostDetailResponse {
             String authorName,
             String authorProfileUrl,
             List<InfoPostImage> images,
+            List<InfoPostAttachment> attachments,
             Function<String, String> urlResolver,
             Boolean isAuthor,
             Boolean isScrap,
@@ -71,6 +76,10 @@ public class InfoPostDetailResponse {
                 .map(img -> new Image(urlResolver.apply(img.getImageKey()), img.getSortOrder()))
                 .toList();
 
+        List<Attachment> attachmentList = attachments.stream()
+                .map(file -> new Attachment(file.getName(), file.getUrl(), file.getFileType()))
+                .toList();
+
         return new InfoPostDetailResponse(
                 infoPost.getInfoPostId(),
                 infoPost.getCategory(),
@@ -79,6 +88,7 @@ public class InfoPostDetailResponse {
                 infoPost.getContent(),
                 infoPost.getSourceUrl(),
                 imageList,
+                attachmentList,
                 authorInfo,
                 isAuthor,
                 isScrap,
@@ -101,4 +111,17 @@ public class InfoPostDetailResponse {
     private record Image(
             @Schema(description = "이미지 URL") String imageUrl,
             @Schema(description = "정렬 순서", example = "0") Integer sortOrder) {}
+
+    @Schema(description = "정보글 첨부파일")
+    private record Attachment(
+            @Schema(description = "원본 파일명 (확장자 포함)", example = "붙임1. 계획서.hwp")
+            String name,
+
+            @Schema(
+                    description = "학교 서버 다운로드 URL (CORS 미지원이라 링크 이동 방식으로 열어야 함)",
+                    example = "https://www.inu.ac.kr/bbs/inu/253/397813/download.do")
+            String url,
+
+            @Schema(description = "소문자 확장자", example = "hwp")
+            String fileType) {}
 }
