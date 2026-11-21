@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -84,6 +85,29 @@ public class S3Service {
         String uploadUrl = createUploadPresignedUrl(imageKey, request.getContentType());
 
         return PresignedUrlResponse.of(uploadUrl, imageKey);
+    }
+
+    /**
+     * 서버가 가진 이미지 파일을 정보글 이미지 경로로 S3에 직접 업로드한다.
+     *
+     * @param fileName 확장자를 뽑아낼 원본 파일명
+     * @param contentType 저장할 이미지 Content-Type
+     * @param content 이미지 바이트
+     * @return 업로드된 이미지의 S3 키
+     * @throws RestApiException 허용되지 않은 이미지 Content-Type인 경우
+     */
+    public String uploadInfoPostImage(String fileName, String contentType, byte[] content) {
+        validateImageContentType(contentType);
+
+        String imageKey = createInfoPostImageKey(fileName);
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(imageKey)
+                .contentType(contentType)
+                .build();
+
+        s3Client.putObject(putObjectRequest, RequestBody.fromBytes(content));
+        return imageKey;
     }
 
     public String getImageUrl(String imageKey) {
