@@ -256,7 +256,7 @@ public class ChatMessageService {
                 content, // 알림 본문: IMAGE가 아니라면 채팅 내용
                 NotificationType.CHAT,
                 "/chat/" + roomId,
-                roomId // 같은 방 알림 묶음을 위한 collapseKey
+                roomId // 같은 방 알림 묶음(threadId)에 사용
                 );
     }
 }

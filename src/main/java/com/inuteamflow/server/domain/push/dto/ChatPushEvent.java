@@ -10,4 +10,4 @@ public record ChatPushEvent(
         NotificationType type,
         String redirectUrl,
         Long roomId,
-        String collapseKey) {}
+        String threadId) {}
