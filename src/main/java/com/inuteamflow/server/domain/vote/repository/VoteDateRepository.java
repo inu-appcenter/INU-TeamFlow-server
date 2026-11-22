@@ -12,6 +12,8 @@ public interface VoteDateRepository extends JpaRepository<VoteDate, Long> {
 
     List<VoteDate> findByVoteOrderByDateAsc(Vote vote);
 
+    List<VoteDate> findByVoteInOrderByDateAsc(List<Vote> votes);
+
     @Modifying
     @Query("""
     DELETE FROM VoteDate vd

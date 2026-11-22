@@ -20,6 +20,13 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
             """)
     List<VoteParticipant> findByVote(@Param("vote") Vote vote);
 
+    @Query("""
+            SELECT vp FROM VoteParticipant vp
+            JOIN FETCH vp.teamMember tm JOIN FETCH tm.user
+            WHERE vp.vote IN :votes
+            """)
+    List<VoteParticipant> findByVoteIn(@Param("votes") List<Vote> votes);
+
     Optional<VoteParticipant> findByVoteAndTeamMember(Vote vote, TeamMember teamMember);
 
     @Modifying
@@ -55,8 +62,10 @@ public interface VoteParticipantRepository extends JpaRepository<VoteParticipant
     boolean existsByVoteIdAndUserId(@Param("voteId") Long voteId, @Param("userId") Long userId);
 
     @Query("""
-    SELECT vp.vote
+    SELECT v
     FROM VoteParticipant vp
+    JOIN vp.vote v
+    JOIN FETCH v.team
     WHERE vp.teamMember.user = :user
     """)
     List<Vote> findVotesByUser(@Param("user") User user);

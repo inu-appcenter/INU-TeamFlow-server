@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -109,6 +111,19 @@ public class VoteTimeService {
      */
     public List<VoteDate> getVoteDates(Vote vote) {
         return voteDateRepository.findByVoteOrderByDateAsc(vote);
+    }
+
+    /**
+     * 여러 투표의 후보 날짜를 일괄 조회한다.
+     *
+     * @param votes 후보 날짜를 조회할 투표 목록
+     * @return 날짜 오름차순으로 정렬된 후보 날짜 목록을 담은 투표 ID별 맵
+     */
+    Map<Long, List<LocalDate>> getDatesByVote(List<Vote> votes) {
+        return voteDateRepository.findByVoteInOrderByDateAsc(votes).stream()
+                .collect(Collectors.groupingBy(
+                        date -> date.getVote().getVoteId(),
+                        Collectors.mapping(VoteDate::getDate, Collectors.toList())));
     }
 
     /**
