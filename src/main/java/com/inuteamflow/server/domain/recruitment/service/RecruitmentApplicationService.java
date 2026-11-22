@@ -152,9 +152,7 @@ public class RecruitmentApplicationService {
      * @return 사용자가 신청한 지원서 요약 목록
      */
     public Page<MyApplicationSummaryResponse> getMyApplications(User user, Pageable pageable) {
-        return recruitmentApplicationRepository
-                .findAllByCreatedBy(user.getUserId(), pageable)
-                .map(MyApplicationSummaryResponse::from);
+        return recruitmentApplicationRepository.findSummariesByCreatedBy(user.getUserId(), pageable);
     }
 
     /**
