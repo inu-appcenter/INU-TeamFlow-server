@@ -22,6 +22,8 @@ import com.inuteamflow.server.global.enums.Status;
 import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -59,13 +61,11 @@ public class TeamInvitationService {
      */
     public Page<TeamInvitationResponse> getInvitations(User user, InvitationDirection direction, Pageable pageable) {
         if (direction == InvitationDirection.RECEIVED) {
-            return teamInvitationRepository.findByReceiver(user, pageable).map(invitation -> {
-                String senderName = invitation.getCreatedBy() == null
-                        ? null
-                        : userRepository
-                                .findById(invitation.getCreatedBy())
-                                .map(User::getName)
-                                .orElse(null);
+            Page<TeamInvitation> invitations = teamInvitationRepository.findByReceiver(user, pageable);
+            Map<Long, String> senderNames = findSenderNames(invitations.getContent());
+            return invitations.map(invitation -> {
+                String senderName =
+                        invitation.getCreatedBy() == null ? null : senderNames.get(invitation.getCreatedBy());
                 return TeamInvitationResponse.from(invitation, senderName);
             });
         } else {
@@ -307,5 +307,20 @@ public class TeamInvitationService {
             return InvitationCandidateStatus.PENDING;
         }
         return InvitationCandidateStatus.NONE;
+    }
+
+    /**
+     * 초대 목록의 발신자(createdBy) 이름을 한 번의 쿼리로 조회한다.
+     *
+     * @param invitations 발신자 이름이 필요한 초대 목록
+     * @return 발신자 ID별 이름. 조회되지 않는 발신자는 포함되지 않는다.
+     */
+    private Map<Long, String> findSenderNames(List<TeamInvitation> invitations) {
+        List<Long> senderIds = invitations.stream()
+                .map(TeamInvitation::getCreatedBy)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        return userRepository.findAllById(senderIds).stream().collect(Collectors.toMap(User::getUserId, User::getName));
     }
 }
