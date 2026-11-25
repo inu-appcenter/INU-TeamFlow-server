@@ -6,7 +6,7 @@ import com.inuteamflow.server.global.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.simp.stomp.StompCommand;
+import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
@@ -20,12 +20,20 @@ import org.springframework.util.StringUtils;
 public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final StompDestinationAuthorizer destinationAuthorizer;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-        if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+        if (accessor == null) {
+            return message;
+        }
+
+        // STOMP 커맨드는 CONNECT와, MESSAGE 커맨드는 SEND와 똑같이 처리되므로 커맨드가 아닌 메시지 타입으로 판별
+        SimpMessageType messageType = accessor.getMessageType();
+
+        if (messageType == SimpMessageType.CONNECT) {
             String token = resolveToken(accessor.getFirstNativeHeader("Authorization"));
 
             if (token == null || !jwtTokenProvider.validateToken(token)) {
@@ -34,11 +42,15 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
             Authentication authentication = jwtTokenProvider.getAuthentication(token);
             accessor.setUser(authentication); // 이제 원본 message에 실제로 반영됨
+        } else if (messageType == SimpMessageType.SUBSCRIBE) {
+            destinationAuthorizer.authorizeSubscribe(accessor.getUser(), accessor.getDestination());
+        } else if (messageType == SimpMessageType.MESSAGE) {
+            destinationAuthorizer.authorizeSend(accessor.getUser(), accessor.getDestination());
         }
 
         // CONNECT 이후의 모든 프레임(SEND 등)에서도, 세션에 저장된 Principal을
         // 이 스레드의 SecurityContext에 실어줘야 JPA Auditing(@CreatedBy) 등이 동작함
-        if (accessor != null && accessor.getUser() instanceof Authentication authentication) {
+        if (accessor.getUser() instanceof Authentication authentication) {
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
