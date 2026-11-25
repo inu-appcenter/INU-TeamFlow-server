@@ -22,6 +22,9 @@ public interface ChatRoomMemberRepository extends JpaRepository<ChatRoomMember, 
     // 그룹 채팅방 퇴장 후 남은 멤버가 있는지 확인용
     boolean existsByChatRoom(ChatRoom chatRoom);
 
+    // STOMP 구독 인가용 (엔티티 조회 없이 ID만으로 멤버 여부 확인)
+    boolean existsByChatRoom_ChatRoomIdAndUser_UserId(Long chatRoomId, Long userId);
+
     // 팀인지 1:1 인지 분기해서 조회
     // 1:1 방은 팀이 없으므로 LEFT JOIN FETCH (팀 지연 로딩 N+1 방지)
     @Query("""

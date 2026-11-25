@@ -8,6 +8,6 @@ import java.util.Map;
  * @param title 알림 제목
  * @param body 알림 본문
  * @param data 알림 선택 시 클라이언트가 사용하는 데이터 (redirectUrl, type 등)
- * @param collapseKey 같은 키의 알림을 하나로 묶기 위한 축약 키, 묶지 않으면 null
+ * @param threadId 같은 키의 알림을 교체 없이 한 묶음으로 보여주기 위한 그룹 키, 묶지 않으면 null
  */
-public record PushMessage(String title, String body, Map<String, String> data, String collapseKey) {}
+public record PushMessage(String title, String body, Map<String, String> data, String threadId) {}

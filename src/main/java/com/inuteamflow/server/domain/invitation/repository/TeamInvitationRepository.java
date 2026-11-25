@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,8 +17,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TeamInvitationRepository extends JpaRepository<TeamInvitation, Long> {
 
+    @EntityGraph(attributePaths = {"team", "receiver"})
     Page<TeamInvitation> findByReceiver(User user, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"team", "receiver"})
     Page<TeamInvitation> findByCreatedBy(Long userId, Pageable pageable);
 
     // 특정 팀+수신자 조합으로 초대 조회

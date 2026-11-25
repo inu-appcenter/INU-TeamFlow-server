@@ -86,24 +86,46 @@ public class VoteParticipantService {
     }
 
     /**
-     * 투표 참여자를 참여 완료 여부에 따라 분류하여 조회한다.
+     * 투표의 참여 완료자와 미완료자를 조회한다.
      *
      * @param vote 참여 현황을 조회할 투표
      * @return 참여 완료자와 미완료자로 분류된 투표 참여 현황
      */
     public VoteParticipants getVoteParticipants(Vote vote) {
+        return summarizeParticipants(voteParticipantRepository.findByVote(vote));
+    }
+
+    /**
+     * 여러 투표의 참여자를 일괄 조회한다.
+     *
+     * @param votes 참여자를 조회할 투표 목록
+     * @return 참여자가 있는 투표의 ID별 참여자 목록
+     */
+    Map<Long, List<VoteParticipant>> getParticipantsByVote(List<Vote> votes) {
+        return voteParticipantRepository.findByVoteIn(votes).stream()
+                .collect(Collectors.groupingBy(
+                        participant -> participant.getVote().getVoteId()));
+    }
+
+    /**
+     * 투표 참여자를 완료 여부에 따라 분류한다.
+     *
+     * <p>완료 여부가 {@code false}이거나 {@code null}인 참여자는 미완료자로 분류한다.</p>
+     *
+     * @param participants 투표에 등록된 참여자 목록
+     * @return 참여 완료자와 미완료자로 분류된 투표 참여 현황
+     */
+    VoteParticipants summarizeParticipants(List<VoteParticipant> participants) {
         List<VoterInfoResponse> completedVoters = new ArrayList<>();
         List<VoterInfoResponse> uncompletedVoters = new ArrayList<>();
-
-        for (VoteParticipant voteParticipant : voteParticipantRepository.findByVote(vote)) {
-            if (Boolean.TRUE.equals(voteParticipant.getHasCompleted())) {
-                completedVoters.add(VoterInfoResponse.from(voteParticipant));
-                continue;
+        for (VoteParticipant participant : participants) {
+            VoterInfoResponse voter = VoterInfoResponse.from(participant);
+            if (Boolean.TRUE.equals(participant.getHasCompleted())) {
+                completedVoters.add(voter);
+            } else {
+                uncompletedVoters.add(voter);
             }
-
-            uncompletedVoters.add(VoterInfoResponse.from(voteParticipant));
         }
-
         return new VoteParticipants(completedVoters, uncompletedVoters);
     }
 

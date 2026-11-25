@@ -17,8 +17,8 @@ class FcmSenderTest {
     private final FcmSender fcmSender = new FcmSender();
 
     @Test
-    @DisplayName("축약 키가 있는 메시지도 예외 없이 생성한다")
-    void toMulticast_withCollapseKey() {
+    @DisplayName("그룹 키가 있는 메시지도 예외 없이 생성한다")
+    void toMulticast_withThreadId() {
         PushMessage message =
                 new PushMessage("발신자", "안녕", Map.of("redirectUrl", "/chat/5", "type", "CHAT"), "chat-room-5");
 
@@ -26,8 +26,8 @@ class FcmSenderTest {
     }
 
     @Test
-    @DisplayName("축약 키가 없는 메시지를 예외 없이 생성한다")
-    void toMulticast_withoutCollapseKey() {
+    @DisplayName("그룹 키가 없는 메시지를 예외 없이 생성한다")
+    void toMulticast_withoutThreadId() {
         PushMessage message = new PushMessage("공지", "내용", Map.of("type", "NOTICE"), null);
 
         assertThatCode(() -> fcmSender.toMulticast(List.of("token"), message)).doesNotThrowAnyException();

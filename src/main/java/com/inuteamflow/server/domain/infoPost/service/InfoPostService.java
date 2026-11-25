@@ -5,10 +5,12 @@ import com.inuteamflow.server.domain.infoPost.dto.request.InfoPostUpdateRequest;
 import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostDetailResponse;
 import com.inuteamflow.server.domain.infoPost.dto.response.InfoPostSummaryResponse;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPost;
+import com.inuteamflow.server.domain.infoPost.entity.InfoPostAttachment;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostImage;
 import com.inuteamflow.server.domain.infoPost.entity.InfoPostScrap;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostCategory;
 import com.inuteamflow.server.domain.infoPost.enums.InfoPostType;
+import com.inuteamflow.server.domain.infoPost.repository.InfoPostAttachmentRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostImageRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostRepository;
 import com.inuteamflow.server.domain.infoPost.repository.InfoPostScrapRepository;
@@ -38,6 +40,7 @@ public class InfoPostService {
 
     private final InfoPostRepository infoPostRepository;
     private final InfoPostImageRepository infoPostImageRepository;
+    private final InfoPostAttachmentRepository infoPostAttachmentRepository;
     private final UserRepository userRepository;
     private final S3Service s3Service;
     private final RecruitmentRepository recruitmentRepository;
@@ -89,6 +92,7 @@ public class InfoPostService {
     public InfoPostDetailResponse getInfoPost(Long infoPostId, User user) {
         InfoPost infoPost = getInfoPostById(infoPostId);
         List<InfoPostImage> images = infoPostImageRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
+        List<InfoPostAttachment> attachments = infoPostAttachmentRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
 
         Long authorId;
         String authorName;
@@ -114,6 +118,7 @@ public class InfoPostService {
                 authorName,
                 authorProfileUrl,
                 images,
+                attachments,
                 s3Service::getImageUrl,
                 isAuthor,
                 isScrap,
@@ -149,6 +154,7 @@ public class InfoPostService {
                 user.getName(),
                 authorProfileUrl,
                 images,
+                List.of(), // 첨부파일은 INTIP 수집 공지에만 있음
                 s3Service::getImageUrl,
                 true,
                 false,
@@ -182,6 +188,7 @@ public class InfoPostService {
         String authorProfileUrl = s3Service.getImageUrl(user.getImageKey());
         boolean isScrap = infoPostScrapRepository.existsByInfoPostAndUser(infoPost, user);
         Integer recruitmentCount = getRecruitmentCount(infoPost);
+        List<InfoPostAttachment> attachments = infoPostAttachmentRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
 
         return InfoPostDetailResponse.of(
                 infoPost,
@@ -189,6 +196,7 @@ public class InfoPostService {
                 user.getName(),
                 authorProfileUrl,
                 images,
+                attachments,
                 s3Service::getImageUrl,
                 true,
                 isScrap,
@@ -291,10 +299,14 @@ public class InfoPostService {
                         .collect(
                                 Collectors.toMap(img -> img.getInfoPost().getInfoPostId(), InfoPostImage::getImageKey));
 
+        Map<Long, Integer> recruitmentCountByInfoPostId = getRecruitmentCountMap(infoPosts);
+
         return infoPostSlice.map(infoPost -> {
             String thumbnailKey = thumbnailKeyByInfoPostId.get(infoPost.getInfoPostId());
             String thumbnailUrl = thumbnailKey != null ? s3Service.getImageUrl(thumbnailKey) : null;
-            Integer recruitmentCount = getRecruitmentCount(infoPost);
+            Integer recruitmentCount = infoPost.isLinkable()
+                    ? recruitmentCountByInfoPostId.getOrDefault(infoPost.getInfoPostId(), 0)
+                    : null; // 자유형은 null
             return InfoPostSummaryResponse.of(infoPost, thumbnailUrl, recruitmentCount);
         });
     }
@@ -306,7 +318,7 @@ public class InfoPostService {
     /**
      * 정보글과 연관 데이터를 함께 삭제한다.
      *
-     * <p>정보글에 속한 이미지를 DB와 S3에서 삭제하고, 스크랩 기록을 정리한 후 정보글을 삭제한다.</p>
+     * <p>정보글에 속한 이미지를 DB와 S3에서 삭제하고, 첨부파일과 스크랩 기록을 정리한 후 정보글을 삭제한다.</p>
      *
      * @param infoPost 삭제할 정보글
      */
@@ -314,6 +326,7 @@ public class InfoPostService {
         List<InfoPostImage> images = infoPostImageRepository.findByInfoPostOrderBySortOrderAsc(infoPost);
         infoPostImageRepository.deleteByInfoPost(infoPost);
         images.forEach(img -> s3Service.deleteImage(img.getImageKey()));
+        infoPostAttachmentRepository.deleteByInfoPost(infoPost);
         infoPostScrapRepository.deleteByInfoPost(infoPost);
         infoPostRepository.delete(infoPost);
     }
@@ -336,10 +349,14 @@ public class InfoPostService {
                         .collect(
                                 Collectors.toMap(img -> img.getInfoPost().getInfoPostId(), InfoPostImage::getImageKey));
 
+        Map<Long, Integer> recruitmentCountByInfoPostId = getRecruitmentCountMap(infoPosts);
+
         return infoPostPage.map(infoPost -> {
             String thumbnailKey = thumbnailKeyByInfoPostId.get(infoPost.getInfoPostId());
             String thumbnailUrl = thumbnailKey != null ? s3Service.getImageUrl(thumbnailKey) : null;
-            Integer recruitmentCount = getRecruitmentCount(infoPost);
+            Integer recruitmentCount = infoPost.isLinkable()
+                    ? recruitmentCountByInfoPostId.getOrDefault(infoPost.getInfoPostId(), 0)
+                    : null; // 자유형은 null
             return InfoPostSummaryResponse.of(infoPost, thumbnailUrl, recruitmentCount);
         });
     }
@@ -364,6 +381,24 @@ public class InfoPostService {
             images.add(InfoPostImage.create(imageKeys.get(i), i, infoPost)); // 대표 이미지 = sortOrder 0
         }
         return infoPostImageRepository.saveAll(images);
+    }
+
+    /**
+     * 정보글 목록의 모집글 수를 한 번의 집계 쿼리로 조회한다.
+     *
+     * <p>공고형 정보글만 대상이며, 모집글이 없는 공고형은 맵에 없으므로 호출부에서 0으로 처리한다.</p>
+     *
+     * @param infoPosts 모집글 수를 조회할 정보글 목록
+     * @return 정보글 ID별 모집글 수
+     */
+    private Map<Long, Integer> getRecruitmentCountMap(List<InfoPost> infoPosts) {
+        List<InfoPost> linkables =
+                infoPosts.stream().filter(InfoPost::isLinkable).toList();
+        if (linkables.isEmpty()) {
+            return Map.of();
+        }
+        return recruitmentRepository.countByInfoPosts(linkables).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> ((Long) row[1]).intValue()));
     }
 
     /**

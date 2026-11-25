@@ -42,7 +42,7 @@ class ExpoSenderTest {
     }
 
     @Test
-    @DisplayName("토큰마다 메시지 1개씩 Expo 형식(to, title, body, data, sound, collapseId)으로 요청한다")
+    @DisplayName("토큰마다 메시지 1개씩 Expo 형식(to, title, body, data, sound, threadId)으로 요청한다")
     void send_requestsExpoFormat() {
         server.expect(requestTo(EXPO_PUSH_URL))
                 .andExpect(method(HttpMethod.POST))
@@ -50,10 +50,13 @@ class ExpoSenderTest {
                         [
                           {"to": "ExponentPushToken[a]", "title": "발신자", "body": "안녕",
                            "data": {"redirectUrl": "/chat/5", "type": "CHAT"},
-                           "sound": "default", "collapseId": "chat-room-5"},
+                           "sound": "default", "threadId": "chat-room-5"},
                           {"to": "ExponentPushToken[b]"}
                         ]
                         """))
+                // collapseId를 보내면 iOS에서 같은 방 알림이 최신 1개로 교체된다
+                .andExpect(request -> assertThat(((MockClientHttpRequest) request).getBodyAsString())
+                        .doesNotContain("collapseId"))
                 .andRespond(withSuccess("""
                         {"data": [{"status": "ok", "id": "1"}, {"status": "ok", "id": "2"}]}
                         """, MediaType.APPLICATION_JSON));
@@ -65,11 +68,11 @@ class ExpoSenderTest {
     }
 
     @Test
-    @DisplayName("축약 키가 없으면 collapseId를 요청에 포함하지 않는다")
-    void send_omitsCollapseIdWhenNull() {
+    @DisplayName("그룹 키가 없으면 threadId를 요청에 포함하지 않는다")
+    void send_omitsThreadIdWhenNull() {
         server.expect(requestTo(EXPO_PUSH_URL))
                 .andExpect(request -> assertThat(((MockClientHttpRequest) request).getBodyAsString())
-                        .doesNotContain("collapseId"))
+                        .doesNotContain("threadId"))
                 .andRespond(withSuccess("{\"data\": [{\"status\": \"ok\"}]}", MediaType.APPLICATION_JSON));
 
         expoSender.send(List.of("ExponentPushToken[a]"), new PushMessage("제목", "내용", Map.of(), null));

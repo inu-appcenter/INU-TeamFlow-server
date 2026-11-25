@@ -34,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class VoteService {
 
+    private static final int VOTE_LIST_BATCH_SIZE = 1000;
+
     private final VoteParticipantService voteParticipantService;
     private final VoteTimeService voteTimeService;
     private final VoteAvailabilityService voteAvailabilityService;
@@ -51,26 +53,18 @@ public class VoteService {
     /**
      * 팀에 생성된 모든 투표를 조회한다.
      *
-     * <p>각 투표에는 요청자의 투표 대상자 여부와 투표 생성자 여부가 함께 포함된다.</p>
+     * <p>조회한 참여자 목록으로 요청자의 투표 대상자 여부를 판단한다.
+     * 각 투표에는 요청자의 투표 생성자 여부도 포함된다.</p>
      *
      * @param user 투표 목록을 조회하는 사용자
      * @param teamId 조회할 팀 ID
      * @return 팀에 생성된 투표 목록
-     * @throws RestApiException 팀을 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우
+     * @throws RestApiException 팀을 찾을 수 없거나 사용자가 해당 팀의 멤버가 아닌 경우.
      */
     public List<EventVoteResponse> getVotes(User user, Long teamId) {
         Team team = getTeamById(teamId);
         validateTeamMember(team, user);
-        List<EventVoteResponse> responses = new ArrayList<>();
-
-        for (Vote vote : voteRepository.findByTeam(team)) {
-            boolean isVoter = voteParticipantService.isVoter(vote, user);
-
-            responses.add(
-                    createEventVoteResponse(vote, isVoter, vote.getCreatedBy().equals(user.getUserId())));
-        }
-
-        return responses;
+        return createEventVoteListResponses(voteRepository.findByTeam(team), user.getUserId(), false);
     }
 
     /**
@@ -140,13 +134,10 @@ public class VoteService {
      * 요청자가 투표 생성자인지 여부가 {@code isCreator}에 포함된다.</p>
      *
      * @param user 투표 목록을 조회할 사용자
-     * @return 요청자가 투표 대상자로 지정된 투표 목록
+     * @return 팀 정보, 후보 날짜 및 참여 현황을 포함한 요청자의 투표 목록
      */
     public List<EventVoteResponse> getMyVotes(User user) {
-        return voteParticipantService.getVotesByUser(user).stream()
-                .map(vote ->
-                        createEventVoteResponse(vote, true, vote.getCreatedBy().equals(user.getUserId())))
-                .toList();
+        return createEventVoteListResponses(voteParticipantService.getVotesByUser(user), user.getUserId(), true);
     }
 
     /**
@@ -307,7 +298,7 @@ public class VoteService {
     }
 
     /**
-     * 투표와 참여 현황을 조합하여 투표 응답을 생성한다.
+     * 투표의 후보 날짜와 참여 현황을 조회해 응답을 생성한다.
      *
      * @param vote 투표
      * @param isVoter 요청자의 투표 대상자 여부
@@ -321,6 +312,25 @@ public class VoteService {
                 .map(VoteDate::getDate)
                 .toList();
 
+        return createEventVoteResponse(vote, isVoter, isCreator, dates, voteParticipants);
+    }
+
+    /**
+     * 조회한 후보 날짜와 참여 현황으로 투표 응답을 생성한다.
+     *
+     * @param vote 투표
+     * @param isVoter 요청자의 투표 대상자 여부
+     * @param isCreator 요청자의 투표 생성자 여부
+     * @param dates 날짜 오름차순으로 정렬된 후보 날짜 목록
+     * @param voteParticipants 참여 완료자와 미완료자로 분류된 투표 참여 현황
+     * @return 투표 정보, 후보 날짜 및 참여 현황을 포함한 응답
+     */
+    private EventVoteResponse createEventVoteResponse(
+            Vote vote,
+            boolean isVoter,
+            boolean isCreator,
+            List<LocalDate> dates,
+            VoteParticipantService.VoteParticipants voteParticipants) {
         return EventVoteResponse.of(
                 vote,
                 isVoter,
@@ -328,6 +338,43 @@ public class VoteService {
                 dates,
                 voteParticipants.completedVoters(),
                 voteParticipants.uncompletedVoters());
+    }
+
+    /**
+     * 여러 투표의 응답 목록을 생성한다.
+     *
+     * <p>참여자와 후보 날짜는 투표를 묶어 일괄 조회한다.
+     * 요청자가 모든 투표에 대상자로 지정된 경우 각 응답의 {@code isVoter}는 {@code true}다.</p>
+     *
+     * @param votes 응답에 포함할 투표 목록
+     * @param userId 목록을 조회하는 사용자 ID
+     * @param allVotesAssignedToUser 요청자가 목록의 모든 투표에서 대상자로 지정됐는지 여부
+     * @return 입력 투표 순서를 유지한 응답 목록
+     */
+    private List<EventVoteResponse> createEventVoteListResponses(
+            List<Vote> votes, Long userId, boolean allVotesAssignedToUser) {
+        List<EventVoteResponse> responses = new ArrayList<>(votes.size());
+        for (int from = 0; from < votes.size(); from += VOTE_LIST_BATCH_SIZE) {
+            List<Vote> batch = votes.subList(from, Math.min(from + VOTE_LIST_BATCH_SIZE, votes.size()));
+            Map<Long, List<VoteParticipant>> participantsByVoteId = voteParticipantService.getParticipantsByVote(batch);
+            Map<Long, List<LocalDate>> datesByVoteId = voteTimeService.getDatesByVote(batch);
+
+            for (Vote vote : batch) {
+                Long voteId = vote.getVoteId();
+                List<VoteParticipant> participants = participantsByVoteId.getOrDefault(voteId, List.of());
+                boolean isVoter = allVotesAssignedToUser
+                        || participants.stream()
+                                .anyMatch(participant -> userId.equals(
+                                        participant.getTeamMember().getUser().getUserId()));
+                responses.add(createEventVoteResponse(
+                        vote,
+                        isVoter,
+                        vote.getCreatedBy().equals(userId),
+                        datesByVoteId.getOrDefault(voteId, List.of()),
+                        voteParticipantService.summarizeParticipants(participants)));
+            }
+        }
+        return responses;
     }
 
     /**

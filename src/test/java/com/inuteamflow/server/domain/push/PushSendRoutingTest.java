@@ -98,7 +98,7 @@ class PushSendRoutingTest {
     }
 
     @Test
-    @DisplayName("채팅 알림은 두 채널에 같은 data와 축약 키를 전달한다")
+    @DisplayName("채팅 알림은 두 채널에 같은 data와 그룹 키를 전달한다")
     void sendChatNotification_sendsSameMessageToBothProviders() {
         when(notificationOptionRepository.findByUserIdIn(any())).thenReturn(List.of());
         when(pushTokenRepository.findAllByCreatedByIn(any()))
@@ -116,7 +116,7 @@ class PushSendRoutingTest {
         verify(expoSender).send(anyList(), expoMessage.capture());
 
         assertThat(fcmMessage.getValue()).isEqualTo(expoMessage.getValue());
-        assertThat(expoMessage.getValue().collapseKey()).isEqualTo("chat-room-5");
+        assertThat(expoMessage.getValue().threadId()).isEqualTo("chat-room-5");
         assertThat(expoMessage.getValue().data())
                 .containsEntry("redirectUrl", "/chat/5")
                 .containsEntry("type", "CHAT")

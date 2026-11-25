@@ -17,7 +17,7 @@ public class FcmSender {
      * FCM 토큰으로 Firebase Admin SDK를 통해 푸시 알림을 발송한다.
      *
      * <p>Firebase 멀티캐스트 제한에 맞춰 토큰을 최대 {@value #MAX_BATCH_SIZE}개씩 나누어 발송한다.
-     * 축약 키가 있으면 Android와 iOS에 동일하게 설정하여 같은 키의 미확인 알림이 중복 표시되지 않도록 한다.
+     * 그룹 키가 있으면 iOS thread-id로 설정하여 같은 키의 알림이 교체되지 않고 한 묶음으로 쌓이도록 한다.
      * Firebase 발송 실패는 기록하고 호출자에게 전파하지 않는다.</p>
      *
      * @param tokens 발송할 FCM 토큰 목록
@@ -48,14 +48,10 @@ public class FcmSender {
                 .putAllData(message.data())
                 .addAllTokens(batch);
 
-        if (message.collapseKey() != null) {
-            builder.setAndroidConfig(AndroidConfig.builder()
-                            .setCollapseKey(message.collapseKey())
-                            .build())
-                    .setApnsConfig(ApnsConfig.builder()
-                            .putHeader("apns-collapse-id", message.collapseKey())
-                            .setAps(Aps.builder().build()) // Firebase SDK는 ApnsConfig 생성 시 aps를 필수로 요구
-                            .build());
+        if (message.threadId() != null) {
+            builder.setApnsConfig(ApnsConfig.builder()
+                    .setAps(Aps.builder().setThreadId(message.threadId()).build())
+                    .build());
         }
         return builder.build();
     }

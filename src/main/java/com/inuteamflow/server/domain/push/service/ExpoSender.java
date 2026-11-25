@@ -93,11 +93,11 @@ public class ExpoSender {
     // Expo Push API 요청 메시지
     @JsonInclude(JsonInclude.Include.NON_NULL)
     record ExpoPushMessage(
-            String to, String title, String body, Map<String, String> data, String sound, String collapseId) {
+            String to, String title, String body, Map<String, String> data, String sound, String threadId) {
 
         static ExpoPushMessage of(String token, PushMessage message) {
             return new ExpoPushMessage(
-                    token, message.title(), message.body(), message.data(), "default", message.collapseKey());
+                    token, message.title(), message.body(), message.data(), "default", message.threadId());
         }
     }
 

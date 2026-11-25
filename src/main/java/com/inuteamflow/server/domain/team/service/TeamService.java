@@ -142,7 +142,7 @@ public class TeamService {
         if (!teamMemberRepository.existsByTeamAndUser(team, user))
             throw new RestApiException(CustomErrorCode.TEAM_MEMBER_NOT_FOUND);
 
-        return teamMemberRepository.findByTeam(team).stream()
+        return teamMemberRepository.findByTeamWithUser(team).stream()
                 .map(tm -> TeamMemberResponse.create(
                         tm, tm.getUser(), s3Service.getImageUrl(tm.getUser().getImageKey())))
                 .toList();

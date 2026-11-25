@@ -2,9 +2,12 @@ package com.inuteamflow.server.domain.intip.client;
 
 import com.inuteamflow.server.domain.intip.dto.IntipNoticeListResponse;
 import com.inuteamflow.server.domain.intip.dto.IntipNoticeResponse;
+import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -12,10 +15,19 @@ import org.springframework.web.client.RestClient;
 @Component
 public class IntipClient {
 
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
+
     private final RestClient restClient;
 
     public IntipClient(@Value("${intip.base-url}") String baseUrl) {
-        this.restClient = RestClient.builder().baseUrl(baseUrl).build();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(CONNECT_TIMEOUT);
+        requestFactory.setReadTimeout(READ_TIMEOUT);
+        this.restClient = RestClient.builder()
+                .baseUrl(baseUrl)
+                .requestFactory(requestFactory)
+                .build();
     }
 
     /**
@@ -39,5 +51,15 @@ public class IntipClient {
             return List.of();
         }
         return response.getData().getContents();
+    }
+
+    /**
+     * 공지 첨부파일을 내려받는다.
+     *
+     * @param url 학교 서버의 첨부파일 다운로드 URL (절대 경로라 base-url을 쓰지 않음)
+     * @return 파일 바이트
+     */
+    public byte[] downloadFile(String url) {
+        return restClient.get().uri(URI.create(url)).retrieve().body(byte[].class);
     }
 }
