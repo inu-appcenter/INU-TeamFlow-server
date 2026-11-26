@@ -17,6 +17,8 @@ import com.inuteamflow.server.global.exception.error.CustomErrorCode;
 import com.inuteamflow.server.global.exception.error.RestApiException;
 import com.inuteamflow.server.global.s3.S3Service;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -137,17 +139,21 @@ public class ChatMessageService {
         ChatRoomListUpdateResponse.LastMessage lastMessage = ChatRoomListUpdateResponse.LastMessage.of(
                 previewOf(message), sender.getUserId(), sender.getName(), message.getCreatedAt());
 
+        Map<Long, Long> unreadCountByUserId = chatMessageRepository.countUnreadByMember(chatRoom).stream()
+                .collect(Collectors.toMap(
+                        ChatMessageRepository.MemberUnreadCountView::getUserId,
+                        ChatMessageRepository.MemberUnreadCountView::getUnreadCount));
+
         for (ChatRoomMember member : chatRoomMemberRepository.findByChatRoomWithUser(chatRoom)) {
-            long unreadCount = chatMessageRepository.countByChatRoomAndChatMessageIdGreaterThan(
-                    chatRoom, member.getLastReadMessageId() != null ? member.getLastReadMessageId() : 0L);
+            Long userId = member.getUser().getUserId();
 
             pushChatRoomListUpdate(
-                    member.getUser().getUserId(),
+                    userId,
                     ChatRoomListUpdateResponse.of(
                             chatRoom.getChatRoomId(),
                             lastMessage,
                             message.getCreatedAt(),
-                            (int) unreadCount,
+                            unreadCountByUserId.getOrDefault(userId, 0L).intValue(),
                             chatRoom.getChatRoomType()));
         }
     }
