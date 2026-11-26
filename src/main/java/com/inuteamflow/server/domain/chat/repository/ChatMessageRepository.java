@@ -65,5 +65,24 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         Long getUnreadCount();
     }
 
+    // 메시지 전송 시 목록 갱신용: 멤버별 안읽은 메시지 수를 한 번에 계산 (멤버마다 COUNT 하는 N+1 방지)
+    // 기준은 기존과 동일하게 마지막으로 읽은 메시지 이후 (읽은 적이 없으면 전체)
+    @Query("""
+            SELECT crm.user.userId AS userId, COUNT(cm.chatMessageId) AS unreadCount
+            FROM ChatRoomMember crm
+            LEFT JOIN ChatMessage cm
+              ON cm.chatRoom = crm.chatRoom
+             AND cm.chatMessageId > COALESCE(crm.lastReadMessageId, 0L)
+            WHERE crm.chatRoom = :chatRoom
+            GROUP BY crm.user.userId
+            """)
+    List<MemberUnreadCountView> countUnreadByMember(@Param("chatRoom") ChatRoom chatRoom);
+
+    interface MemberUnreadCountView {
+        Long getUserId();
+
+        Long getUnreadCount();
+    }
+
     void deleteByChatRoom(ChatRoom chatRoom);
 }
